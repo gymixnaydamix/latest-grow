@@ -76,7 +76,7 @@ jobs:
           npx wait-on http://localhost:3000 http://localhost:5000/health -t 60000
 
       - name: Run Cypress tests
-        uses: cypress-io/github-action@v6
+        uses: cypress-io/github-action@v7
         with:
           working-directory: ./frontend
           browser: ${{ matrix.browser }}
