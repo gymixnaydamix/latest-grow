@@ -38,7 +38,7 @@ interface AuditEntry {
 interface ComplianceTask {
   id: string;
   area: string;
-  description: string;
+  description?: string;
   dueDate: string;
   assignee: string;
   priority: string;
@@ -325,7 +325,7 @@ function ComplianceTasksView() {
                   t.priority === 'Medium' ? 'bg-blue-400' : 'bg-accent'
                 }`} />
                 <div>
-                  <p className="text-sm font-medium text-foreground/80">{t.area}: {t.description.length > 60 ? t.description.slice(0, 57) + '...' : t.description}</p>
+                  <p className="text-sm font-medium text-foreground/80">{t.area}: {(t.description ?? '').length > 60 ? (t.description ?? '').slice(0, 57) + '...' : (t.description ?? '')}</p>
                   <p className="text-xs text-muted-foreground/40">{t.assignee} | Due: {t.dueDate}</p>
                 </div>
               </div>
