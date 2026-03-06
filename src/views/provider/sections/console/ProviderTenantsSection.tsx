@@ -73,6 +73,7 @@ import {
   reasonPrompt,
   type ColumnDef,
 } from './shared';
+import { AddTenantDialog } from '../../dialogs/AddTenantDialog';
 
 type TenantRecord = {
   id: string;
@@ -145,6 +146,7 @@ function TenantDirectoryView() {
   const [stageFilter, setStageFilter] = useState('');
   const [countryFilter, setCountryFilter] = useState('');
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
+  const [addTenantOpen, setAddTenantOpen] = useState(false);
 
   const tenantsQuery = useProviderTenants({
     search: search || undefined,
@@ -253,12 +255,15 @@ function TenantDirectoryView() {
               {exportMutation.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Download className="mr-1 size-3" />}
               Export
             </Button>
-            <Button size="sm" className="h-7 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/30">
+            <Button size="sm" className="h-7 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/30" onClick={() => setAddTenantOpen(true)}>
               <UserPlus className="mr-1 size-3" />Add Tenant
             </Button>
           </div>
         }
       />
+
+      {/* Add Tenant Dialog */}
+      <AddTenantDialog open={addTenantOpen} onOpenChange={setAddTenantOpen} />
 
       {/* KPI strip */}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">

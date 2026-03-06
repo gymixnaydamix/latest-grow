@@ -58,7 +58,20 @@ class ApiClient {
       throw new ApiError(message, res.status, errBody);
     }
 
-    return res.json();
+    // 204 No Content or empty body — nothing to parse
+    if (res.status === 204 || res.headers.get('content-length') === '0') {
+      return undefined as T;
+    }
+
+    // Guard against truly empty bodies (e.g. some proxies strip content)
+    const text = await res.text();
+    if (!text) return undefined as T;
+
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new ApiError('Invalid JSON in response body', res.status, { raw: text });
+    }
   }
 
   // Convenience wrappers
