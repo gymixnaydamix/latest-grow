@@ -1,0 +1,207 @@
+# ============================================================================
+# Agent Orchestrator Configuration — D-School 2049
+# ============================================================================
+# Defines how AI agents coordinate on tasks, their ownership boundaries,
+# handoff protocols, and escalation rules.
+# ============================================================================
+
+version: "1.0"
+project: "D-School 2049"
+
+# ── Agent Registry ──────────────────────────────────────────────────────────
+agents:
+  frontend:
+    name: "Frontend Agent"
+    spec: ".github/agents/frontend-agent.md"
+    triggers:
+      - "src/**"
+      - "index.html"
+      - "vite.config.ts"
+      - "components.json"
+    labels: ["frontend"]
+    priority: 1
+
+  backend:
+    name: "Backend Agent"
+    spec: ".github/agents/backend-agent.md"
+    triggers:
+      - "backend/src/**"
+      - "backend/prisma/**"
+    labels: ["backend"]
+    priority: 1
+
+  ml:
+    name: "ML Agent"
+    spec: ".github/agents/ml-agent.md"
+    triggers:
+      - "ml/**"
+      - "backend/src/services/ai.service.ts"
+    labels: ["ml", "ai"]
+    priority: 2
+
+  3d-graphics:
+    name: "3D Graphics Agent"
+    spec: ".github/agents/3d-graphics-agent.md"
+    triggers:
+      - "src/components/3d/**"
+      - "src/shaders/**"
+      - "public/models/**"
+    labels: ["3d", "graphics"]
+    priority: 2
+
+  devops:
+    name: "DevOps Agent"
+    spec: ".github/agents/devops-agent.md"
+    triggers:
+      - ".github/**"
+      - "docker-compose.yml"
+      - "netlify.toml"
+      - "Dockerfile*"
+    labels: ["ci", "infrastructure"]
+    priority: 1
+
+  testing:
+    name: "Testing Agent"
+    spec: ".github/agents/testing-agent.md"
+    triggers:
+      - "**/*.test.ts"
+      - "**/*.test.tsx"
+      - "**/*.spec.ts"
+      - "e2e/**"
+      - "jest.config.*"
+    labels: ["testing"]
+    priority: 1
+
+  documentation:
+    name: "Documentation Agent"
+    spec: ".github/agents/documentation-agent.md"
+    triggers:
+      - "docs/**"
+      - "**/*.md"
+      - "README.md"
+    labels: ["documentation"]
+    priority: 3
+
+  security:
+    name: "Security Agent"
+    spec: ".github/agents/security-agent.md"
+    triggers:
+      - "backend/src/api/middlewares/**"
+      - "backend/src/services/auth.service.ts"
+      - "backend/src/services/audit.service.ts"
+      - ".github/workflows/security.yml"
+    labels: ["security"]
+    priority: 0  # Highest priority — security reviews first
+
+# ── Coordination Rules ──────────────────────────────────────────────────────
+coordination:
+  # When a task spans multiple agents, the orchestrator assigns a lead
+  multi-agent-tasks:
+    strategy: "lead-agent"
+    rules:
+      - trigger: "Full-stack feature"
+        lead: "backend"
+        collaborators: ["frontend", "testing"]
+        sequence: ["backend", "frontend", "testing"]
+
+      - trigger: "New API endpoint"
+        lead: "backend"
+        collaborators: ["security", "testing", "documentation"]
+        sequence: ["backend", "security", "testing", "documentation"]
+
+      - trigger: "New UI component"
+        lead: "frontend"
+        collaborators: ["testing", "3d-graphics"]
+        sequence: ["frontend", "testing"]
+
+      - trigger: "Security fix"
+        lead: "security"
+        collaborators: ["backend", "frontend", "devops"]
+        sequence: ["security", "backend", "frontend", "devops"]
+
+      - trigger: "Database migration"
+        lead: "backend"
+        collaborators: ["devops", "testing"]
+        sequence: ["backend", "devops", "testing"]
+
+      - trigger: "CI/CD change"
+        lead: "devops"
+        collaborators: ["testing"]
+        sequence: ["devops", "testing"]
+
+  # Handoff protocol between agents
+  handoff:
+    format: "github-issue-comment"
+    required-fields:
+      - "from_agent"
+      - "to_agent"
+      - "task_summary"
+      - "files_changed"
+      - "testing_status"
+      - "blocking_issues"
+    template: |
+      ## Agent Handoff: {from_agent} → {to_agent}
+
+      **Task**: {task_summary}
+      **Files Changed**: {files_changed}
+      **Tests**: {testing_status}
+      **Blockers**: {blocking_issues}
+
+      ### What was done
+      {completed_work}
+
+      ### What needs to happen next
+      {next_steps}
+
+# ── Quality Gates (per-agent) ──────────────────────────────────────────────
+quality-gates:
+  global:
+    - "TypeScript compiles with no errors"
+    - "No ESLint errors"
+    - "All existing tests pass"
+    - "No decrease in code coverage"
+
+  frontend:
+    - "Components render without console errors"
+    - "Responsive on 320px–2560px viewports"
+    - "Loading and error states handled"
+    - "Accessibility: no ARIA violations"
+
+  backend:
+    - "All routes have Zod validation"
+    - "RBAC middleware on all protected routes"
+    - "No N+1 queries"
+    - "API response time < 200ms (p95)"
+
+  security:
+    - "No high/critical vulnerabilities"
+    - "No secrets in source code"
+    - "Auth/authz on all new endpoints"
+    - "Input validation on all user inputs"
+
+  testing:
+    - "Coverage >= 80% (frontend) / 85% (backend)"
+    - "No skipped tests in final PR"
+    - "E2E critical paths pass"
+
+# ── Escalation Rules ───────────────────────────────────────────────────────
+escalation:
+  - condition: "Security vulnerability (critical/high)"
+    action: "Block merge, notify @your-org/security-team immediately"
+    sla: "1 hour response"
+
+  - condition: "Build failure on main"
+    action: "Alert @your-org/devops-team, auto-revert if not fixed in 30 min"
+    sla: "30 minutes"
+
+  - condition: "Test coverage decreased > 5%"
+    action: "Block merge, require @your-org/testing-team review"
+    sla: "4 hours"
+
+  - condition: "Database migration conflicts"
+    action: "Alert @your-org/backend-team, manual resolution required"
+    sla: "2 hours"
+
+  - condition: "Agent task exceeded time estimate by 2x"
+    action: "Escalate to @your-org/core-team for re-scoping"
+    sla: "1 business day"

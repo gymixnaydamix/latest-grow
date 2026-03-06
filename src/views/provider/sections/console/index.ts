@@ -1,0 +1,22 @@
+/* ─── Provider Console sections · Barrel export ─── */
+export { ProviderBillingSection } from './ProviderBillingSection';
+export { ProviderUsageSection } from './ProviderUsageSection';
+export { ProviderTemplatesSection } from './ProviderTemplatesSection';
+export { ProviderIntegrationsSection } from './ProviderIntegrationsSection';
+export { ProviderSecuritySection } from './ProviderSecuritySection';
+export { ProviderTeamSection } from './ProviderTeamSection';
+export { ProviderSettingsSection } from './ProviderSettingsSection';
+export { ProviderHomeSection } from './ProviderHomeSection';
+export { ProviderTenantsSection } from './ProviderTenantsSection';
+export { ProviderOnboardingSection } from './ProviderOnboardingSection';
+export { ProviderSupportSection } from './ProviderSupportSection';
+export { ProviderIncidentsSection } from './ProviderIncidentsSection';
+export { ProviderReleasesSection } from './ProviderReleasesSection';
+export { ProviderDataOpsSection } from './ProviderDataOpsSection';
+export { ProviderAuditSection } from './ProviderAuditSection';
+export { ProviderAnalyticsSection } from './ProviderAnalyticsSection';
+export { ProviderCommsSection } from './ProviderCommsSection';
+export { ProviderNotificationsSection } from './ProviderNotificationsSection';
+export { ProviderBrandingSection } from './ProviderBrandingSection';
+export { ProviderApiMgmtSection } from './ProviderApiMgmtSection';
+export { ProviderBackupSection } from './ProviderBackupSection';

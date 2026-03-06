@@ -1,0 +1,32 @@
+# ============================================================================
+# TruffleHog Exclusions — D-School 2049
+# ============================================================================
+# Paths or patterns to exclude from secret scanning.
+# Only add entries after confirming they are NOT actual secrets.
+# ============================================================================
+
+# Lock files (contain registry URLs, not secrets)
+pnpm-lock.yaml
+
+# Test fixtures with dummy credentials
+**/__tests__/fixtures/**
+**/test-data/**
+
+# Documentation examples
+docs/**/*.md
+
+# Prisma seed data (demo credentials only — never production)
+backend/prisma/seed.ts
+
+# Generated files
+**/*.generated.ts
+**/node_modules/**
+
+# Build outputs
+dist/**
+build/**
+.next/**
+
+# Environment example (only placeholder values)
+.env.example
+backend/.env.example

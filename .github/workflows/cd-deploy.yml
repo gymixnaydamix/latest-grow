@@ -1,0 +1,271 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches:
+      - main
+    tags:
+      - 'v*'
+
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-frontend:
+    name: Build Frontend Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./frontend
+          file: ./frontend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            REACT_APP_API_URL=${{ secrets.API_URL }}
+            REACT_APP_WS_URL=${{ secrets.WS_URL }}
+
+  build-backend:
+    name: Build Backend Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./backend
+          file: ./backend/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  build-ml-service:
+    name: Build ML Service Docker Image
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-ml
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}}
+            type=sha
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./ml-service
+          file: ./ml-service/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend, build-ml-service]
+    if: github.ref == 'refs/heads/develop' || github.event.inputs.environment == 'staging'
+    environment:
+      name: staging
+      url: https://staging.dschool-2049.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name dschool-staging --region us-east-1
+
+      - name: Deploy to Kubernetes
+        run: |
+          kubectl set image deployment/frontend frontend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-frontend:${{ github.sha }} -n staging
+          kubectl set image deployment/backend backend=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-backend:${{ github.sha }} -n staging
+          kubectl set image deployment/ml-service ml-service=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}-ml:${{ github.sha }} -n staging
+          kubectl rollout status deployment/frontend -n staging
+          kubectl rollout status deployment/backend -n staging
+          kubectl rollout status deployment/ml-service -n staging
+
+      - name: Run database migrations
+        run: |
+          kubectl exec -it deployment/backend -n staging -- pnpm prisma migrate deploy
+
+      - name: Run smoke tests
+        run: |
+          curl -f https://staging.dschool-2049.com/health || exit 1
+          curl -f https://api-staging.dschool-2049.com/health || exit 1
+          curl -f https://ml-staging.dschool-2049.com/health || exit 1
+
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [build-frontend, build-backend, build-ml-service]
+    if: startsWith(github.ref, 'refs/tags/v') || github.event.inputs.environment == 'production'
+    environment:
+      name: production
+      url: https://dschool-2049.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Update kubeconfig
+        run: aws eks update-kubeconfig --name dschool-production --region us-east-1
+
+      - name: Create database backup
+        run: |
+          kubectl exec -it deployment/postgres -n production -- pg_dump -U postgres dschool > backup-$(date +%Y%m%d-%H%M%S).sql
+
+      - name: Deploy to Kubernetes (Blue-Green)
+        run: |
+          kubectl apply -f k8s/production/frontend-green.yaml
+          kubectl apply -f k8s/production/backend-green.yaml
+          kubectl apply -f k8s/production/ml-service-green.yaml
+          kubectl wait --for=condition=ready pod -l app=frontend,version=green -n production --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=backend,version=green -n production --timeout=300s
+          kubectl wait --for=condition=ready pod -l app=ml-service,version=green -n production --timeout=300s
+
+      - name: Run database migrations
+        run: |
+          kubectl exec -it deployment/backend-green -n production -- pnpm prisma migrate deploy
+
+      - name: Smoke tests on green deployment
+        run: |
+          GREEN_FRONTEND_IP=$(kubectl get svc frontend-green -n production -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+          curl -f http://$GREEN_FRONTEND_IP/health || exit 1
+
+      - name: Switch traffic to green
+        run: |
+          kubectl patch svc frontend -n production -p '{"spec":{"selector":{"version":"green"}}}'
+          kubectl patch svc backend -n production -p '{"spec":{"selector":{"version":"green"}}}'
+          kubectl patch svc ml-service -n production -p '{"spec":{"selector":{"version":"green"}}}'
+
+      - name: Monitor for 5 minutes
+        run: |
+          sleep 300
+          ERROR_RATE=$(kubectl top pod -n production | grep backend-green | awk '{print $3}')
+          # Add error rate checking logic
+
+      - name: Cleanup old blue deployment
+        run: |
+          kubectl delete deployment frontend-blue backend-blue ml-service-blue -n production
+
+      - name: Send deployment notification
+        uses: 8398a7/action-slack@v3
+        with:
+          status: ${{ job.status }}
+          text: 'Production deployment completed successfully!'
+          webhook_url: ${{ secrets.SLACK_WEBHOOK }}

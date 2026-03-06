@@ -1,0 +1,133 @@
+# ============================================================================
+# Labeler Configuration — D-School 2049
+# ============================================================================
+# Automatically labels PRs based on file paths changed.
+# Used by: .github/workflows/ci.yml (actions/labeler)
+# See: https://github.com/actions/labeler
+# ============================================================================
+
+frontend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/**"
+          - "index.html"
+          - "vite.config.ts"
+          - "tsconfig.json"
+          - "components.json"
+
+backend:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/**"
+
+database:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/prisma/**"
+
+auth:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/src/api/middlewares/auth*"
+          - "backend/src/api/middlewares/rbac*"
+          - "backend/src/api/middlewares/csrf*"
+          - "backend/src/services/auth.service.ts"
+          - "src/store/auth.store.ts"
+          - "src/components/guards/**"
+
+ci:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/**"
+          - ".github/dependabot.yml"
+          - ".github/renovate.json"
+          - ".github/labeler.yml"
+          - "docker-compose.yml"
+          - "netlify.toml"
+
+documentation:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "docs/**"
+          - "**/*.md"
+          - "!.github/ISSUE_TEMPLATE/**"
+          - "!.github/PULL_REQUEST_TEMPLATE.md"
+
+ui-components:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/components/ui/**"
+
+views:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/views/**"
+
+hooks:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/hooks/**"
+
+api-routes:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/src/api/routes/**"
+          - "backend/src/api/controllers/**"
+          - "backend/src/api/schemas/**"
+
+services:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "backend/src/services/**"
+
+dependencies:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "package.json"
+          - "pnpm-lock.yaml"
+          - "backend/package.json"
+
+security:
+  - changed-files:
+      - any-glob-to-any-file:
+          - ".github/workflows/security.yml"
+          - "backend/src/api/middlewares/**"
+          - "backend/src/services/auth.service.ts"
+          - "backend/src/services/audit.service.ts"
+
+admin:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/views/admin/**"
+          - "backend/src/api/routes/admin*"
+          - "backend/src/api/controllers/admin*"
+
+teacher:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/views/teacher/**"
+          - "backend/src/api/routes/teacher*"
+
+student:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/views/student/**"
+          - "backend/src/api/routes/student*"
+
+parent:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/views/parent/**"
+          - "backend/src/api/routes/parent*"
+
+finance:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/views/finance/**"
+          - "backend/src/api/routes/finance*"
+
+marketing:
+  - changed-files:
+      - any-glob-to-any-file:
+          - "src/views/marketing/**"
+          - "backend/src/api/routes/marketing*"

@@ -1,0 +1,64 @@
+name: Database Management
+
+on:
+  workflow_dispatch:
+    inputs:
+      action:
+        description: "Database action to perform"
+        required: true
+        type: choice
+        options:
+          - migrate-deploy
+          - seed
+          - reset-staging
+      environment:
+        description: "Target environment"
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+
+jobs:
+  database:
+    name: "DB: ${{ github.event.inputs.action }} (${{ github.event.inputs.environment }})"
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}-database
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma Client
+        run: pnpm --filter ./backend exec prisma generate
+
+      - name: Deploy Migrations
+        if: github.event.inputs.action == 'migrate-deploy'
+        run: pnpm --filter ./backend exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Seed Database
+        if: github.event.inputs.action == 'seed'
+        run: pnpm --filter ./backend exec tsx prisma/seed.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Reset Staging Database
+        if: github.event.inputs.action == 'reset-staging' && github.event.inputs.environment == 'staging'
+        run: |
+          pnpm --filter ./backend exec prisma migrate reset --force
+          pnpm --filter ./backend exec tsx prisma/seed.ts
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+      - name: Verify
+        run: |
+          pnpm --filter ./backend exec prisma migrate status
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}

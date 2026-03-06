@@ -1,0 +1,64 @@
+# ============================================================================
+# CODEOWNERS — D-School 2049
+# ============================================================================
+# Each line is a file pattern followed by one or more owners.
+# Order matters — last matching pattern takes precedence.
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+# ============================================================================
+
+# ── Global (fallback) ───────────────────────────────────────────────────────
+*                                       @your-org/core-team
+
+# ── Frontend ────────────────────────────────────────────────────────────────
+/src/                                   @your-org/frontend-team
+/index.html                             @your-org/frontend-team
+/vite.config.ts                         @your-org/frontend-team
+/tsconfig.json                          @your-org/frontend-team
+/components.json                        @your-org/frontend-team
+/src/components/ui/                     @your-org/frontend-team
+/src/views/                             @your-org/frontend-team
+/src/hooks/                             @your-org/frontend-team
+/src/store/                             @your-org/frontend-team
+/src/api/                               @your-org/frontend-team
+
+# ── Backend ─────────────────────────────────────────────────────────────────
+/backend/                               @your-org/backend-team
+/backend/prisma/                        @your-org/backend-team @your-org/security-team
+/backend/src/api/                       @your-org/backend-team
+/backend/src/services/                  @your-org/backend-team
+/backend/src/config/                    @your-org/backend-team @your-org/devops-team
+
+# ── Database / Prisma ───────────────────────────────────────────────────────
+/backend/prisma/schema.prisma           @your-org/backend-team @your-org/core-team
+/backend/prisma/seed.ts                 @your-org/backend-team
+
+# ── Auth & Security ─────────────────────────────────────────────────────────
+/backend/src/api/middlewares/           @your-org/security-team @your-org/backend-team
+/backend/src/services/auth.service.ts   @your-org/security-team
+/backend/src/services/audit.service.ts  @your-org/security-team
+
+# ── DevOps / CI/CD ──────────────────────────────────────────────────────────
+/.github/                               @your-org/devops-team
+/.github/workflows/                     @your-org/devops-team
+/.github/workflows/security.yml         @your-org/devops-team @your-org/security-team
+/docker-compose.yml                     @your-org/devops-team
+/netlify.toml                           @your-org/devops-team @your-org/frontend-team
+
+# ── Documentation ───────────────────────────────────────────────────────────
+/docs/                                  @your-org/docs-team
+/README.md                              @your-org/docs-team @your-org/core-team
+/.github/agents/                        @your-org/core-team
+
+# ── Testing ─────────────────────────────────────────────────────────────────
+/jest.config.cjs                        @your-org/testing-team
+/jest.setup.ts                          @your-org/testing-team
+/**/__tests__/                          @your-org/testing-team
+/**/*.test.ts                           @your-org/testing-team
+/**/*.test.tsx                          @your-org/testing-team
+/**/*.spec.ts                           @your-org/testing-team
+
+# ── Dependencies ────────────────────────────────────────────────────────────
+/package.json                           @your-org/core-team
+/pnpm-lock.yaml                        @your-org/core-team
+/pnpm-workspace.yaml                   @your-org/devops-team
+/backend/package.json                   @your-org/backend-team @your-org/core-team

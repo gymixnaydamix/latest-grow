@@ -1,0 +1,156 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Target environment"
+        required: true
+        default: staging
+        type: choice
+        options:
+          - staging
+          - production
+
+concurrency:
+  group: deploy-${{ github.event.inputs.environment || 'production' }}
+  cancel-in-progress: false
+
+jobs:
+  # ─── Pre-deploy Validation ──────────────────────────────────────
+  validate:
+    name: Validate
+    runs-on: ubuntu-latest
+    outputs:
+      environment: ${{ steps.env.outputs.target }}
+    steps:
+      - id: env
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target=${{ github.event.inputs.environment }}" >> $GITHUB_OUTPUT
+          else
+            echo "target=production" >> $GITHUB_OUTPUT
+          fi
+
+  # ─── Deploy Frontend to Netlify ─────────────────────────────────
+  deploy-frontend:
+    name: Deploy Frontend
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.validate.outputs.environment }}-frontend
+      url: ${{ steps.deploy.outputs.deploy-url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Build Frontend
+        run: pnpm frontend:build
+        env:
+          VITE_API_URL: ${{ vars.VITE_API_URL }}
+          VITE_ENVIRONMENT: ${{ needs.validate.outputs.environment }}
+      - id: deploy
+        uses: nwtgck/actions-netlify@v3
+        with:
+          publish-dir: ./dist
+          production-deploy: ${{ needs.validate.outputs.environment == 'production' }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          deploy-message: "Deploy ${{ github.sha }} to ${{ needs.validate.outputs.environment }}"
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+
+  # ─── Deploy Backend to Railway ──────────────────────────────────
+  deploy-backend:
+    name: Deploy Backend
+    needs: validate
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.validate.outputs.environment }}-backend
+      url: ${{ vars.BACKEND_URL }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+      - name: Deploy to Railway
+        run: railway up --service backend --detach
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+          RAILWAY_PROJECT_ID: ${{ secrets.RAILWAY_PROJECT_ID }}
+
+  # ─── Run Prisma Migrations ──────────────────────────────────────
+  migrate:
+    name: Database Migrations
+    needs: [validate, deploy-backend]
+    runs-on: ubuntu-latest
+    environment:
+      name: ${{ needs.validate.outputs.environment }}-database
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: "9"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma Client
+        run: pnpm --filter ./backend exec prisma generate
+      - name: Deploy Migrations
+        run: pnpm --filter ./backend exec prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+  # ─── Post-deploy Verification ───────────────────────────────────
+  smoke-test:
+    name: Smoke Tests
+    needs: [deploy-frontend, deploy-backend, migrate]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Health Check - Backend
+        run: |
+          for i in {1..10}; do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ vars.BACKEND_URL }}/api/health" || true)
+            if [ "$STATUS" = "200" ]; then
+              echo "Backend is healthy"
+              exit 0
+            fi
+            echo "Attempt $i: Status $STATUS, retrying in 10s..."
+            sleep 10
+          done
+          echo "Backend health check failed"
+          exit 1
+      - name: Health Check - Frontend
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ vars.FRONTEND_URL }}" || true)
+          if [ "$STATUS" = "200" ]; then
+            echo "Frontend is healthy"
+          else
+            echo "Frontend returned status $STATUS"
+            exit 1
+          fi
+
+  # ─── Notify on Completion ───────────────────────────────────────
+  notify:
+    name: Notify
+    needs: [smoke-test]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Summary
+        run: |
+          echo "## Deployment Summary" >> $GITHUB_STEP_SUMMARY
+          echo "- **Environment**: ${{ needs.validate.outputs.environment || 'production' }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ${{ needs.smoke-test.result }}" >> $GITHUB_STEP_SUMMARY
+          echo "- **Triggered by**: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,209 @@
+# ============================================================================
+# Quality Gates Configuration — D-School 2049
+# ============================================================================
+# Defines the minimum quality standards that must be met before merging.
+# Referenced by CI workflows and the agent orchestrator.
+# ============================================================================
+
+version: "1.0"
+
+# ── Build Gates ─────────────────────────────────────────────────────────────
+build:
+  typescript:
+    command: "pnpm tsc --noEmit"
+    required: true
+    description: "Zero TypeScript errors in frontend and backend"
+
+  lint:
+    command: "pnpm lint"
+    required: true
+    description: "Zero ESLint errors (warnings allowed but tracked)"
+
+  build-frontend:
+    command: "pnpm build"
+    required: true
+    description: "Vite production build succeeds"
+    max-bundle-size:
+      initial-js: "500KB"
+      initial-css: "100KB"
+      total: "2MB"
+
+  build-backend:
+    command: "pnpm --filter backend build"
+    required: false
+    description: "Backend compiles (if build step exists)"
+
+# ── Test Gates ──────────────────────────────────────────────────────────────
+tests:
+  unit-frontend:
+    command: "pnpm test -- --coverage"
+    required: true
+    coverage:
+      statements: 80
+      branches: 75
+      functions: 80
+      lines: 80
+    max-duration: "60s"
+
+  unit-backend:
+    command: "pnpm --filter backend test -- --coverage"
+    required: true
+    coverage:
+      statements: 85
+      branches: 80
+      functions: 85
+      lines: 85
+    max-duration: "120s"
+
+  integration:
+    command: "pnpm --filter backend test:integration"
+    required: true
+    max-duration: "180s"
+
+  e2e:
+    command: "pnpm e2e"
+    required: false  # Required on release branches, optional on feature branches
+    max-duration: "300s"
+    browsers:
+      - chromium
+      - firefox
+      - webkit
+
+# ── Security Gates ──────────────────────────────────────────────────────────
+security:
+  dependency-audit:
+    command: "pnpm audit --audit-level=high"
+    required: true
+    description: "No high/critical vulnerabilities in dependencies"
+
+  secret-scanning:
+    tool: "trufflehog"
+    required: true
+    description: "No secrets detected in source code"
+
+  codeql:
+    languages: ["javascript", "typescript"]
+    required: true
+    description: "No high/critical CodeQL findings"
+
+  license-compliance:
+    allowed:
+      - "MIT"
+      - "ISC"
+      - "BSD-2-Clause"
+      - "BSD-3-Clause"
+      - "Apache-2.0"
+      - "0BSD"
+      - "CC0-1.0"
+      - "CC-BY-4.0"
+      - "Unlicense"
+      - "BlueOak-1.0.0"
+    blocked:
+      - "GPL-2.0"
+      - "GPL-3.0"
+      - "AGPL-3.0"
+    required: true
+    description: "All dependencies use permissive licenses"
+
+# ── Performance Gates ───────────────────────────────────────────────────────
+performance:
+  lighthouse:
+    required: false  # Informational on PRs, required on release
+    thresholds:
+      performance: 90
+      accessibility: 95
+      best-practices: 90
+      seo: 90
+    pages:
+      - "/"
+      - "/login"
+
+  api-response-time:
+    required: true
+    p95: "200ms"
+    p99: "500ms"
+    endpoints:
+      - "GET /api/auth/me"
+      - "GET /api/schools/:id/dashboard/kpis"
+      - "GET /api/schools/:id/courses"
+
+  bundle-analysis:
+    required: true
+    description: "Bundle size does not increase beyond thresholds"
+    max-increase: "10KB"
+
+# ── Code Quality Gates ─────────────────────────────────────────────────────
+code-quality:
+  no-any-types:
+    pattern: ": any"
+    max-occurrences: 0
+    exclude:
+      - "**/*.d.ts"
+      - "**/vite-env.d.ts"
+    description: "No explicit 'any' types in source code"
+
+  no-console-log:
+    pattern: "console.log"
+    max-occurrences: 0
+    exclude:
+      - "backend/src/utils/logger.ts"
+      - "**/*.test.*"
+    description: "Use structured logger instead of console.log"
+
+  no-ts-ignore:
+    pattern: "@ts-ignore|@ts-nocheck"
+    max-occurrences: 0
+    description: "No TypeScript escape hatches"
+
+  max-file-length:
+    lines: 400
+    exclude:
+      - "backend/prisma/seed.ts"
+      - "types.ts"
+    description: "Files should not exceed 400 lines"
+
+  max-function-length:
+    lines: 50
+    description: "Functions should not exceed 50 lines"
+
+# ── PR Review Gates ────────────────────────────────────────────────────────
+review:
+  required-approvals: 1
+  dismiss-stale-reviews: true
+  require-codeowner-review: true
+
+  auto-approve:
+    conditions:
+      - "Only dependency updates (no source changes)"
+      - "Documentation-only changes"
+      - "CI configuration changes (by devops team)"
+
+  mandatory-review:
+    conditions:
+      - "Database schema changes → backend-team + core-team"
+      - "Auth/security changes → security-team"
+      - "CI workflow changes → devops-team"
+      - "Major version dependency bumps → core-team"
+
+# ── Branch Protection ───────────────────────────────────────────────────────
+branch-protection:
+  main:
+    required-checks:
+      - "typecheck"
+      - "lint"
+      - "test-frontend"
+      - "test-backend"
+      - "build"
+      - "security-audit"
+    require-up-to-date: true
+    restrict-pushes: true
+    allow-force-push: false
+    allow-deletions: false
+
+  develop:
+    required-checks:
+      - "typecheck"
+      - "lint"
+      - "build"
+    require-up-to-date: false
+    restrict-pushes: false

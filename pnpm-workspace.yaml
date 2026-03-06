@@ -1,0 +1,9 @@
+packages:
+  - .
+  - backend
+
+ignoreWorkspaceRootCheck: true
+
+ignoredBuiltDependencies:
+  - esbuild
+  - unrs-resolver

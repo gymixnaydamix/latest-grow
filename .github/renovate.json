@@ -1,0 +1,80 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommitTypeAll(deps)",
+    ":separateMajorReleases",
+    "group:allNonMajor"
+  ],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "timezone": "UTC",
+  "schedule": ["before 6am on monday"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 5,
+  "packageRules": [
+    {
+      "description": "React ecosystem — group minor/patch",
+      "matchPackagePatterns": ["^react", "^@types/react"],
+      "groupName": "react",
+      "labels": ["dependencies", "frontend"]
+    },
+    {
+      "description": "TanStack ecosystem",
+      "matchPackagePatterns": ["^@tanstack/"],
+      "groupName": "tanstack",
+      "labels": ["dependencies", "frontend"]
+    },
+    {
+      "description": "Radix UI primitives",
+      "matchPackagePatterns": ["^@radix-ui/"],
+      "groupName": "radix-ui",
+      "labels": ["dependencies", "frontend"]
+    },
+    {
+      "description": "Prisma ORM",
+      "matchPackagePatterns": ["^prisma", "^@prisma/"],
+      "groupName": "prisma",
+      "labels": ["dependencies", "backend"]
+    },
+    {
+      "description": "Express ecosystem",
+      "matchPackageNames": ["express", "cors", "helmet", "cookie-parser", "express-rate-limit"],
+      "groupName": "express",
+      "labels": ["dependencies", "backend"]
+    },
+    {
+      "description": "Vite build tools",
+      "matchPackagePatterns": ["^vite", "^@vitejs/"],
+      "groupName": "vite",
+      "labels": ["dependencies", "frontend"]
+    },
+    {
+      "description": "ESLint and TypeScript tooling",
+      "matchPackagePatterns": ["^eslint", "^@typescript-eslint/", "^typescript$", "^prettier"],
+      "groupName": "linting",
+      "labels": ["dependencies", "dev-tools"],
+      "automerge": true
+    },
+    {
+      "description": "Test frameworks",
+      "matchPackagePatterns": ["^jest", "^@jest/", "^@testing-library/", "^vitest"],
+      "groupName": "testing",
+      "labels": ["dependencies", "testing"],
+      "automerge": true
+    },
+    {
+      "description": "GitHub Actions — automerge minor/patch",
+      "matchManagers": ["github-actions"],
+      "automerge": true,
+      "labels": ["dependencies", "ci"]
+    },
+    {
+      "description": "Pin major versions — require manual review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "labels": ["dependencies", "breaking"]
+    }
+  ],
+  "ignorePaths": ["**/node_modules/**"]
+}

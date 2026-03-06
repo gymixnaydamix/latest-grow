@@ -1,0 +1,347 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * LUXURY 2040 DESIGN SYSTEM — Premium Material Surfaces
+ * Light: Pearl · Ceramic · Frosted Glass · Liquid Silver · Champagne
+ * Dark:  Obsidian · Graphite · Gunmetal · Smoked Chrome · Deep Navy
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* ─── LIGHT MODE — Pearl & Champagne Metallic ────────────────────────── */
+:root {
+  --radius: 0.625rem;
+
+  /* Soft warm gray — gives contrast for neumorphic surfaces */
+  --background: oklch(0.935 0.006 80);
+  --foreground: oklch(0.18 0.02 260);
+
+  /* Ceramic card surface — cream-tinted with depth */
+  --card: oklch(0.993 0.004 90);
+  --card-foreground: oklch(0.18 0.02 260);
+
+  /* Frosted glass popover */
+  --popover: oklch(0.99 0.003 80);
+  --popover-foreground: oklch(0.18 0.02 260);
+
+  /* Primary — deep sapphire with metallic blue sheen */
+  --primary: oklch(0.45 0.18 265);
+  --primary-foreground: oklch(0.99 0.003 80);
+
+  /* Secondary — liquid silver */
+  --secondary: oklch(0.955 0.005 260);
+  --secondary-foreground: oklch(0.25 0.02 260);
+
+  /* Muted — platinum fog */
+  --muted: oklch(0.945 0.004 260);
+  --muted-foreground: oklch(0.48 0.015 260);
+
+  /* Accent — champagne metallic with warm gold */
+  --accent: oklch(0.94 0.012 80);
+  --accent-foreground: oklch(0.22 0.02 260);
+
+  --destructive: oklch(0.577 0.245 27.325);
+
+  /* Borders — subtle platinum with blue micro-tint */
+  --border: oklch(0.905 0.008 260);
+  --input: oklch(0.92 0.006 260);
+  --ring: oklch(0.55 0.15 265);
+
+  /* Charts — jewel tones */
+  --chart-1: oklch(0.55 0.2 265);
+  --chart-2: oklch(0.6 0.15 165);
+  --chart-3: oklch(0.5 0.12 310);
+  --chart-4: oklch(0.7 0.16 80);
+  --chart-5: oklch(0.6 0.2 30);
+
+  /* Sidebar — ceramic cream */
+  --sidebar: oklch(0.985 0.005 80);
+  --sidebar-foreground: oklch(0.18 0.02 260);
+  --sidebar-primary: oklch(0.45 0.18 265);
+  --sidebar-primary-foreground: oklch(0.99 0 0);
+  --sidebar-accent: oklch(0.95 0.008 80);
+  --sidebar-accent-foreground: oklch(0.22 0.02 260);
+  --sidebar-border: oklch(0.91 0.008 260);
+  --sidebar-ring: oklch(0.55 0.15 265);
+
+  /* Premium surface layers */
+  --surface-1: oklch(0.993 0.004 90);
+  --surface-2: oklch(0.975 0.006 80);
+  --surface-3: oklch(0.955 0.005 260);
+  --surface-glow: oklch(0.45 0.18 265 / 8%);
+  --surface-shimmer: oklch(0.99 0.01 80 / 60%);
+  --surface-reflection: linear-gradient(135deg, oklch(1 0 0 / 80%) 0%, oklch(1 0 0 / 0%) 50%);
+  --ambient-light: oklch(0.45 0.18 265 / 4%);
+  --card-glow: 0 1px 3px oklch(0.45 0.18 265 / 6%), 0 8px 24px oklch(0.2 0.05 260 / 6%);
+  --card-glow-hover: 0 2px 8px oklch(0.45 0.18 265 / 10%), 0 12px 32px oklch(0.2 0.05 260 / 10%);
+}
+
+/* ─── DARK MODE — Obsidian & Smoked Chrome ───────────────────────────── */
+.dark {
+  /* Deep obsidian with navy undertone */
+  --background: oklch(0.14 0.015 265);
+  --foreground: oklch(0.93 0.005 260);
+
+  /* Graphite card — lifted with subtle blue shift */
+  --card: oklch(0.19 0.018 265);
+  --card-foreground: oklch(0.93 0.005 260);
+
+  /* Gunmetal popover */
+  --popover: oklch(0.2 0.016 265);
+  --popover-foreground: oklch(0.93 0.005 260);
+
+  /* Primary — electric sapphire glow */
+  --primary: oklch(0.68 0.19 265);
+  --primary-foreground: oklch(0.98 0.003 265);
+
+  /* Secondary — smoked chrome */
+  --secondary: oklch(0.24 0.015 265);
+  --secondary-foreground: oklch(0.9 0.005 260);
+
+  /* Muted — charcoal with depth */
+  --muted: oklch(0.22 0.012 265);
+  --muted-foreground: oklch(0.62 0.01 260);
+
+  /* Accent — dark titanium with blue reflection */
+  --accent: oklch(0.25 0.02 265);
+  --accent-foreground: oklch(0.93 0.005 260);
+
+  --destructive: oklch(0.704 0.191 22.216);
+
+  /* Borders — subtle chrome edge with glow */
+  --border: oklch(0.32 0.015 265 / 50%);
+  --input: oklch(0.28 0.015 265 / 60%);
+  --ring: oklch(0.68 0.19 265);
+
+  /* Charts — neon jewels on dark */
+  --chart-1: oklch(0.68 0.19 265);
+  --chart-2: oklch(0.7 0.18 165);
+  --chart-3: oklch(0.75 0.16 70);
+  --chart-4: oklch(0.65 0.22 310);
+  --chart-5: oklch(0.7 0.2 30);
+
+  /* Sidebar — deep charcoal */
+  --sidebar: oklch(0.17 0.018 265);
+  --sidebar-foreground: oklch(0.93 0.005 260);
+  --sidebar-primary: oklch(0.68 0.19 265);
+  --sidebar-primary-foreground: oklch(0.98 0 0);
+  --sidebar-accent: oklch(0.24 0.02 265);
+  --sidebar-accent-foreground: oklch(0.93 0.005 260);
+  --sidebar-border: oklch(0.35 0.015 265 / 40%);
+  --sidebar-ring: oklch(0.68 0.19 265);
+
+  /* Premium surface layers — cinematic depth */
+  --surface-1: oklch(0.19 0.018 265);
+  --surface-2: oklch(0.16 0.015 265);
+  --surface-3: oklch(0.22 0.02 265);
+  --surface-glow: oklch(0.68 0.19 265 / 6%);
+  --surface-shimmer: oklch(0.68 0.19 265 / 8%);
+  --surface-reflection: linear-gradient(135deg, oklch(1 0 0 / 6%) 0%, oklch(1 0 0 / 0%) 50%);
+  --ambient-light: oklch(0.68 0.19 265 / 3%);
+  --card-glow: 0 1px 3px oklch(0 0 0 / 30%), 0 8px 24px oklch(0 0 0 / 30%), inset 0 1px 0 oklch(1 0 0 / 4%);
+  --card-glow-hover: 0 2px 8px oklch(0.68 0.19 265 / 15%), 0 16px 40px oklch(0 0 0 / 40%), inset 0 1px 0 oklch(1 0 0 / 6%);
+}
+
+/* ─── Base Styles ──────────────────────────────────────────────────── */
+body {
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* ─── Premium Atmospheric Background ────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 80% 60% at 20% 10%, var(--surface-glow), transparent 60%),
+    radial-gradient(ellipse 60% 50% at 80% 80%, var(--ambient-light), transparent 50%),
+    radial-gradient(ellipse 40% 30% at 50% 50%, var(--surface-shimmer), transparent 70%);
+}
+
+/* ─── Scrollbar — Chrome-metallic ──────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--muted-foreground);
+}
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  /* Premium surface tokens */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+ * PREMIUM SURFACE UTILITY CLASSES
+ * ═══════════════════════════════════════════════════════════════════════ */
+
+/* Luxury card — ceramic / graphite with metallic edge highlight */
+@layer utilities {
+  .premium-card {
+    background: var(--card);
+    box-shadow: var(--card-glow);
+    border-color: var(--border);
+    position: relative;
+    transition: box-shadow 0.3s ease, transform 0.3s ease;
+  }
+  .premium-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: var(--surface-reflection);
+    pointer-events: none;
+    opacity: 0.5;
+  }
+  .premium-card:hover {
+    box-shadow: var(--card-glow-hover);
+  }
+
+  /* Frosted glass panel */
+  .frosted-glass {
+    background: var(--card);
+    backdrop-filter: blur(24px) saturate(1.8);
+    -webkit-backdrop-filter: blur(24px) saturate(1.8);
+    border-color: var(--border);
+  }
+
+  /* Metallic shimmer on hover — for interactive elements */
+  .metallic-hover {
+    position: relative;
+    overflow: hidden;
+  }
+  .metallic-hover::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      105deg,
+      transparent 40%,
+      var(--surface-shimmer) 45%,
+      var(--surface-shimmer) 55%,
+      transparent 60%
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s ease;
+    pointer-events: none;
+  }
+  .metallic-hover:hover::after {
+    transform: translateX(100%);
+  }
+
+  /* Ambient glow ring — for focused / active elements */
+  .glow-ring {
+    box-shadow: 0 0 0 1px var(--border), 0 0 12px var(--surface-glow);
+  }
+}
+
+/* ─── Performance-optimised entry animations (GSAP replacement) ─── */
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeSlideDown {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeSlideLeft {
+  from { opacity: 0; transform: translateX(-12px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeSlideRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeScaleIn {
+  from { opacity: 0; transform: scale(1.1); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes fadeScaleUp {
+  from { opacity: 0; transform: scale(0.6) translateY(30px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* CourseCard scan-line + shimmer */
+@keyframes scan {
+  0%   { top: 0; }
+  100% { top: 100%; }
+}
+@keyframes shimmer {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Utility classes — stagger via --delay custom property */
+.animate-fade-up    { animation: fadeSlideUp   0.45s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--delay, 0ms); }
+.animate-fade-down  { animation: fadeSlideDown 0.3s  cubic-bezier(.16,1,.3,1) both; animation-delay: var(--delay, 0ms); }
+.animate-fade-right { animation: fadeSlideRight 0.35s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--delay, 0ms); }
+.animate-slide-left { animation: fadeSlideLeft 0.3s  cubic-bezier(.16,1,.3,1) both; animation-delay: var(--delay, 0ms); }
+.animate-slide-right{ animation: fadeSlideRight 0.35s cubic-bezier(.16,1,.3,1) both; animation-delay: var(--delay, 0ms); }
+.animate-scale-in   { animation: fadeScaleIn   0.8s  cubic-bezier(.16,1,.3,1) both; animation-delay: var(--delay, 0ms); }
+.animate-scale-up   { animation: fadeScaleUp   0.6s  cubic-bezier(.16,1,.3,1) both; animation-delay: var(--delay, 0ms); }
+
+/* Content swap — applied to main content area on nav change */
+.animate-content-swap {
+  animation: fadeSlideUp 0.3s cubic-bezier(.33,1,.68,1) both;
+}
