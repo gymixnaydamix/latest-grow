@@ -30,7 +30,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 /* ── Section components ── */
 import { ParentMyChildrenSection } from './sections/ParentMyChildrenSection';
 import { ParentCommunicationSection } from './sections/ParentCommunicationSection';
-import { ConciergeAISection } from '@/views/shared/sections/ConciergeAISection';
+import { ParentConciergeSection } from './concierge';
 import { AccountSection } from '@/views/shared/sections/AccountSection';
 
 /* ── Grade helpers ── */
@@ -172,7 +172,7 @@ export function ParentDashboardLegacy() {
     switch (activeSection) {
       case 'school': return <ParentMyChildrenSection />;
       case 'communication': return <ParentCommunicationSection />;
-      case 'concierge_ai': return <ConciergeAISection />;
+      case 'concierge_ai': return <ParentConciergeSection />;
       case 'setting': return <AccountSection />;
       default: return null;
     }

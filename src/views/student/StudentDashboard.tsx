@@ -58,7 +58,7 @@ import GeneralCommunityPage from './pages/GeneralCommunityPage';
 import AnnouncementsCommunityPage from './pages/AnnouncementsCommunityPage';
 
 /* ── Concierge AI ── */
-import { ConciergeAISection } from '../shared/sections/ConciergeAISection';
+import { StudentConciergeSection } from './concierge';
 
 /* ── Setting ── */
 import ProfileSettingsPage from './pages/ProfileSettingsPage';
@@ -125,7 +125,7 @@ export function StudentDashboard() {
 
       /* ── Concierge AI ── */
       case 'concierge_ai':
-        return <ConciergeAISection />;
+        return <StudentConciergeSection />;
 
       /* ── Setting ── */
       case 'setting':

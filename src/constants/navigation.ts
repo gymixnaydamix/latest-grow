@@ -147,38 +147,70 @@ export const ownerNav: RoleNavConfig = {
     },
     {
       id: 'concierge_ai', label: 'Concierge AI', icon: Sparkles,
-      description: 'Configure, train, operate the AI assistant',
+      description: 'AI operations assistant for tenant, release & platform management',
       headerItems: [
-        { id: 'assistant', label: 'Assistant', icon: Sparkles },
-        { id: 'ai_analytics', label: 'Analytics', icon: BarChart3 },
         {
-          id: 'operations', label: 'Operations', icon: Gauge,
+          id: 'c_assistant', label: 'Assistant', icon: Sparkles,
           subNav: [
-            { id: 'system_health', label: 'System Health' },
-            { id: 'tenant_ai', label: 'Tenant Management' },
-            { id: 'support', label: 'Support' },
+            { id: 'c_quick_actions', label: 'Quick Actions' },
+            { id: 'c_today', label: 'Today' },
+            { id: 'c_search', label: 'Search' },
+            { id: 'c_history', label: 'History' },
           ],
         },
         {
-          id: 'development', label: 'Development', icon: Code,
+          id: 'c_tenants', label: 'Tenants', icon: Building,
           subNav: [
-            { id: 'code_gen', label: 'Code Gen' },
-            { id: 'db_schema', label: 'DB Schema' },
-            { id: 'log_analysis', label: 'Log Analysis' },
-            { id: 'add_component', label: 'Add Component' },
-            { id: 'modify_component', label: 'Modify Component' },
-            { id: 'manage_deps', label: 'Manage Deps' },
-            { id: 'create_api', label: 'Create API' },
-            { id: 'project_enhancer', label: 'Project Enhancer' },
+            { id: 'c_all_tenants', label: 'All Tenants' },
+            { id: 'c_health_watch', label: 'Health Watch' },
+            { id: 'c_onboarding', label: 'Onboarding' },
+            { id: 'c_plans_billing', label: 'Plans & Billing' },
+            { id: 'c_roles_modules', label: 'Roles & Modules' },
+            { id: 'c_tenant_actions', label: 'Tenant Actions' },
           ],
         },
         {
-          id: 'ai_settings', label: 'Settings', icon: Settings,
+          id: 'c_operations', label: 'Operations', icon: Gauge,
           subNav: [
-            { id: 'configuration', label: 'Configuration' },
-            { id: 'data_sources', label: 'Data Sources' },
-            { id: 'usage', label: 'Usage' },
-            { id: 'training', label: 'Training' },
+            { id: 'c_support_desk', label: 'Support Desk' },
+            { id: 'c_escalations', label: 'Requests & Escalations' },
+            { id: 'c_incidents', label: 'Incidents' },
+            { id: 'c_data_ops', label: 'Data Ops' },
+            { id: 'c_security', label: 'Security & Compliance' },
+            { id: 'c_audit_center', label: 'Audit Center' },
+          ],
+        },
+        {
+          id: 'c_development', label: 'Development', icon: Code,
+          subNav: [
+            { id: 'c_roadmap', label: 'Roadmap' },
+            { id: 'c_releases', label: 'Releases' },
+            { id: 'c_feature_flags', label: 'Feature Flags' },
+            { id: 'c_environments', label: 'Environments' },
+            { id: 'c_qa_testing', label: 'QA & Testing' },
+            { id: 'c_dev_tasks', label: 'Dev Tasks' },
+          ],
+        },
+        {
+          id: 'c_comms', label: 'Comms', icon: Mail,
+          subNav: [
+            { id: 'c_broadcasts', label: 'Broadcasts' },
+            { id: 'c_tenant_notices', label: 'Tenant Notices' },
+            { id: 'c_release_notes', label: 'Release Notes' },
+            { id: 'c_incident_updates', label: 'Incident Updates' },
+            { id: 'c_templates', label: 'Templates' },
+            { id: 'c_delivery_log', label: 'Delivery Log' },
+          ],
+        },
+        {
+          id: 'c_settings', label: 'Settings', icon: Settings,
+          subNav: [
+            { id: 'c_permissions', label: 'Permissions' },
+            { id: 'c_routing_rules', label: 'Routing Rules' },
+            { id: 'c_snippets', label: 'Templates & Snippets' },
+            { id: 'c_policies', label: 'Execution Policies' },
+            { id: 'c_notifications', label: 'Notifications' },
+            { id: 'c_audit_rules', label: 'Audit Rules' },
           ],
         },
       ],
@@ -457,6 +489,73 @@ export const adminNav: RoleNavConfig = {
         { id: 'rpt_compliance', label: 'Compliance', icon: ShieldCheck },
       ],
     },
+    /* ── Concierge AI ── */
+    {
+      id: 'concierge_ai', label: 'Concierge AI', icon: Sparkles,
+      description: 'AI assistant for school operations, tasks & approvals',
+      headerItems: [
+        {
+          id: 'c_assistant', label: 'Assistant', icon: Sparkles,
+          subNav: [
+            { id: 'c_quick_actions', label: 'Quick Actions' },
+            { id: 'c_today', label: 'Today' },
+            { id: 'c_search', label: 'Search' },
+            { id: 'c_history', label: 'History' },
+          ],
+        },
+        {
+          id: 'c_tasks', label: 'Tasks', icon: CheckSquare,
+          subNav: [
+            { id: 'c_my_tasks', label: 'My Tasks' },
+            { id: 'c_due_today', label: 'Due Today' },
+            { id: 'c_scheduled', label: 'Scheduled' },
+            { id: 'c_waiting', label: 'Waiting' },
+            { id: 'c_completed', label: 'Completed' },
+          ],
+        },
+        {
+          id: 'c_approvals', label: 'Approvals', icon: FileCheck,
+          subNav: [
+            { id: 'c_pending', label: 'Pending' },
+            { id: 'c_approved', label: 'Approved' },
+            { id: 'c_rejected', label: 'Rejected' },
+            { id: 'c_delegated', label: 'Delegated' },
+            { id: 'c_escalated', label: 'Escalated' },
+          ],
+        },
+        {
+          id: 'c_documents', label: 'Documents', icon: FileText,
+          subNav: [
+            { id: 'c_generate', label: 'Generate' },
+            { id: 'c_doc_templates', label: 'Templates' },
+            { id: 'c_requests', label: 'Requests' },
+            { id: 'c_sent', label: 'Sent / Published' },
+          ],
+        },
+        {
+          id: 'c_comms', label: 'Comms', icon: Mail,
+          subNav: [
+            { id: 'c_announcements', label: 'Announcements' },
+            { id: 'c_messages', label: 'Messages' },
+            { id: 'c_broadcasts', label: 'Broadcasts' },
+            { id: 'c_comm_templates', label: 'Templates' },
+            { id: 'c_delivery_log', label: 'Delivery Log' },
+          ],
+        },
+        {
+          id: 'c_settings', label: 'Settings', icon: Settings,
+          subNav: [
+            { id: 'c_permissions', label: 'Permissions' },
+            { id: 'c_snippets', label: 'Snippets' },
+            { id: 'c_config_templates', label: 'Templates' },
+            { id: 'c_routing', label: 'Routing Rules' },
+            { id: 'c_notifications', label: 'Notifications' },
+            { id: 'c_audit', label: 'Audit' },
+          ],
+        },
+      ],
+    },
+
     /* 13 â”€ Settings */
     {
       id: 'settings', label: 'Settings', icon: Settings,
@@ -598,6 +697,78 @@ export const teacherNav: RoleNavConfig = {
         { id: 'at_risk', label: 'At-Risk', icon: AlertTriangle },
       ],
     },
+    /* ── Concierge AI ── */
+    {
+      id: 'concierge_ai', label: 'Concierge AI', icon: Sparkles,
+      description: 'AI teaching assistant for classes, grading & communication',
+      headerItems: [
+        {
+          id: 'c_assistant', label: 'Assistant', icon: Sparkles,
+          subNav: [
+            { id: 'c_quick_actions', label: 'Quick Actions' },
+            { id: 'c_today', label: 'Today' },
+            { id: 'c_search', label: 'Search' },
+            { id: 'c_history', label: 'History' },
+          ],
+        },
+        {
+          id: 'c_class_tasks', label: 'Class Tasks', icon: CheckSquare,
+          subNav: [
+            { id: 'c_my_tasks', label: 'My Tasks' },
+            { id: 'c_due_today', label: 'Due Today' },
+            { id: 'c_lesson_plans', label: 'Lesson Plans' },
+            { id: 'c_resources', label: 'Resources' },
+            { id: 'c_substitutions', label: 'Substitutions' },
+            { id: 'c_completed', label: 'Completed' },
+          ],
+        },
+        {
+          id: 'c_attendance', label: 'Attendance', icon: ClipboardList,
+          subNav: [
+            { id: 'c_mark_today', label: 'Mark Today' },
+            { id: 'c_corrections', label: 'Corrections' },
+            { id: 'c_absent_followup', label: 'Absent Follow-up' },
+            { id: 'c_att_reports', label: 'Reports' },
+            { id: 'c_patterns', label: 'Patterns' },
+            { id: 'c_att_settings', label: 'Settings' },
+          ],
+        },
+        {
+          id: 'c_grading', label: 'Grading', icon: BarChart3,
+          subNav: [
+            { id: 'c_enter_grades', label: 'Enter Grades' },
+            { id: 'c_pending_reviews', label: 'Pending Reviews' },
+            { id: 'c_report_cards', label: 'Report Cards' },
+            { id: 'c_grade_book', label: 'Grade Book' },
+            { id: 'c_analytics', label: 'Analytics' },
+            { id: 'c_grade_templates', label: 'Templates' },
+          ],
+        },
+        {
+          id: 'c_comms', label: 'Comms', icon: Mail,
+          subNav: [
+            { id: 'c_parent_notes', label: 'Parent Notes' },
+            { id: 'c_announcements', label: 'Announcements' },
+            { id: 'c_messages', label: 'Messages' },
+            { id: 'c_meeting_requests', label: 'Meeting Requests' },
+            { id: 'c_comm_templates', label: 'Templates' },
+            { id: 'c_sent_log', label: 'Sent Log' },
+          ],
+        },
+        {
+          id: 'c_settings', label: 'Settings', icon: Settings,
+          subNav: [
+            { id: 'c_preferences', label: 'Preferences' },
+            { id: 'c_quick_replies', label: 'Quick Replies' },
+            { id: 'c_grade_scales', label: 'Grade Scales' },
+            { id: 'c_notification_rules', label: 'Notification Rules' },
+            { id: 'c_class_config', label: 'Class Config' },
+            { id: 'c_teacher_templates', label: 'Templates' },
+          ],
+        },
+      ],
+    },
+
     {
       id: 'profile_settings', label: 'Profile', icon: Settings,
       description: 'Profile, preferences, notification settings',
@@ -607,6 +778,78 @@ export const teacherNav: RoleNavConfig = {
         { id: 'notification_settings', label: 'Notifications', icon: Bell },
       ],
     },
+    /* ── Concierge AI ── */
+    {
+      id: 'concierge_ai', label: 'Concierge AI', icon: Sparkles,
+      description: 'AI family assistant for tasks, payments & communication',
+      headerItems: [
+        {
+          id: 'c_assistant', label: 'Assistant', icon: Sparkles,
+          subNav: [
+            { id: 'c_quick_actions', label: 'Quick Actions' },
+            { id: 'c_today', label: 'Today' },
+            { id: 'c_search', label: 'Search' },
+            { id: 'c_history', label: 'History' },
+          ],
+        },
+        {
+          id: 'c_family_tasks', label: 'Family Tasks', icon: CheckSquare,
+          subNav: [
+            { id: 'c_all_tasks', label: 'All Tasks' },
+            { id: 'c_due_today', label: 'Due Today' },
+            { id: 'c_per_child', label: 'Per Child' },
+            { id: 'c_approvals_needed', label: 'Approvals Needed' },
+            { id: 'c_scheduled', label: 'Scheduled' },
+            { id: 'c_completed', label: 'Completed' },
+          ],
+        },
+        {
+          id: 'c_payments', label: 'Payments', icon: CreditCard,
+          subNav: [
+            { id: 'c_outstanding', label: 'Outstanding' },
+            { id: 'c_payment_history', label: 'Payment History' },
+            { id: 'c_installments', label: 'Installment Plans' },
+            { id: 'c_fee_breakdown', label: 'Fee Breakdown' },
+            { id: 'c_receipts', label: 'Receipts' },
+            { id: 'c_pay_settings', label: 'Settings' },
+          ],
+        },
+        {
+          id: 'c_forms', label: 'Forms & Approvals', icon: FileCheck,
+          subNav: [
+            { id: 'c_pending_forms', label: 'Pending Forms' },
+            { id: 'c_leave_requests', label: 'Leave Requests' },
+            { id: 'c_permission_slips', label: 'Permission Slips' },
+            { id: 'c_medical', label: 'Medical' },
+            { id: 'c_reenrollment', label: 'Re-enrollment' },
+            { id: 'c_submitted', label: 'Submitted' },
+          ],
+        },
+        {
+          id: 'c_comms', label: 'Comms', icon: Mail,
+          subNav: [
+            { id: 'c_teacher_messages', label: 'Teacher Messages' },
+            { id: 'c_school_notices', label: 'School Notices' },
+            { id: 'c_event_updates', label: 'Event Updates' },
+            { id: 'c_feedback', label: 'Feedback' },
+            { id: 'c_emergency', label: 'Emergency Alerts' },
+            { id: 'c_sent', label: 'Sent' },
+          ],
+        },
+        {
+          id: 'c_settings', label: 'Settings', icon: Settings,
+          subNav: [
+            { id: 'c_preferences', label: 'Preferences' },
+            { id: 'c_notification_rules', label: 'Notification Rules' },
+            { id: 'c_child_profiles', label: 'Child Profiles' },
+            { id: 'c_payment_methods', label: 'Payment Methods' },
+            { id: 'c_privacy', label: 'Privacy' },
+            { id: 'c_language', label: 'Language' },
+          ],
+        },
+      ],
+    },
+
     {
       id: 'support', label: 'Support', icon: HelpCircle,
       description: 'Help center, submit tickets, FAQs',
@@ -747,8 +990,73 @@ export const studentNav: RoleNavConfig = {
     /* ── Concierge AI ── */
     {
       id: 'concierge_ai', label: 'Concierge AI', icon: Sparkles,
-      description: 'AI tutoring, research, writing assistance',
-      headerItems: [{ id: 'assistant', label: 'Assistant', icon: Sparkles }],
+      description: 'AI study assistant for tasks, assignments & exams',
+      headerItems: [
+        {
+          id: 'c_assistant', label: 'Assistant', icon: Sparkles,
+          subNav: [
+            { id: 'c_quick_actions', label: 'Quick Actions' },
+            { id: 'c_today', label: 'Today' },
+            { id: 'c_search', label: 'Search' },
+            { id: 'c_history', label: 'History' },
+          ],
+        },
+        {
+          id: 'c_study_tasks', label: 'Study Tasks', icon: CheckSquare,
+          subNav: [
+            { id: 'c_all_tasks', label: 'All Tasks' },
+            { id: 'c_due_today', label: 'Due Today' },
+            { id: 'c_by_subject', label: 'By Subject' },
+            { id: 'c_study_plan', label: 'Study Plan' },
+            { id: 'c_revision', label: 'Revision' },
+            { id: 'c_completed', label: 'Completed' },
+          ],
+        },
+        {
+          id: 'c_assignments', label: 'Assignments', icon: ClipboardList,
+          subNav: [
+            { id: 'c_pending', label: 'Pending' },
+            { id: 'c_submitted', label: 'Submitted' },
+            { id: 'c_graded', label: 'Graded' },
+            { id: 'c_projects', label: 'Projects' },
+            { id: 'c_group_work', label: 'Group Work' },
+            { id: 'c_upload', label: 'Upload' },
+          ],
+        },
+        {
+          id: 'c_exams', label: 'Exams & Results', icon: FileText,
+          subNav: [
+            { id: 'c_upcoming', label: 'Upcoming' },
+            { id: 'c_schedule', label: 'Schedule' },
+            { id: 'c_results', label: 'Results' },
+            { id: 'c_report_card', label: 'Report Card' },
+            { id: 'c_analysis', label: 'Analysis' },
+            { id: 'c_resources', label: 'Resources' },
+          ],
+        },
+        {
+          id: 'c_comms', label: 'Comms', icon: Mail,
+          subNav: [
+            { id: 'c_teacher_messages', label: 'Teacher Messages' },
+            { id: 'c_class_notices', label: 'Class Notices' },
+            { id: 'c_study_groups', label: 'Study Groups' },
+            { id: 'c_announcements', label: 'Announcements' },
+            { id: 'c_feedback', label: 'Feedback' },
+            { id: 'c_sent', label: 'Sent' },
+          ],
+        },
+        {
+          id: 'c_settings', label: 'Settings', icon: Settings,
+          subNav: [
+            { id: 'c_preferences', label: 'Preferences' },
+            { id: 'c_study_goals', label: 'Study Goals' },
+            { id: 'c_notification_rules', label: 'Notification Rules' },
+            { id: 'c_timetable_display', label: 'Timetable Display' },
+            { id: 'c_theme', label: 'Theme' },
+            { id: 'c_privacy', label: 'Privacy' },
+          ],
+        },
+      ],
     },
     /* ── Setting ── */
     {
@@ -829,8 +1137,73 @@ export const parentLegacyNav: RoleNavConfig = {
     },
     {
       id: 'concierge_ai', label: 'Concierge AI', icon: Sparkles,
-      description: 'AI support for parent queries',
-      headerItems: [{ id: 'assistant', label: 'Assistant', icon: Sparkles }],
+      description: 'AI family assistant for tasks, payments & communication',
+      headerItems: [
+        {
+          id: 'c_assistant', label: 'Assistant', icon: Sparkles,
+          subNav: [
+            { id: 'c_quick_actions', label: 'Quick Actions' },
+            { id: 'c_today', label: 'Today' },
+            { id: 'c_search', label: 'Search' },
+            { id: 'c_history', label: 'History' },
+          ],
+        },
+        {
+          id: 'c_family_tasks', label: 'Family Tasks', icon: CheckSquare,
+          subNav: [
+            { id: 'c_all_tasks', label: 'All Tasks' },
+            { id: 'c_due_today', label: 'Due Today' },
+            { id: 'c_per_child', label: 'Per Child' },
+            { id: 'c_approvals_needed', label: 'Approvals Needed' },
+            { id: 'c_scheduled', label: 'Scheduled' },
+            { id: 'c_completed', label: 'Completed' },
+          ],
+        },
+        {
+          id: 'c_payments', label: 'Payments', icon: CreditCard,
+          subNav: [
+            { id: 'c_outstanding', label: 'Outstanding' },
+            { id: 'c_payment_history', label: 'Payment History' },
+            { id: 'c_installments', label: 'Installment Plans' },
+            { id: 'c_fee_breakdown', label: 'Fee Breakdown' },
+            { id: 'c_receipts', label: 'Receipts' },
+            { id: 'c_pay_settings', label: 'Settings' },
+          ],
+        },
+        {
+          id: 'c_forms', label: 'Forms & Approvals', icon: FileCheck,
+          subNav: [
+            { id: 'c_pending_forms', label: 'Pending Forms' },
+            { id: 'c_leave_requests', label: 'Leave Requests' },
+            { id: 'c_permission_slips', label: 'Permission Slips' },
+            { id: 'c_medical', label: 'Medical' },
+            { id: 'c_reenrollment', label: 'Re-enrollment' },
+            { id: 'c_submitted', label: 'Submitted' },
+          ],
+        },
+        {
+          id: 'c_comms', label: 'Comms', icon: Mail,
+          subNav: [
+            { id: 'c_teacher_messages', label: 'Teacher Messages' },
+            { id: 'c_school_notices', label: 'School Notices' },
+            { id: 'c_event_updates', label: 'Event Updates' },
+            { id: 'c_feedback', label: 'Feedback' },
+            { id: 'c_emergency', label: 'Emergency Alerts' },
+            { id: 'c_sent', label: 'Sent' },
+          ],
+        },
+        {
+          id: 'c_settings', label: 'Settings', icon: Settings,
+          subNav: [
+            { id: 'c_preferences', label: 'Preferences' },
+            { id: 'c_notification_rules', label: 'Notification Rules' },
+            { id: 'c_child_profiles', label: 'Child Profiles' },
+            { id: 'c_payment_methods', label: 'Payment Methods' },
+            { id: 'c_privacy', label: 'Privacy' },
+            { id: 'c_language', label: 'Language' },
+          ],
+        },
+      ],
     },
     {
       id: 'setting', label: 'Setting', icon: Settings,

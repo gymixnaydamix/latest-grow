@@ -21,6 +21,7 @@ import { MeetingsSection } from './sections/v2/MeetingsSection';
 import { ReportsSection } from './sections/v2/ReportsSection';
 import { ProfileSettingsSection } from './sections/v2/ProfileSettingsSection';
 import { SupportSection } from './sections/v2/SupportSection';
+import { TeacherConciergeSection } from './concierge';
 
 export function TeacherDashboard() {
   const { activeSection } = useNavigationStore();
@@ -45,6 +46,7 @@ export function TeacherDashboard() {
       case 'reports':          return <ReportsSection {...sp} />;
       case 'profile_settings': return <ProfileSettingsSection {...sp} />;
       case 'support':          return <SupportSection {...sp} />;
+      case 'concierge_ai':    return <TeacherConciergeSection />;
       default:                 return <TodaySection {...sp} />;
     }
   })();

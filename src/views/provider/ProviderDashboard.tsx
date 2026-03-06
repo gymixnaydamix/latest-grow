@@ -24,6 +24,7 @@ import {
   ProviderApiMgmtSection,
   ProviderBackupSection,
 } from './sections/console';
+import { ProviderConciergeSection } from './concierge';
 import { Panel } from './sections/console/shared';
 
 /* ══════════════════════════════════════════════════════════════ */
@@ -52,6 +53,7 @@ const SECTION_COMPONENT: Record<string, React.ComponentType> = {
   provider_branding:      ProviderBrandingSection,
   provider_api_mgmt:      ProviderApiMgmtSection,
   provider_backup:        ProviderBackupSection,
+  concierge_ai:           ProviderConciergeSection,
 };
 
 export function ProviderDashboard() {

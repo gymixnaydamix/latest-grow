@@ -20,6 +20,7 @@ import { FacilitiesSection } from './sections/FacilitiesSection';
 import { ReportsSection } from './sections/ReportsSection';
 import { AdminSettingsSection } from './sections/AdminSettingsSection';
 import { AuditSection } from './sections/AuditSection';
+import { AdminConciergeSection } from './concierge';
 
 export function AdminDashboard() {
   const { activeSection } = useNavigationStore();
@@ -40,6 +41,7 @@ export function AdminDashboard() {
       case 'reports': return <ReportsSection />;
       case 'settings': return <AdminSettingsSection />;
       case 'audit': return <AuditSection />;
+      case 'concierge_ai': return <AdminConciergeSection />;
       default: return <ControlCenterSection />;
     }
   })();
