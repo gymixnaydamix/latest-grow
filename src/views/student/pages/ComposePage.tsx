@@ -12,8 +12,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
-import { notifySuccess } from '@/lib/notify';
-import { useStudentMessages } from '@/hooks/api/use-student';
+import { notifySuccess, notifyError } from '@/lib/notify';
+import { useStudentMessages, useSendStudentMessage } from '@/hooks/api/use-student';
 
 const FALLBACK_QUICK_CONTACTS = [
   { name: 'Mrs. Rodriguez', role: 'Algebra II Teacher', initials: 'MR', color: 'bg-indigo-500/20 text-indigo-400' },
@@ -37,8 +37,9 @@ export default function ComposePage() {
   const [body, setBody] = useState('');
   const [attachments, setAttachments] = useState<string[]>([]);
   const { data: apiMessages } = useStudentMessages();
-  void apiMessages;
-  const QUICK_CONTACTS = FALLBACK_QUICK_CONTACTS;
+  const sendMessageMut = useSendStudentMessage();
+  const contactsFromApi = (apiMessages as any)?.contacts as any[] | undefined;
+  const QUICK_CONTACTS = contactsFromApi?.length ? contactsFromApi : FALLBACK_QUICK_CONTACTS;
   const TEMPLATES = FALLBACK_TEMPLATES;
 
   const removeAttachment = (name: string) => setAttachments((p) => p.filter((a) => a !== name));
@@ -122,8 +123,8 @@ export default function ComposePage() {
                 <Button variant="outline" size="sm" className="border-white/10 text-white/60 hover:bg-white/5" onClick={() => notifySuccess('Options', 'Send options displayed')}>
                   <ChevronDown className="size-3" />
                 </Button>
-                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white" onClick={() => notifySuccess('Sent', 'Message sent successfully')}>
-                  <Send className="mr-1 size-3" /> Send
+                <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white" disabled={sendMessageMut.isPending} onClick={() => sendMessageMut.mutate({ recipientId: to, subject, content: body } as any, { onSuccess: () => { notifySuccess('Sent', 'Message sent successfully'); setTo(''); setSubject(''); setBody(''); setAttachments([]); }, onError: () => notifyError('Send failed', 'Could not send message') })}>
+                  <Send className="mr-1 size-3" /> {sendMessageMut.isPending ? 'Sending…' : 'Send'}
                 </Button>
               </div>
             </div>

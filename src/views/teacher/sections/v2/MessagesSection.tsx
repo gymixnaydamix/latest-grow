@@ -63,7 +63,9 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
   const sendMessageMut = useSendTeacherMessage();
   const createThreadMut = useCreateTeacherThread();
   const { data: apiTeacherMessages } = useTeacherMessages();
-  void apiTeacherMessages;
+  // Use teacher-specific messages as secondary fallback if generic threads empty
+  const teacherMsgThreads = (apiTeacherMessages as any)?.data as MessageThreadDemo[] | undefined;
+  const effectiveThreads: MessageThreadDemo[] = threads.length > 0 ? threads : (teacherMsgThreads ?? FALLBACK_messageThreadsDemo);
 
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string | 'all'>('all');
@@ -75,10 +77,10 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
   const [composeSubject, setComposeSubject] = useState('');
   const [composeBody, setComposeBody] = useState('');
 
-  const unreadCount = threads.filter(t => t.unread).length;
+  const unreadCount = effectiveThreads.filter(t => t.unread).length;
 
   const filtered = useMemo(() => {
-    let result = threads;
+    let result = effectiveThreads;
     if (filterCategory !== 'all') result = result.filter(t => t.category === filterCategory);
     if (search.trim()) {
       const q = search.toLowerCase();
@@ -89,7 +91,7 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
       );
     }
     return result;
-  }, [threads, filterCategory, search]);
+  }, [effectiveThreads, filterCategory, search]);
 
   const handleSendReply = () => {
     if (!replyText.trim()) return;
@@ -104,7 +106,7 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
   return (
     <TeacherSectionShell
       title="Messages"
-      description={`${threads.length} conversations · ${unreadCount} unread`}
+      description={`${effectiveThreads.length} conversations · ${unreadCount} unread`}
       actions={
         <Button
           size="sm"
@@ -117,10 +119,10 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
     >
       {/* ── Quick Stats ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-animate>
-        <MetricCard label="Total Threads" value={threads.length} accent="#818cf8" />
+        <MetricCard label="Total Threads" value={effectiveThreads.length} accent="#818cf8" />
         <MetricCard label="Unread" value={unreadCount} accent="#f472b6" />
-        <MetricCard label="Parent Messages" value={threads.filter(t => t.category === 'parent').length} accent="#fbbf24" />
-        <MetricCard label="Today" value={threads.filter(t => t.timestamp.includes('h ago')).length} accent="#34d399" />
+        <MetricCard label="Parent Messages" value={effectiveThreads.filter(t => t.category === 'parent').length} accent="#fbbf24" />
+        <MetricCard label="Today" value={effectiveThreads.filter(t => t.timestamp.includes('h ago')).length} accent="#34d399" />
       </div>
 
       {/* ── INBOX VIEW ── */}

@@ -8,7 +8,6 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import { notifySuccess } from '@/lib/notify';
-import { useStudentSessions } from '@/hooks/api/use-student';
 
 type VizType = 'mindmap' | 'flowchart' | 'timeline' | 'diagram';
 
@@ -31,8 +30,6 @@ export default function VisualizerPage() {
   const [concept, setConcept] = useState('');
   const [vizType, setVizType] = useState<VizType>('mindmap');
   const [generated, setGenerated] = useState(false);
-  const { data: apiSessions } = useStudentSessions();
-  void apiSessions;
   const RECENT = FALLBACK_RECENT;
 
   const generate = () => {

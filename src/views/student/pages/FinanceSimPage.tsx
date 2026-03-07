@@ -15,7 +15,6 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { useStudentFees } from '@/hooks/api/use-student';
 
 const BALANCE = 12450;
 const INCOME_MONTHLY = 2400;
@@ -61,8 +60,6 @@ const FALLBACK_MONTHLY_DATA = [
 export default function FinanceSimPage() {
   const containerRef = useStaggerAnimate([]);
   const [tab, setTab] = useState<'overview' | 'scenarios'>('overview');
-  const { data: apiFees } = useStudentFees();
-  void apiFees;
   const ACCOUNTS = FALLBACK_ACCOUNTS;
   const TRANSACTIONS = FALLBACK_TRANSACTIONS;
   const GOALS = FALLBACK_GOALS;

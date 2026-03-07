@@ -10,7 +10,6 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { cn } from '@/lib/utils';
 import { notifySuccess } from '@/lib/notify';
-import { useStudentProfile } from '@/hooks/api/use-student';
 
 interface CareerPath {
   id: string; title: string; field: string; matchPct: number;
@@ -33,8 +32,6 @@ export default function CareerCompassPage() {
   const containerRef = useStaggerAnimate([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>(['Technology', 'Science', 'Writing']);
   const [view, setView] = useState<'explore' | 'saved'>('explore');
-  const { data: apiProfile } = useStudentProfile();
-  void apiProfile;
   const CAREERS = FALLBACK_CAREERS;
   const INTERESTS = FALLBACK_INTERESTS;
 

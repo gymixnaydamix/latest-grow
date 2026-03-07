@@ -1,5 +1,5 @@
 /* ─── AdmissionsSection ─── Application pipeline, management, enrollment ─── */
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
@@ -16,13 +16,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  KanbanBoard, DataTable, StatusBadge, WorkflowStepper,
+  KanbanBoard, type KanbanCard, type KanbanColumn, DataTable, StatusBadge, WorkflowStepper,
   FormDialog, DetailPanel, DetailFields,
 } from '@/components/features/school-admin';
 import type { FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
-import { admissionsPipeline } from '../data/demo-data';
+import { admissionsPipeline as FALLBACK_admissionsPipeline } from '../data/demo-data';
 import { notifySuccess, notifyWarning } from '@/lib/notify';
 
 /* ── Local type ── */
@@ -59,11 +59,45 @@ const appFields: FormField[] = [
   { name: 'notes', label: 'Notes', type: 'textarea' },
 ];
 
+/* ─── Stage → column config ─── */
+const stageColumnConfig: Record<string, { title: string; color: string }> = {
+  INQUIRY: { title: 'New', color: '#6366f1' },
+  APPLICATION: { title: 'Under Review', color: '#f59e0b' },
+  REVIEW: { title: 'Interview Scheduled', color: '#3b82f6' },
+  ACCEPTED: { title: 'Accepted', color: '#10b981' },
+  ENROLLED: { title: 'Enrolled', color: '#059669' },
+  REJECTED: { title: 'Rejected', color: '#ef4444' },
+};
+
 /* ─── Pipeline (Kanban) ─── */
 function PipelineView() {
   const { setHeader } = useNavigationStore();
+  const { schoolId } = useAuthStore();
+  const { data: applicantsRes } = useApplicants(schoolId);
   const [selectedCard, setSelectedCard] = useState<{ id: string; title: string; subtitle?: string; meta?: string } | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
+
+  const pipeline: KanbanColumn[] = useMemo(() => {
+    const applicants: Applicant[] = (applicantsRes as any)?.data ?? applicantsRes ?? [];
+    if (!applicants.length) return FALLBACK_admissionsPipeline;
+    const grouped: Record<string, KanbanCard[]> = {};
+    for (const a of applicants) {
+      const stage = a.stage || 'INQUIRY';
+      if (!grouped[stage]) grouped[stage] = [];
+      grouped[stage].push({
+        id: a.id,
+        title: `${a.firstName} ${a.lastName}`,
+        subtitle: `Applied ${new Date(a.appliedAt).toLocaleDateString()}`,
+        meta: a.email,
+      });
+    }
+    return Object.entries(stageColumnConfig).map(([key, cfg]) => ({
+      id: key.toLowerCase(),
+      title: cfg.title,
+      color: cfg.color,
+      cards: grouped[key] || [],
+    }));
+  }, [applicantsRes]);
 
   return (
     <div className="space-y-4">
@@ -79,7 +113,7 @@ function PipelineView() {
         </PermissionGate>
       </div>
       <KanbanBoard
-        columns={admissionsPipeline}
+        columns={pipeline}
         onCardClick={(card) => { setSelectedCard(card as any); setDetailOpen(true); }}
         onAddCard={() => setHeader('adm_applications')}
       />

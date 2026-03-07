@@ -14,7 +14,7 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import { useStudentSessions } from '@/hooks/api/use-student';
 import { useAIChat } from '@/hooks/api/use-ai';
 
@@ -62,7 +62,7 @@ export default function AIStudyHubOverviewPage() {
   const [quickQuestion, setQuickQuestion] = useState('');
   const { data: apiSessions } = useStudentSessions();
   const aiChat = useAIChat();
-  void apiSessions; void aiChat;
+  void apiSessions;
   const AI_TOOLS = FALLBACK_AI_TOOLS;
   const RECENT_SESSIONS = FALLBACK_RECENT_SESSIONS;
   const SUGGESTED_TOPICS = FALLBACK_SUGGESTED_TOPICS;
@@ -94,8 +94,8 @@ export default function AIStudyHubOverviewPage() {
             onChange={(e) => setQuickQuestion(e.target.value)}
             className="flex-1 h-9 text-sm bg-white/3 border-white/8 text-white/70 placeholder:text-white/25"
           />
-          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => notifySuccess('AI Tutor', 'Processing your question…')}>
-            <Sparkles className="size-3" />Ask AI
+          <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white gap-1" disabled={aiChat.isPending} onClick={() => aiChat.mutate({ messages: [{ role: 'user', content: quickQuestion }] } as any, { onSuccess: () => { notifySuccess('AI Tutor', 'Response received!'); setQuickQuestion(''); }, onError: () => notifyError('AI Tutor', 'Failed to process question') })}>
+            <Sparkles className="size-3" />{aiChat.isPending ? 'Thinking…' : 'Ask AI'}
           </Button>
         </CardContent>
       </Card>

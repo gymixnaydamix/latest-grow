@@ -14,7 +14,6 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { useStudentSessions } from '@/hooks/api/use-student';
 
 const FALLBACK_LABS = [
   { id: '1', title: 'Acid-Base Titration', subject: 'Chemistry', icon: FlaskConical, difficulty: 'Beginner', progress: 100, rating: 4.8, duration: '20 min', locked: false },
@@ -49,8 +48,6 @@ export default function VirtualLabsPage() {
   const containerRef = useStaggerAnimate([]);
   const [filter, setFilter] = useState<string>('all');
   const [activeLab, setActiveLab] = useState<string | null>(null);
-  const { data: apiSessions } = useStudentSessions();
-  void apiSessions;
   const LABS = FALLBACK_LABS;
   const RECENT_RESULTS = FALLBACK_RECENT_RESULTS;
   const ACTIVE_STEPS = FALLBACK_ACTIVE_STEPS;

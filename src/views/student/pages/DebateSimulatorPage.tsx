@@ -15,7 +15,6 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { useStudentSessions } from '@/hooks/api/use-student';
 
 const FALLBACK_TOPICS = [
   { id: '1', title: 'Should AI replace teachers?', category: 'Technology', difficulty: 'Intermediate', doneCount: 1432 },
@@ -47,8 +46,6 @@ export default function DebateSimulatorPage() {
   const containerRef = useStaggerAnimate([]);
   const [activeDebate, setActiveDebate] = useState(false);
   const [userInput, setUserInput] = useState('');
-  const { data: apiSessions } = useStudentSessions();
-  void apiSessions;
   const TOPICS = FALLBACK_TOPICS;
   const MESSAGES = FALLBACK_MESSAGES;
   const PAST_DEBATES = FALLBACK_PAST_DEBATES;

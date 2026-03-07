@@ -32,9 +32,15 @@ export default function EmailOverviewPage() {
   const schoolId = useAuthStore((s) => s.schoolId);
   const { data: threads = [], isLoading } = useMessageThreads(schoolId);
   const { data: apiStudentMessages } = useStudentMessages();
+  // Derive recent activity from real threads when available
+  const derivedActivity = threads.slice(0, 5).map((t) => {
+    const sender = t.participants?.[0];
+    const name = sender ? `${sender.firstName} ${sender.lastName}` : 'Someone';
+    return { action: `Received email from ${name}`, time: new Date(t.createdAt).toLocaleDateString(), icon: Mail };
+  });
   void apiStudentMessages;
   const QUICK_ACTIONS = FALLBACK_QUICK_ACTIONS;
-  const RECENT_ACTIVITY = FALLBACK_RECENT_ACTIVITY;
+  const RECENT_ACTIVITY = derivedActivity.length > 0 ? derivedActivity : FALLBACK_RECENT_ACTIVITY;
 
   const unreadCount = threads.filter((t) => !t.isRead).length;
   const starredCount = threads.filter((t) => t.isStarred).length;

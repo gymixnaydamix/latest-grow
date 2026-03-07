@@ -199,8 +199,8 @@ function AuthenticationView() {
                       ) : (
                         <Input
                           className="h-7 w-36 text-xs text-right"
-                          value={currentVal}
-                          onChange={() => {}}
+                          defaultValue={currentVal}
+                          key={currentVal}
                           onBlur={(e) => {
                             if (e.target.value !== currentVal) {
                               handleUpdate(item.key, e.target.value, item.category);
@@ -212,7 +212,6 @@ function AuthenticationView() {
                               handleUpdate(item.key, target.value, item.category);
                             }
                           }}
-                          defaultValue={currentVal}
                         />
                       )}
                     </CardContent>

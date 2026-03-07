@@ -14,7 +14,6 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
-import { useStudentSessions } from '@/hooks/api/use-student';
 
 const FALLBACK_AR_MODELS = [
   { id: '1', title: 'Human Heart', subject: 'Biology', type: '3D Model', views: 2340, rating: 4.9, favorited: true, thumbnail: 'heart' },
@@ -49,8 +48,6 @@ export default function ARLabPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [activeModel, setActiveModel] = useState<string | null>(null);
-  const { data: apiSessions } = useStudentSessions();
-  void apiSessions;
   const AR_MODELS = FALLBACK_AR_MODELS;
   const RECENT_SESSIONS = FALLBACK_RECENT_SESSIONS;
 

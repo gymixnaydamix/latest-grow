@@ -15,8 +15,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { notifySuccess } from '@/lib/notify';
-import { useStudentFees, usePayInvoice } from '@/hooks/api/use-student';
+import { notifySuccess, notifyError } from '@/lib/notify';
+import { useStudentFees, usePayInvoice, useDownloadDocument } from '@/hooks/api/use-student';
 
 const PLAN = {
   name: 'Pro Student Plan',
@@ -71,8 +71,9 @@ export default function BillingSettingsPage() {
 
   /* ── API data ── */
   const { data: apiFees } = useStudentFees();
-  // @ts-expect-error TS6133 — mutation available for wiring
-  const _payInvoiceMut = usePayInvoice();
+  const payInvoiceMut = usePayInvoice();
+  const downloadDocMut = useDownloadDocument();
+  void payInvoiceMut;
   const feesData = (apiFees as any) ?? {};
   const paymentMethods = (feesData?.paymentMethods as any[])?.length > 0 ? (feesData.paymentMethods as any[]) : FALLBACK_PAYMENT_METHODS;
   const invoices = (feesData?.invoices as any[])?.length > 0 ? (feesData.invoices as any[]) : FALLBACK_INVOICES;
@@ -215,7 +216,7 @@ export default function BillingSettingsPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-white/60">{inv.amount}</span>
                         <Badge className="text-[7px] bg-emerald-500/15 text-emerald-400 border-0 capitalize">{inv.status}</Badge>
-                        <Button size="icon" className="size-7 bg-transparent text-white/20 hover:text-white/50 hover:bg-white/5" onClick={(e) => { e.stopPropagation(); notifySuccess('Invoice', 'Invoice downloaded'); }}>
+                        <Button size="icon" className="size-7 bg-transparent text-white/20 hover:text-white/50 hover:bg-white/5" onClick={(e) => { e.stopPropagation(); downloadDocMut.mutate({ documentId: inv.id } as any, { onSuccess: () => notifySuccess('Invoice', 'Invoice downloaded'), onError: () => notifyError('Invoice', 'Download failed') }); }}>
                           <Download className="size-3" />
                         </Button>
                       </div>

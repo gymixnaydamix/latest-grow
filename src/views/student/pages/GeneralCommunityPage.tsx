@@ -14,7 +14,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
-import { useStudentCommunity, useCreateCommunityPost, useLikeCommunityPost } from '@/hooks/api/use-student';
+import { useStudentCommunity, useCreateCommunityPost, useLikeCommunityPost, useBookmarkCommunityPost } from '@/hooks/api/use-student';
 
 interface Post {
   id: string;
@@ -61,6 +61,7 @@ export default function GeneralCommunityPage() {
   const { data: apiCommunity } = useStudentCommunity();
   const createPostMut = useCreateCommunityPost();
   const likePostMut = useLikeCommunityPost();
+  const bookmarkMut = useBookmarkCommunityPost();
   const communityData = (apiCommunity as any) ?? {};
   const communityPosts = (communityData?.posts as any[])?.length > 0 ? (communityData.posts as any[]) : POSTS;
   const trendingTopics = (communityData?.trendingTopics as any[])?.length > 0 ? (communityData.trendingTopics as any[]) : FALLBACK_TRENDING_TOPICS;
@@ -137,7 +138,7 @@ export default function GeneralCommunityPage() {
                         <MessageSquare className="size-3.5" />
                         <span className="text-xs">{post.replies}</span>
                       </button>
-                      <button className="text-white/30 hover:text-indigo-400 transition-colors" onClick={() => notifySuccess('Saved', 'Post bookmarked')}>
+                      <button className="text-white/30 hover:text-indigo-400 transition-colors" onClick={() => bookmarkMut.mutate(post.id, { onSuccess: () => notifySuccess('Saved', 'Post bookmarked') })}>
                         <Bookmark className="size-3.5" />
                       </button>
                     </div>

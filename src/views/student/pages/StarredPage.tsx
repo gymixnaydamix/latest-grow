@@ -16,8 +16,8 @@ import { Separator } from '@/components/ui/separator';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { notifySuccess } from '@/lib/notify';
-import { useStudentMessages } from '@/hooks/api/use-student';
+import { notifySuccess, notifyError } from '@/lib/notify';
+import { useStudentMessages, useSendStudentMessage } from '@/hooks/api/use-student';
 
 interface StarredMsg {
   id: string;
@@ -44,6 +44,8 @@ export default function StarredPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [replyText, setReplyText] = useState('');
+  const sendReplyMut = useSendStudentMessage();
 
   /* ── API data ── */
   const { data: _apiMessages } = useStudentMessages();
@@ -148,10 +150,10 @@ export default function StarredPage() {
               <Badge variant="outline" className="text-[10px] border-white/10 text-white/40">{selected.category}</Badge>
               <Separator className="bg-white/6" />
               <div className="space-y-2">
-                <Textarea placeholder="Reply…" rows={3} className="border-white/10 bg-white/5 text-white/80 placeholder:text-white/25" />
+                <Textarea placeholder="Reply…" rows={3} value={replyText} onChange={(e) => setReplyText(e.target.value)} className="border-white/10 bg-white/5 text-white/80 placeholder:text-white/25" />
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" className="border-white/10 text-white/60 hover:bg-white/5" onClick={() => notifySuccess('Attach', 'File picker opened')}><Paperclip className="mr-1 size-3" /> Attach</Button>
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500" onClick={() => notifySuccess('Reply', 'Reply sent successfully')}><Send className="mr-1 size-3" /> Reply</Button>
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500" disabled={sendReplyMut.isPending} onClick={() => sendReplyMut.mutate({ threadId: selected?.id, content: replyText } as any, { onSuccess: () => { notifySuccess('Reply', 'Reply sent successfully'); setReplyText(''); }, onError: () => notifyError('Error', 'Reply failed to send') })}><Send className="mr-1 size-3" /> {sendReplyMut.isPending ? 'Sending…' : 'Reply'}</Button>
                 </div>
               </div>
             </CardContent>

@@ -38,7 +38,6 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
   const { data: coursesRes } = useCourses(schoolId);
   const { data: apiSchedule } = useTeacherSchedule();
   const { data: apiActionItems } = useTeacherActionItems();
-  void apiSchedule; void apiActionItems;
   const courses: Course[] = coursesRes ?? [];
   const teacherCourses = teacherId ? courses.filter(c => c.teacherId === teacherId) : courses;
 
@@ -47,7 +46,7 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
   const greeting = now.getHours() < 12 ? 'Good morning' : now.getHours() < 17 ? 'Good afternoon' : 'Good evening';
   const dateStr = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 
-  // Derive schedule from real courses or demo
+  // Derive schedule from real courses, API schedule, or demo
   const schedule = useMemo(() => {
     if (teacherCourses.length > 0) {
       return teacherCourses.map((c, i) => {
@@ -64,15 +63,30 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
         } satisfies ScheduleItemDemo;
       });
     }
+    const apiItems = (apiSchedule as any)?.data as any[] | undefined;
+    if (apiItems?.length) {
+      return apiItems.map((s: any) => ({
+        id: s.id ?? s.classId ?? '',
+        time: s.startTime ?? s.time ?? '08:00',
+        endTime: s.endTime ?? '09:00',
+        title: s.title ?? s.name ?? 'Class',
+        type: (s.type ?? 'class') as ScheduleItemDemo['type'],
+        room: s.room ?? 'TBD',
+        classId: s.classId,
+        studentCount: s.studentCount ?? 25,
+      } satisfies ScheduleItemDemo));
+    }
     return FALLBACK_todayScheduleDemo;
-  }, [teacherCourses]);
+  }, [teacherCourses, apiSchedule]);
 
   const classCount = schedule.filter(s => s.type === 'class').length;
   const totalStudents = teacherCourses.length > 0
     ? teacherCourses.reduce((sum, c) => sum + (c._count?.enrollments ?? 25), 0)
     : FALLBACK_teacherClassesDemo.reduce((sum, c) => sum + c.studentCount, 0);
 
-  const urgentActions = FALLBACK_actionItemsDemo.filter(a => a.priority === 'HIGH');
+  const apiActions = (apiActionItems as any)?.data as any[] | undefined;
+  const actionItems = apiActions?.length ? apiActions : FALLBACK_actionItemsDemo;
+  const urgentActions = actionItems.filter((a: any) => a.priority === 'HIGH');
   const ungradedCount = FALLBACK_gradingQueueDemo.reduce((sum, g) => sum + g.submitted, 0);
 
   // Current/next period detection
@@ -191,10 +205,10 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
             <div className="flex items-center gap-2 mb-3">
               <Zap className="size-4 text-amber-400" />
               <h3 className="text-sm font-semibold text-white/80">Action Required</h3>
-              <Badge variant="outline" className="ml-auto text-[9px] border-amber-500/30 text-amber-400">{FALLBACK_actionItemsDemo.length}</Badge>
+              <Badge variant="outline" className="ml-auto text-[9px] border-amber-500/30 text-amber-400">{actionItems.length}</Badge>
             </div>
             <div className="space-y-2">
-              {FALLBACK_actionItemsDemo.slice(0, 5).map(a => (
+              {actionItems.slice(0, 5).map((a: any) => (
                 <div key={a.id} className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/2 p-3">
                   <div className={`mt-0.5 size-2 rounded-full shrink-0 ${a.priority === 'HIGH' ? 'bg-rose-400' : a.priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                   <div className="min-w-0 flex-1">

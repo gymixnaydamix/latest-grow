@@ -18,18 +18,21 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { useAuthStore } from '@/store/auth.store';
 import { useMessageThreads, useMessageThread } from '@/hooks/api';
-import { notifySuccess } from '@/lib/notify';
+import { useSendStudentMessage } from '@/hooks/api/use-student';
+import { notifySuccess, notifyError } from '@/lib/notify';
 
 const CATEGORIES = ['All', 'Teachers', 'Admin', 'Classmates', 'System'];
 
 export default function InboxPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const schoolId = useAuthStore((s) => s.schoolId);
-  const { data: threads = [], isLoading } = useMessageThreads(schoolId);
+  const { data: threads = [], isLoading, refetch } = useMessageThreads(schoolId);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const { data: selectedThread } = useMessageThread(selectedId);
   const [search, setSearch] = useState('');
   const [category, setCategory] = useState('All');
+  const [replyText, setReplyText] = useState('');
+  const sendReplyMut = useSendStudentMessage();
 
   const unreadCount = threads.filter((t) => !t.isRead).length;
 
@@ -77,7 +80,7 @@ export default function InboxPage() {
             >{c}</Button>
           ))}
         </div>
-        <Button variant="outline" size="sm" className="h-7 text-[10px] border-white/10 text-white/40" onClick={() => notifySuccess('Inbox', 'Messages refreshed')}>
+        <Button variant="outline" size="sm" className="h-7 text-[10px] border-white/10 text-white/40" onClick={() => { refetch(); notifySuccess('Inbox', 'Messages refreshed'); }}>
           <RefreshCw className="mr-1 size-3" /> Refresh
         </Button>
       </div>
@@ -163,10 +166,10 @@ export default function InboxPage() {
               </div>
               <Separator className="bg-white/6" />
               <div className="space-y-2">
-                <Textarea placeholder="Reply…" rows={3} className="border-white/10 bg-white/5 text-white/80 placeholder:text-white/25" />
+                <Textarea placeholder="Reply…" rows={3} value={replyText} onChange={(e) => setReplyText(e.target.value)} className="border-white/10 bg-white/5 text-white/80 placeholder:text-white/25" />
                 <div className="flex justify-end gap-2">
                   <Button variant="outline" size="sm" className="border-white/10 text-white/60 hover:bg-white/5" onClick={() => notifySuccess('Attach', 'File picker opened')}><Paperclip className="mr-1 size-3" /> Attach</Button>
-                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500" onClick={() => notifySuccess('Reply', 'Reply sent successfully')}><Send className="mr-1 size-3" /> Reply</Button>
+                  <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500" disabled={sendReplyMut.isPending} onClick={() => sendReplyMut.mutate({ threadId: selectedThread!.id, content: replyText } as any, { onSuccess: () => { notifySuccess('Reply', 'Reply sent successfully'); setReplyText(''); }, onError: () => notifyError('Error', 'Reply failed to send') })}><Send className="mr-1 size-3" /> {sendReplyMut.isPending ? 'Sending…' : 'Reply'}</Button>
                 </div>
               </div>
             </CardContent>

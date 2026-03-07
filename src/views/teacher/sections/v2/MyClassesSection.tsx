@@ -14,9 +14,11 @@ export function MyClassesSection({ schoolId, teacherId }: TeacherSectionProps) {
   const { activeHeader, navigate } = useNavigationStore();
   const { data: coursesRes, isLoading } = useCourses(schoolId);
   const { data: apiTeacherClasses } = useTeacherClasses();
-  void apiTeacherClasses;
   const courses: Course[] = coursesRes ?? [];
   const teacherCourses = teacherId ? courses.filter(c => c.teacherId === teacherId) : courses;
+  // Use teacher-specific classes as secondary fallback when courses endpoint returns nothing
+  const apiClasses = (apiTeacherClasses as any)?.data as any[] | undefined;
+  const displayClasses = teacherCourses.length > 0 ? teacherCourses : (apiClasses?.length ? apiClasses : []);
 
   if (activeHeader === 'class_timetable') {
     return <TimetableView schoolId={schoolId} teacherId={teacherId} />;
@@ -28,7 +30,7 @@ export function MyClassesSection({ schoolId, teacherId }: TeacherSectionProps) {
   return (
     <TeacherSectionShell
       title="My Classes"
-      description={`${teacherCourses.length || FALLBACK_teacherClassesDemo.length} active classes this semester`}
+      description={`${displayClasses.length || FALLBACK_teacherClassesDemo.length} active classes this semester`}
     >
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -36,7 +38,7 @@ export function MyClassesSection({ schoolId, teacherId }: TeacherSectionProps) {
             <div key={i} className="h-48 rounded-2xl border border-white/6 bg-white/3 animate-pulse" />
           ))}
         </div>
-      ) : (teacherCourses.length > 0 ? teacherCourses : []).length === 0 ? (
+      ) : (teacherCourses.length > 0 ? teacherCourses : displayClasses).length === 0 ? (
         // Use demo data for display
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-animate>
           {FALLBACK_teacherClassesDemo.map((cls) => (

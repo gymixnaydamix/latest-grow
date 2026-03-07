@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import { useStudentCitations, useGenerateCitation, useDeleteCitation } from '@/hooks/api/use-student';
 
 type CitationStyle = 'APA' | 'MLA' | 'Chicago' | 'Harvard' | 'IEEE';
@@ -165,8 +165,8 @@ export default function CitationGeneratorPage() {
               <p className="text-[10px] text-white/40 mb-1.5">Quick Auto-Cite</p>
               <div className="flex gap-1.5">
                 <Input placeholder="Paste URL or DOI…" className="h-7 text-xs bg-white/3 border-white/8 text-white/70 placeholder:text-white/25 flex-1" />
-                <Button size="sm" className="h-7 text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => notifySuccess('Auto-Cite', 'Source automatically cited')}>
-                  <RefreshCw className="size-3" />Cite
+                <Button size="sm" className="h-7 text-[10px] bg-indigo-600 hover:bg-indigo-500 text-white gap-1" disabled={generateCitationMut.isPending} onClick={() => generateCitationMut.mutate({ style, sourceType, url: '' } as any, { onSuccess: () => notifySuccess('Auto-Cite', 'Source automatically cited'), onError: () => notifyError('Auto-Cite', 'Failed to auto-cite source') })}>
+                  <RefreshCw className="size-3" />{generateCitationMut.isPending ? 'Citing…' : 'Cite'}
                 </Button>
               </div>
             </div>

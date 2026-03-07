@@ -24,8 +24,6 @@ type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
 export function AttendanceSection({ schoolId, teacherId }: TeacherSectionProps) {
   const { activeHeader } = useNavigationStore();
-  const { data: apiAttendanceHistory } = useTeacherAttendanceHistory();
-  void apiAttendanceHistory;
 
   switch (activeHeader) {
     case 'take_attendance':
@@ -264,6 +262,7 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
 /* ─── Attendance History ──────────────────────────────────────────── */
 function AttendanceHistoryView({ schoolId, teacherId }: TeacherSectionProps) {
   const { data: coursesRes } = useCourses(schoolId);
+  const { data: apiAttHistory } = useTeacherAttendanceHistory();
   const courses: Course[] = coursesRes ?? [];
   const teacherCourses = teacherId ? courses.filter(c => c.teacherId === teacherId) : courses;
   const [selectedCourseIdx, setSelectedCourseIdx] = useState(0);
@@ -292,14 +291,24 @@ function AttendanceHistoryView({ schoolId, teacherId }: TeacherSectionProps) {
     return Array.from(map.entries()).sort((a, b) => new Date(b[0]).getTime() - new Date(a[0]).getTime());
   }, [records]);
 
-  // Demo history if no records
-  const demoHistory = [
-    { date: 'Mar 5, 2026', present: 26, late: 1, absent: 1, total: 28, rate: 96 },
-    { date: 'Mar 4, 2026', present: 27, late: 0, absent: 1, total: 28, rate: 96 },
-    { date: 'Mar 3, 2026', present: 28, late: 0, absent: 0, total: 28, rate: 100 },
-    { date: 'Feb 28, 2026', present: 25, late: 2, absent: 1, total: 28, rate: 96 },
-    { date: 'Feb 27, 2026', present: 24, late: 1, absent: 3, total: 28, rate: 89 },
-  ];
+  // Attendance history from API or inline fallback
+  const historyItems = (apiAttHistory as any)?.data as any[] | undefined;
+  const demoHistory = historyItems?.length
+    ? historyItems.map((h: any) => ({
+        date: h.date ? new Date(h.date).toLocaleDateString() : 'Unknown',
+        present: h.present ?? 0,
+        late: h.late ?? 0,
+        absent: h.absent ?? 0,
+        total: h.total ?? 28,
+        rate: h.rate ?? Math.round(((h.present ?? 0) / (h.total ?? 28)) * 100),
+      }))
+    : [
+        { date: 'Mar 5, 2026', present: 26, late: 1, absent: 1, total: 28, rate: 96 },
+        { date: 'Mar 4, 2026', present: 27, late: 0, absent: 1, total: 28, rate: 96 },
+        { date: 'Mar 3, 2026', present: 28, late: 0, absent: 0, total: 28, rate: 100 },
+        { date: 'Feb 28, 2026', present: 25, late: 2, absent: 1, total: 28, rate: 96 },
+        { date: 'Feb 27, 2026', present: 24, late: 1, absent: 3, total: 28, rate: 89 },
+      ];
 
   return (
     <TeacherSectionShell title="Attendance History" description="Review past attendance records">

@@ -58,7 +58,11 @@ const FALLBACK_ACHIEVEMENTS = [
 export default function ProductivityOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const { data: apiFocusSessions } = useStudentFocusSessions();
-  void apiFocusSessions;
+  const focusSessions = (apiFocusSessions as any)?.data as any[] | undefined;
+  const totalFocusSessions = focusSessions?.length ?? 24;
+  const totalFocusHours = focusSessions?.length
+    ? Math.round(focusSessions.reduce((sum: number, s: any) => sum + (s.duration ?? 0), 0) / 60)
+    : 18;
   const TOOLS = FALLBACK_TOOLS;
   const WEEKLY_ACTIVITY = FALLBACK_WEEKLY_ACTIVITY;
   const ACHIEVEMENTS = FALLBACK_ACHIEVEMENTS;
@@ -69,8 +73,8 @@ export default function ProductivityOverviewPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Focus Sessions" value={24} icon={<Timer className="h-5 w-5" />} trend="up" trendLabel="+8 this week" />
-        <StatCard label="Total Focus Time" value={18} suffix="h" icon={<Clock className="h-5 w-5" />} />
+        <StatCard label="Focus Sessions" value={totalFocusSessions} icon={<Timer className="h-5 w-5" />} trend="up" trendLabel="+8 this week" />
+        <StatCard label="Total Focus Time" value={totalFocusHours} suffix="h" icon={<Clock className="h-5 w-5" />} />
         <StatCard label="Maps Created" value={8} icon={<GitBranch className="h-5 w-5" />} />
         <StatCard label="Productivity Score" value={87} suffix="%" icon={<Target className="h-5 w-5" />} trend="up" />
       </div>

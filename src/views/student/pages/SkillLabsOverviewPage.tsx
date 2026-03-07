@@ -12,7 +12,6 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { useStudentSessions } from '@/hooks/api/use-student';
 
 const FALLBACK_LABS = [
   {
@@ -74,8 +73,6 @@ const FALLBACK_RECENT_RESULTS = [
 
 export default function SkillLabsOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
-  const { data: apiSessions } = useStudentSessions();
-  void apiSessions;
   const LABS = FALLBACK_LABS;
   const SKILL_POINTS = FALLBACK_SKILL_POINTS;
   const RECENT_RESULTS = FALLBACK_RECENT_RESULTS;

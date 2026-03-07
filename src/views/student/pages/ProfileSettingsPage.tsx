@@ -54,7 +54,9 @@ export default function ProfileSettingsPage() {
   const user = meData?.user;
   const updateProfile = useUpdateProfile();
   const { data: apiStudentProfile } = useStudentProfile();
-  void apiStudentProfile;
+  const studentProfile = (apiStudentProfile as any)?.data ?? (apiStudentProfile as any) ?? {};
+  const gradeLevel = studentProfile?.gradeLevel ?? '';
+  const section = studentProfile?.section ?? '';
   const SECURITY_ITEMS = FALLBACK_SECURITY_ITEMS;
   const PREFERENCES = FALLBACK_PREFERENCES;
   const LINKED_ACCOUNTS = FALLBACK_LINKED_ACCOUNTS;
@@ -117,6 +119,8 @@ export default function ProfileSettingsPage() {
               <p className="text-sm text-white/40">{email}</p>
               <div className="flex items-center gap-2 mt-1.5">
                 <Badge variant="outline" className="text-[10px] capitalize border-indigo-500/30 text-indigo-400">{role}</Badge>
+                {gradeLevel && <Badge variant="outline" className="text-[10px] border-violet-500/30 text-violet-400">{gradeLevel}</Badge>}
+                {section && <Badge variant="outline" className="text-[10px] border-cyan-500/30 text-cyan-400">{section}</Badge>}
                 <Badge variant="outline" className="text-[10px] border-emerald-500/30 text-emerald-400">Active</Badge>
               </div>
             </div>

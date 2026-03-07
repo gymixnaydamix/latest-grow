@@ -13,8 +13,9 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import { useStudentMindMaps, useCreateMindMap } from '@/hooks/api/use-student';
+import { useAIChat } from '@/hooks/api';
 
 interface MapNode {
   id: string;
@@ -55,6 +56,7 @@ export default function MindMapperPage() {
   /* ── API data ── */
   const { data: apiMindMaps } = useStudentMindMaps();
   const createMindMapMut = useCreateMindMap();
+  const aiSuggestMut = useAIChat();
   const sampleMaps = (apiMindMaps as any[])?.length > 0 ? (apiMindMaps as any[]) : FALLBACK_SAMPLE_MAPS;
   const colors = (apiMindMaps as any)?.colors ?? FALLBACK_COLORS;
 
@@ -127,7 +129,7 @@ export default function MindMapperPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="text-white/90 text-sm">Cell Biology Concepts</CardTitle>
               <div className="flex items-center gap-1.5">
-                <Button size="sm" variant="outline" className="h-7 text-[10px] border-white/10 text-white/40 gap-1" onClick={() => notifySuccess('AI Suggest', 'Generating concept suggestions…')}><Sparkles className="size-3" />AI Suggest</Button>
+                <Button size="sm" variant="outline" className="h-7 text-[10px] border-white/10 text-white/40 gap-1" disabled={aiSuggestMut.isPending} onClick={() => aiSuggestMut.mutate({ messages: [{ role: 'user', content: 'Suggest related concepts for mind map' }] } as any, { onSuccess: () => notifySuccess('AI Suggest', 'Concept suggestions generated!'), onError: () => notifyError('AI Suggest', 'Failed to generate suggestions') })}><Sparkles className="size-3" />{aiSuggestMut.isPending ? 'Generating…' : 'AI Suggest'}</Button>
                 <Button size="sm" variant="outline" className="h-7 text-[10px] border-white/10 text-white/40 gap-1" onClick={() => notifySuccess('Export', 'Mind map exported as PNG')}><Download className="size-3" />Export</Button>
                 <Button size="sm" variant="outline" className="h-7 text-[10px] border-white/10 text-white/40 gap-1" onClick={() => notifySuccess('Share', 'Sharing link copied to clipboard')}><Share2 className="size-3" />Share</Button>
               </div>
