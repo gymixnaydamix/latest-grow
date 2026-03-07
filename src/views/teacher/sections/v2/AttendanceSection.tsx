@@ -12,18 +12,20 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useCourses, useCourseAttendance } from '@/hooks/api';
-import { useSubmitAttendance } from '@/hooks/api/use-teacher';
+import { useSubmitAttendance, useTeacherAttendanceHistory } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course, AttendanceRecord } from '@root/types';
 import { TeacherSectionShell, GlassCard, MetricCard, StatusBadge } from './shared';
 import type { TeacherSectionProps } from './shared';
-import { teacherClassesDemo, attendanceStudentsDemo } from './teacher-demo-data';
+import { teacherClassesDemo as FALLBACK_teacherClassesDemo, attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo } from './teacher-demo-data';
 
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
 export function AttendanceSection({ schoolId, teacherId }: TeacherSectionProps) {
   const { activeHeader } = useNavigationStore();
+  const { data: apiAttendanceHistory } = useTeacherAttendanceHistory();
+  void apiAttendanceHistory;
 
   switch (activeHeader) {
     case 'take_attendance':
@@ -53,13 +55,13 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
   // Use real courses if available, otherwise demo
   const classes = teacherCourses.length > 0
     ? teacherCourses.map((c) => ({ id: c.id, name: c.name, studentCount: c._count?.enrollments ?? 25 }))
-    : teacherClassesDemo.map(c => ({ id: c.id, name: c.name, studentCount: c.studentCount }));
+    : FALLBACK_teacherClassesDemo.map(c => ({ id: c.id, name: c.name, studentCount: c.studentCount }));
   
   const selectedClass = classes[selectedClassIdx] ?? classes[0];
 
   // Students — demo for now
   const students = useMemo(() => {
-    let list = attendanceStudentsDemo;
+    let list = FALLBACK_attendanceStudentsDemo;
     if (searchTerm) {
       list = list.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }
@@ -268,7 +270,7 @@ function AttendanceHistoryView({ schoolId, teacherId }: TeacherSectionProps) {
 
   const classes = teacherCourses.length > 0
     ? teacherCourses.map(c => ({ id: c.id, name: c.name }))
-    : teacherClassesDemo.map(c => ({ id: c.id, name: c.name }));
+    : FALLBACK_teacherClassesDemo.map(c => ({ id: c.id, name: c.name }));
 
   const selectedClass = classes[selectedCourseIdx];
   const { data: attendanceData } = useCourseAttendance(selectedClass?.id ?? null);

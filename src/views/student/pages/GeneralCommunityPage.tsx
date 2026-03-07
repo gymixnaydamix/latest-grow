@@ -38,7 +38,7 @@ const POSTS: Post[] = [
   { id: '6', author: 'Sarah Chen', initials: 'SC', role: 'Student', content: 'Just got my AP Chemistry score back — passed with a 5! Thank you Dr. Chen for an amazing class this year! 🎉', time: '6 hours ago', likes: 89, replies: 15, color: 'bg-rose-500/20 text-rose-400' },
 ];
 
-const TRENDING_TOPICS = [
+const FALLBACK_TRENDING_TOPICS = [
   { tag: '#SpiritWeek', posts: 34 },
   { tag: '#StudyGroup', posts: 18 },
   { tag: '#CodingClub', posts: 12 },
@@ -46,7 +46,7 @@ const TRENDING_TOPICS = [
   { tag: '#SummerPlans', posts: 22 },
 ];
 
-const ACTIVE_MEMBERS = [
+const FALLBACK_ACTIVE_MEMBERS = [
   { name: 'Emma W.', initials: 'EW', posts: 24 },
   { name: 'Jake M.', initials: 'JM', posts: 18 },
   { name: 'Sarah C.', initials: 'SC', posts: 15 },
@@ -58,10 +58,13 @@ export default function GeneralCommunityPage() {
   const [message, setMessage] = useState('');
 
   /* ── API data ── */
-  const { data: _apiCommunity } = useStudentCommunity();
+  const { data: apiCommunity } = useStudentCommunity();
   const createPostMut = useCreateCommunityPost();
   const likePostMut = useLikeCommunityPost();
-  const communityPosts = (_apiCommunity as any[]) ?? [];
+  const communityData = (apiCommunity as any) ?? {};
+  const communityPosts = (communityData?.posts as any[])?.length > 0 ? (communityData.posts as any[]) : POSTS;
+  const trendingTopics = (communityData?.trendingTopics as any[])?.length > 0 ? (communityData.trendingTopics as any[]) : FALLBACK_TRENDING_TOPICS;
+  const activeMembers = (communityData?.activeMembers as any[])?.length > 0 ? (communityData.activeMembers as any[]) : FALLBACK_ACTIVE_MEMBERS;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -110,7 +113,7 @@ export default function GeneralCommunityPage() {
           </Card>
 
           {/* Posts */}
-          {(communityPosts.length > 0 ? communityPosts : POSTS).map((post: any) => (
+          {communityPosts.map((post: any) => (
             <Card key={post.id} data-animate className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/10 transition-all">
               <CardContent className="pt-4 pb-3">
                 <div className="flex items-start gap-3">
@@ -153,7 +156,7 @@ export default function GeneralCommunityPage() {
               <CardTitle className="text-xs font-semibold text-white/60">Trending Topics</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1.5">
-              {TRENDING_TOPICS.map((t) => (
+              {trendingTopics.map((t: any) => (
                 <div key={t.tag} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 px-2.5 py-1.5 hover:bg-white/4 cursor-pointer transition-colors">
                   <span className="text-xs font-medium text-indigo-400">{t.tag}</span>
                   <span className="text-[10px] text-white/30">{t.posts} posts</span>
@@ -168,7 +171,7 @@ export default function GeneralCommunityPage() {
               <CardTitle className="text-xs font-semibold text-white/60">Most Active</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1.5">
-              {ACTIVE_MEMBERS.map((m, i) => (
+              {activeMembers.map((m: any, i: number) => (
                 <div key={m.name} className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-white/2 px-2.5 py-1.5">
                   <span className="text-[10px] font-bold text-white/25 w-4">#{i + 1}</span>
                   <Avatar className="size-6">

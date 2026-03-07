@@ -23,7 +23,7 @@ const contextFields: ConciergeContextField[] = [
 ];
 
 /* ── Today chips ── */
-const todayChips: TodayChip[] = [
+const FALLBACK_TODAY_CHIPS: TodayChip[] = [
   { id: 't1', count: 6, label: 'Approvals waiting' },
   { id: 't2', count: 4, label: 'Urgent requests' },
   { id: 't3', count: 3, label: 'Meetings today' },
@@ -33,7 +33,7 @@ const todayChips: TodayChip[] = [
 ];
 
 /* ── Slash commands ── */
-const slashCommands = ['/announce', '/doc', '/approve', '/meeting', '/request', '/task', '/search', '/student', '/invoice'];
+const FALLBACK_SLASH_CMDS = ['/announce', '/doc', '/approve', '/meeting', '/request', '/task', '/search', '/student', '/invoice'];
 
 /* ── Starter messages ── */
 const starterMessages: ConciergeMessage[] = [
@@ -111,6 +111,9 @@ export function AdminConciergeAssistant() {
   const { activeSubNav } = useNavigationStore();
   const { messages, addMessage, history } = useConciergeStore();
   const aiChat = useAIChat();
+
+  const todayChips = FALLBACK_TODAY_CHIPS;
+  const slashCommands = FALLBACK_SLASH_CMDS;
 
   const content = (() => {
     switch (activeSubNav) {

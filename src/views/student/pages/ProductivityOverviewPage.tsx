@@ -9,8 +9,9 @@ import { Badge } from '@/components/ui/badge';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentFocusSessions } from '@/hooks/api/use-student';
 
-const TOOLS = [
+const FALLBACK_TOOLS = [
   {
     title: 'Focus Timer',
     desc: 'Pomodoro-style focus sessions to maximize study productivity',
@@ -37,7 +38,7 @@ const TOOLS = [
   },
 ];
 
-const WEEKLY_ACTIVITY = [
+const FALLBACK_WEEKLY_ACTIVITY = [
   { day: 'Mon', focus: 45, mindMap: 20, citations: 10 },
   { day: 'Tue', focus: 60, mindMap: 0, citations: 15 },
   { day: 'Wed', focus: 30, mindMap: 30, citations: 0 },
@@ -47,7 +48,7 @@ const WEEKLY_ACTIVITY = [
   { day: 'Sun', focus: 40, mindMap: 10, citations: 0 },
 ];
 
-const ACHIEVEMENTS = [
+const FALLBACK_ACHIEVEMENTS = [
   { title: 'Focus Master', desc: '100 focus sessions completed', earned: true, icon: Timer, color: 'text-indigo-400' },
   { title: 'Mind Architect', desc: 'Create 10 mind maps', earned: true, icon: GitBranch, color: 'text-violet-400' },
   { title: 'Citation Pro', desc: '50 citations generated', earned: false, icon: Quote, color: 'text-cyan-400' },
@@ -56,6 +57,11 @@ const ACHIEVEMENTS = [
 
 export default function ProductivityOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
+  const { data: apiFocusSessions } = useStudentFocusSessions();
+  void apiFocusSessions;
+  const TOOLS = FALLBACK_TOOLS;
+  const WEEKLY_ACTIVITY = FALLBACK_WEEKLY_ACTIVITY;
+  const ACHIEVEMENTS = FALLBACK_ACHIEVEMENTS;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">

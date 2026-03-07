@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useStudentData } from '@/hooks/use-student-data';
+import { useStudentDeptRequests } from '@/hooks/api/use-student';
 import { notifySuccess } from '@/lib/notify';
 
 type RequestStatus = 'pending' | 'approved' | 'denied' | 'in-review';
@@ -32,7 +33,7 @@ const STATUS_CFG: Record<RequestStatus, { Icon: typeof Clock; cls: string; bg: s
   denied: { Icon: XCircle, cls: 'text-red-400', bg: 'bg-red-400/10', label: 'Denied' },
 };
 
-const MOCK_REQUESTS: DepartmentRequest[] = [
+const FALLBACK_REQUESTS: DepartmentRequest[] = [
   { id: '1', title: 'Official Transcript Request', category: 'transcript', status: 'approved', department: 'Registrar', submittedAt: '2025-03-10', updatedAt: '2025-03-12', description: 'Need official transcript for college application.', response: 'Transcript has been mailed to the address on file.' },
   { id: '2', title: 'Schedule Change: Drop Art 101', category: 'schedule_change', status: 'in-review', department: 'Academic Affairs', submittedAt: '2025-03-14', updatedAt: '2025-03-14', description: 'Would like to drop Art 101 and add Music Theory instead.' },
   { id: '3', title: 'Excused Absence: March 20', category: 'excused_absence', status: 'pending', department: 'Student Affairs', submittedAt: '2025-03-15', updatedAt: '2025-03-15', description: 'Family medical appointment. Will miss morning classes.' },
@@ -48,10 +49,12 @@ export default function StudentDepartmentRequestsSection() {
   const [reqCategory, setReqCategory] = useState('transcript');
   const [reqDesc, setReqDesc] = useState('');
   const store = useStudentData();
+  const { data: apiData } = useStudentDeptRequests();
+  const requests = (apiData as unknown as DepartmentRequest[]) ?? FALLBACK_REQUESTS;
 
-  const filtered = filter === 'all' ? MOCK_REQUESTS : MOCK_REQUESTS.filter((r) => r.status === filter);
-  const counts = { all: MOCK_REQUESTS.length, pending: 0, 'in-review': 0, approved: 0, denied: 0 };
-  MOCK_REQUESTS.forEach((r) => counts[r.status]++);
+  const filtered = filter === 'all' ? requests : requests.filter((r) => r.status === filter);
+  const counts = { all: requests.length, pending: 0, 'in-review': 0, approved: 0, denied: 0 };
+  requests.forEach((r) => counts[r.status]++);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">

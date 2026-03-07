@@ -2,16 +2,19 @@
 import { BookOpen, Users, Clock, TrendingUp } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useCourses } from '@/hooks/api';
+import { useTeacherClasses } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course } from '@root/types';
 import { TeacherSectionShell, GlassCard } from './shared';
 import type { TeacherSectionProps } from './shared';
-import { teacherClassesDemo } from './teacher-demo-data';
+import { teacherClassesDemo as FALLBACK_teacherClassesDemo } from './teacher-demo-data';
 
 export function MyClassesSection({ schoolId, teacherId }: TeacherSectionProps) {
   const { activeHeader, navigate } = useNavigationStore();
   const { data: coursesRes, isLoading } = useCourses(schoolId);
+  const { data: apiTeacherClasses } = useTeacherClasses();
+  void apiTeacherClasses;
   const courses: Course[] = coursesRes ?? [];
   const teacherCourses = teacherId ? courses.filter(c => c.teacherId === teacherId) : courses;
 
@@ -25,7 +28,7 @@ export function MyClassesSection({ schoolId, teacherId }: TeacherSectionProps) {
   return (
     <TeacherSectionShell
       title="My Classes"
-      description={`${teacherCourses.length || teacherClassesDemo.length} active classes this semester`}
+      description={`${teacherCourses.length || FALLBACK_teacherClassesDemo.length} active classes this semester`}
     >
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -36,7 +39,7 @@ export function MyClassesSection({ schoolId, teacherId }: TeacherSectionProps) {
       ) : (teacherCourses.length > 0 ? teacherCourses : []).length === 0 ? (
         // Use demo data for display
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-animate>
-          {teacherClassesDemo.map((cls) => (
+          {FALLBACK_teacherClassesDemo.map((cls) => (
             <GlassCard key={cls.id} className="group cursor-pointer hover:border-white/12 transition-all hover:scale-[1.01]" onClick={() => { navigate('attendance', 'take_attendance'); notifySuccess(cls.name, `Period ${cls.period} • ${cls.room}`); }}>
               <div className="flex items-start justify-between mb-3">
                 <div

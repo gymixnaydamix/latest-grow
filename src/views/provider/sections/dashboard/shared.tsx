@@ -1,4 +1,6 @@
 /* ─── Dashboard Shared Components & Data ─── */
+// API hook: useProviderHome from '@/hooks/api/use-provider-console'
+// provides mrrSpark, tenantSpark, ltvSpark, churnSpark, mrrData, trialData, alerts at runtime.
 import {
   AlertTriangle, CreditCard, Info,
   ArrowUpRight, ArrowDownRight,
@@ -131,13 +133,13 @@ export type KpiDef = {
   prefix?: string;
 };
 
-/* ── Static demo data (shared) ── */
-export const mrrSpark = [40, 42, 38, 45, 48, 44, 50, 53, 56, 55, 60, 62];
-export const tenantSpark = [90, 95, 92, 100, 105, 108, 110, 112, 115, 116, 118, 120];
-export const ltvSpark = [2100, 2150, 2200, 2220, 2280, 2300, 2320, 2350, 2380, 2400, 2420, 2450];
-export const churnSpark = [3.2, 3.0, 2.9, 3.1, 2.8, 2.7, 2.6, 2.5, 2.4, 2.3, 2.2, 2.1];
+/* ── Static fallback data (shared) — replaced at runtime via useProviderHome ── */
+export const FALLBACK_mrrSpark = [40, 42, 38, 45, 48, 44, 50, 53, 56, 55, 60, 62];
+export const FALLBACK_tenantSpark = [90, 95, 92, 100, 105, 108, 110, 112, 115, 116, 118, 120];
+export const FALLBACK_ltvSpark = [2100, 2150, 2200, 2220, 2280, 2300, 2320, 2350, 2380, 2400, 2420, 2450];
+export const FALLBACK_churnSpark = [3.2, 3.0, 2.9, 3.1, 2.8, 2.7, 2.6, 2.5, 2.4, 2.3, 2.2, 2.1];
 
-export const mrrData = [
+export const FALLBACK_mrrData = [
   { month: 'Jan', mrr: 10200 }, { month: 'Feb', mrr: 10800 },
   { month: 'Mar', mrr: 11150 }, { month: 'Apr', mrr: 11900 },
   { month: 'May', mrr: 12350 }, { month: 'Jun', mrr: 12800 },
@@ -146,7 +148,7 @@ export const mrrData = [
   { month: 'Nov', mrr: 14820 }, { month: 'Dec', mrr: 15230 },
 ];
 
-export const trialData = [
+export const FALLBACK_trialData = [
   { month: 'Jan', trials: 18 }, { month: 'Feb', trials: 22 },
   { month: 'Mar', trials: 15 }, { month: 'Apr', trials: 28 },
   { month: 'May', trials: 34 }, { month: 'Jun', trials: 25 },
@@ -155,7 +157,7 @@ export const trialData = [
   { month: 'Nov', trials: 42 }, { month: 'Dec', trials: 35 },
 ];
 
-export const alerts = [
+export const FALLBACK_alerts = [
   {
     level: 'critical' as const,
     text: 'High API Error Rate Detected',

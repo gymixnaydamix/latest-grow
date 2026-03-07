@@ -12,7 +12,7 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCourses } from '@/hooks/api';
-import { useSaveExamMarks } from '@/hooks/api/use-teacher';
+import { useSaveExamMarks, useTeacherExams } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import {
@@ -20,7 +20,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  examsDemo, attendanceStudentsDemo,
+  examsDemo as FALLBACK_examsDemo, attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo,
   formatDateLabel, formatTimeRange,
 } from './teacher-demo-data';
 
@@ -55,7 +55,7 @@ const marksEntryDemo: Record<string, ExamStudentScore[]> = {
     { id: 'me15', name: 'Priya Patel', initials: 'PP', score: null, maxScore: 100, status: 'pending' },
     { id: 'me16', name: 'Emma Larsson', initials: 'EL', score: 78, maxScore: 100, status: 'entered' },
   ],
-  ex1: attendanceStudentsDemo.slice(0, 8).map((st, i) => ({
+  ex1: FALLBACK_attendanceStudentsDemo.slice(0, 8).map((st, i) => ({
     id: `me-new-${i}`,
     name: st.name,
     initials: st.initials,
@@ -121,8 +121,9 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
   // Prefetch — will render from API when data available
   useCourses(schoolId);
   const saveMarksMut = useSaveExamMarks();
+  const { data: apiExams } = useTeacherExams();
 
-  const exams = examsDemo;
+  const exams = (apiExams as unknown as typeof FALLBACK_examsDemo) ?? FALLBACK_examsDemo;
   const upcomingExams = exams.filter(e => e.status === 'upcoming' || e.status === 'in-progress');
   const completedExams = exams.filter(e => e.status === 'completed' || e.status === 'graded');
 

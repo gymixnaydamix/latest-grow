@@ -15,8 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
-import { useAnnouncements } from '@/hooks/api';
-import { useCreateTeacherAnnouncement } from '@/hooks/api/use-teacher';
+import { useCreateTeacherAnnouncement, useTeacherAnnouncements } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import {
@@ -24,7 +23,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  announcementsDemo, formatDateLabel, type AnnouncementDemo,
+  announcementsDemo as FALLBACK_announcementsDemo, formatDateLabel, type AnnouncementDemo,
 } from './teacher-demo-data';
 
 /* ── Priority accent map ── */
@@ -34,14 +33,14 @@ const priorityAccent: Record<string, { border: string; bg: string; ring: string 
   LOW: { border: 'border-white/8', bg: 'bg-white/2', ring: '' },
 };
 
-export function AnnouncementsSection({ schoolId }: TeacherSectionProps) {
+export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProps) {
   const { activeHeader, setHeader } = useNavigationStore();
   const header = activeHeader || 'announcement_feed';
   const createAnnouncement = useCreateTeacherAnnouncement();
 
-  const { data: apiAnnouncements } = useAnnouncements(schoolId);
+  const { data: apiAnnouncements } = useTeacherAnnouncements();
   const announcements: AnnouncementDemo[] =
-    (apiAnnouncements as unknown as AnnouncementDemo[]) ?? announcementsDemo;
+    (apiAnnouncements as unknown as AnnouncementDemo[]) ?? FALLBACK_announcementsDemo;
 
   const [search, setSearch] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');

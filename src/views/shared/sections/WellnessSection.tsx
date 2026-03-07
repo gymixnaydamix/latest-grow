@@ -54,7 +54,7 @@ function WellnessOverview() {
     { day: 'Friday', activity: 'Mindfulness walk — 20 min', mood: 'Great', moodColor: 'border-emerald-500/30 text-emerald-400' },
   ]) as { day: string; activity: string; mood: string; moodColor: string }[];
 
-  const kpis = [
+  const FALLBACK_KPIS = [
     { label: 'Wellness Score', value: `${m.wellnessScore}/100`, icon: Heart, color: 'text-rose-400', bg: 'bg-rose-500/10' },
     { label: 'Mood Trend', value: m.moodTrend, icon: TrendingUp, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { label: 'Activities Done', value: String(m.activitiesDone), icon: Dumbbell, color: 'text-blue-400', bg: 'bg-blue-500/10' },
@@ -68,7 +68,7 @@ function WellnessOverview() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        {kpis.map((kpi) => (
+        {FALLBACK_KPIS.map((kpi) => (
           <Card key={kpi.label} className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="flex items-center gap-3 py-4">
               <div className={`flex size-10 items-center justify-center rounded-lg ${kpi.bg}`}>
@@ -231,7 +231,7 @@ function MBJournal() {
   const [mood, setMood] = useState('Good');
   const [summary, setSummary] = useState('');
 
-  const moodOptions = [
+  const FALLBACK_MOOD_OPTIONS = [
     { label: '😊 Great', value: 'Great', emoji: '😊', badge: 'border-emerald-500/30 text-emerald-400' },
     { label: '🙂 Good', value: 'Good', emoji: '🙂', badge: 'border-blue-500/30 text-blue-400' },
     { label: '😐 Okay', value: 'Okay', emoji: '😐', badge: 'border-white/10 text-white/40' },
@@ -245,11 +245,11 @@ function MBJournal() {
     { id: 'j4', date: 'May 11, 2025', mood: 'Low', moodEmoji: '😔', summary: 'Feeling overwhelmed. Took a walk and it helped.', createdAt: '' },
   ]) as { id: string; date: string; mood: string; moodEmoji: string; summary: string }[];
 
-  const getBadge = (m: string) => moodOptions.find((o) => o.value === m)?.badge ?? 'border-white/10 text-white/40';
+  const getBadge = (m: string) => FALLBACK_MOOD_OPTIONS.find((o) => o.value === m)?.badge ?? 'border-white/10 text-white/40';
 
   const handleCreate = () => {
     if (!summary.trim()) return;
-    const moodEmoji = moodOptions.find((o) => o.value === mood)?.emoji ?? '😐';
+    const moodEmoji = FALLBACK_MOOD_OPTIONS.find((o) => o.value === mood)?.emoji ?? '😐';
     createEntry.mutate(
       { mood, moodEmoji, summary: summary.trim() },
       { onSuccess: () => { setSummary(''); setMood('Good'); setShowForm(false); } },
@@ -268,7 +268,7 @@ function MBJournal() {
         <Card data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
           <CardContent className="pt-6 space-y-3">
             <div className="flex gap-2">
-              {moodOptions.map((o) => (
+              {FALLBACK_MOOD_OPTIONS.map((o) => (
                 <Button
                   key={o.value}
                   size="sm"
@@ -317,7 +317,7 @@ function MBGoals() {
   const [title, setTitle] = useState('');
   const [target, setTarget] = useState('30 days');
 
-  const goalColors = [
+  const FALLBACK_GOAL_COLORS = [
     'from-indigo-500 to-indigo-600',
     'from-blue-500 to-blue-600',
     'from-emerald-500 to-emerald-600',
@@ -387,7 +387,7 @@ function MBGoals() {
               <span className="text-sm font-bold text-indigo-400">{g.progress}%</span>
             </div>
             <div className="mt-3 h-2 w-full rounded-full bg-white/5">
-              <div className={`h-full rounded-full bg-gradient-to-r ${goalColors[i % goalColors.length]}`} style={{ width: `${g.progress}%` }} />
+              <div className={`h-full rounded-full bg-gradient-to-r ${FALLBACK_GOAL_COLORS[i % FALLBACK_GOAL_COLORS.length]}`} style={{ width: `${g.progress}%` }} />
             </div>
           </CardContent>
         </Card>

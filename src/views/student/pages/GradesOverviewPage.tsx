@@ -47,14 +47,14 @@ const _UPCOMING_ASSIGNMENTS = [
   { title: 'CS Final Project Milestone', course: 'Computer Science', due: 'Mar 12', type: 'Project', points: 150 },
 ];
 
-const RECENT_GRADES = [
+const FALLBACK_RECENT_GRADES = [
   { title: 'Quadratic Equations Quiz', course: 'Algebra II', score: 95, max: 100, date: 'Mar 3' },
   { title: 'Lab: Titration', course: 'AP Chemistry', score: 42, max: 50, date: 'Mar 2' },
   { title: 'Code Review #4', course: 'Computer Science', score: 100, max: 100, date: 'Mar 1' },
   { title: 'Reading Response', course: 'English Literature', score: 88, max: 100, date: 'Feb 28' },
 ];
 
-const SEMESTER_TREND = [
+const FALLBACK_SEMESTER_TREND = [
   { month: 'Sep', gpa: 3.5 },
   { month: 'Oct', gpa: 3.6 },
   { month: 'Nov', gpa: 3.55 },
@@ -68,15 +68,17 @@ export default function GradesOverviewPage() {
   const [tab, setTab] = useState<'grades' | 'upcoming' | 'recent'>('grades');
 
   /* ── API data ── */
-  const { data: _apiGrades } = useStudentGradesOverview();
-  const { data: _apiAssignments } = useStudentAssignments();
-  const courseGrades = (_apiGrades as any[]) ?? [];
-  const upcomingAssignments = (_apiAssignments as any[]) ?? [];
+  const { data: apiGrades } = useStudentGradesOverview();
+  const { data: apiAssignments } = useStudentAssignments();
+  const courseGrades = (apiGrades as any[]) ?? [];
+  const upcomingAssignments = (apiAssignments as any[]) ?? [];
+  const recentGrades = (apiGrades as any)?.recentGrades ?? FALLBACK_RECENT_GRADES;
+  const semesterTrend = (apiGrades as any)?.semesterTrend ?? FALLBACK_SEMESTER_TREND;
 
   const gpa = 3.72;
   const totalAssignments = courseGrades.reduce((s: number, c: any) => s + (c.assignments ?? 0), 0);
   const completedAssignments = courseGrades.reduce((s: number, c: any) => s + (c.completed ?? 0), 0);
-  const maxGpa = Math.max(...SEMESTER_TREND.map((t) => t.gpa));
+  const maxGpa = Math.max(...semesterTrend.map((t: any) => t.gpa));
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -165,7 +167,7 @@ export default function GradesOverviewPage() {
 
           {tab === 'recent' && (
             <div className="flex flex-col gap-2">
-              {RECENT_GRADES.map((g, i) => (
+              {recentGrades.map((g: any, i: number) => (
                 <Card key={i} data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
                   <CardContent className="p-3 flex items-center gap-3">
                     <div className={cn('size-9 rounded-lg flex items-center justify-center shrink-0',
@@ -199,7 +201,7 @@ export default function GradesOverviewPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-end gap-2 h-24">
-                {SEMESTER_TREND.map((t) => (
+                {semesterTrend.map((t: any) => (
                   <div key={t.month} className="flex-1 flex flex-col items-center gap-1">
                     <div
                       className="w-full rounded-t-sm bg-gradient-to-t from-indigo-500/30 to-indigo-500/60"

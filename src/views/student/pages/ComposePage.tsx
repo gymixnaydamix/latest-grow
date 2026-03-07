@@ -13,8 +13,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentMessages } from '@/hooks/api/use-student';
 
-const QUICK_CONTACTS = [
+const FALLBACK_QUICK_CONTACTS = [
   { name: 'Mrs. Rodriguez', role: 'Algebra II Teacher', initials: 'MR', color: 'bg-indigo-500/20 text-indigo-400' },
   { name: 'Dr. Chen', role: 'AP Chemistry Teacher', initials: 'DC', color: 'bg-emerald-500/20 text-emerald-400' },
   { name: 'Mr. Thompson', role: 'English Literature', initials: 'MT', color: 'bg-violet-500/20 text-violet-400' },
@@ -22,7 +23,7 @@ const QUICK_CONTACTS = [
   { name: 'Guidance Counselor', role: 'Student Services', initials: 'GC', color: 'bg-cyan-500/20 text-cyan-400' },
 ];
 
-const TEMPLATES = [
+const FALLBACK_TEMPLATES = [
   { label: 'Absence Notification', subject: 'Absence Notification — [Date]' },
   { label: 'Assignment Extension', subject: 'Request for Assignment Extension' },
   { label: 'Meeting Request', subject: 'Request for Meeting — [Topic]' },
@@ -35,6 +36,10 @@ export default function ComposePage() {
   const [subject, setSubject] = useState('');
   const [body, setBody] = useState('');
   const [attachments, setAttachments] = useState<string[]>([]);
+  const { data: apiMessages } = useStudentMessages();
+  void apiMessages;
+  const QUICK_CONTACTS = FALLBACK_QUICK_CONTACTS;
+  const TEMPLATES = FALLBACK_TEMPLATES;
 
   const removeAttachment = (name: string) => setAttachments((p) => p.filter((a) => a !== name));
 

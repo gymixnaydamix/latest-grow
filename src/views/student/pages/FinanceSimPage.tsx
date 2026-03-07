@@ -15,19 +15,20 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentFees } from '@/hooks/api/use-student';
 
 const BALANCE = 12450;
 const INCOME_MONTHLY = 2400;
 const EXPENSES_MONTHLY = 1650;
 const SAVINGS_RATE = 31;
 
-const ACCOUNTS = [
+const FALLBACK_ACCOUNTS = [
   { name: 'Checking', balance: 3200, icon: Wallet, color: 'text-indigo-400' },
   { name: 'Savings', balance: 7500, icon: PiggyBank, color: 'text-emerald-400' },
   { name: 'Investments', balance: 1750, icon: TrendingUp, color: 'text-violet-400' },
 ];
 
-const TRANSACTIONS = [
+const FALLBACK_TRANSACTIONS = [
   { desc: 'Part-time Job', amount: 600, type: 'income', category: 'Work', date: 'Mar 3' },
   { desc: 'Textbooks', amount: -89, type: 'expense', category: 'Education', date: 'Mar 2' },
   { desc: 'Groceries', amount: -45, type: 'expense', category: 'Food', date: 'Mar 1' },
@@ -36,20 +37,20 @@ const TRANSACTIONS = [
   { desc: 'Phone Bill', amount: -55, type: 'expense', category: 'Utilities', date: 'Feb 26' },
 ];
 
-const GOALS = [
+const FALLBACK_GOALS = [
   { name: 'Emergency Fund', target: 5000, current: 3200, icon: Target, color: 'bg-emerald-500/20 text-emerald-400' },
   { name: 'New Laptop', target: 1500, current: 900, icon: Briefcase, color: 'bg-indigo-500/20 text-indigo-400' },
   { name: 'Summer Trip', target: 2000, current: 450, icon: Car, color: 'bg-amber-500/20 text-amber-400' },
 ];
 
-const SCENARIOS = [
+const FALLBACK_SCENARIOS = [
   { title: 'College Budget Challenge', difficulty: 'Beginner', description: 'Manage a $1,500/month budget as a college student', icon: GraduationCap, color: 'bg-emerald-500/20 text-emerald-400' },
   { title: 'First Apartment', difficulty: 'Intermediate', description: 'Navigate rent, utilities, and living expenses', icon: Home, color: 'bg-amber-500/20 text-amber-400' },
   { title: 'Stock Market Basics', difficulty: 'Intermediate', description: 'Learn to invest with a simulated $10K portfolio', icon: LineChart, color: 'bg-indigo-500/20 text-indigo-400' },
   { title: 'Credit Score Builder', difficulty: 'Advanced', description: 'Build credit responsibly with simulated accounts', icon: CreditCard, color: 'bg-rose-500/20 text-rose-400' },
 ];
 
-const MONTHLY_DATA = [
+const FALLBACK_MONTHLY_DATA = [
   { month: 'Oct', income: 2200, expenses: 1500 },
   { month: 'Nov', income: 2100, expenses: 1700 },
   { month: 'Dec', income: 2600, expenses: 1900 },
@@ -60,6 +61,13 @@ const MONTHLY_DATA = [
 export default function FinanceSimPage() {
   const containerRef = useStaggerAnimate([]);
   const [tab, setTab] = useState<'overview' | 'scenarios'>('overview');
+  const { data: apiFees } = useStudentFees();
+  void apiFees;
+  const ACCOUNTS = FALLBACK_ACCOUNTS;
+  const TRANSACTIONS = FALLBACK_TRANSACTIONS;
+  const GOALS = FALLBACK_GOALS;
+  const SCENARIOS = FALLBACK_SCENARIOS;
+  const MONTHLY_DATA = FALLBACK_MONTHLY_DATA;
 
   const maxBar = Math.max(...MONTHLY_DATA.map((d) => Math.max(d.income, d.expenses)));
 

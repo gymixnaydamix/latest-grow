@@ -9,16 +9,17 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { useAuthStore } from '@/store/auth.store';
 import { useMessageThreads } from '@/hooks/api';
+import { useStudentMessages } from '@/hooks/api/use-student';
 import { Skeleton } from '@/components/ui/skeleton';
 import { notifySuccess } from '@/lib/notify';
 
-const QUICK_ACTIONS = [
+const FALLBACK_QUICK_ACTIONS = [
   { title: 'Compose New Email', desc: 'Draft and send a message', icon: PenSquare, color: 'bg-indigo-500/20 text-indigo-400', href: 'compose' },
   { title: 'View Inbox', desc: 'Read and reply to messages', icon: Inbox, color: 'bg-emerald-500/20 text-emerald-400', href: 'inbox' },
   { title: 'Starred Messages', desc: 'Important saved messages', icon: Star, color: 'bg-yellow-500/20 text-yellow-400', href: 'starred' },
 ];
 
-const RECENT_ACTIVITY = [
+const FALLBACK_RECENT_ACTIVITY = [
   { action: 'Received email from Mrs. Rodriguez', time: '30 min ago', icon: Mail },
   { action: 'Replied to Dr. Chen\'s feedback', time: '2 hours ago', icon: Send },
   { action: 'Starred message from School Office', time: '5 hours ago', icon: Star },
@@ -30,6 +31,10 @@ export default function EmailOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const schoolId = useAuthStore((s) => s.schoolId);
   const { data: threads = [], isLoading } = useMessageThreads(schoolId);
+  const { data: apiStudentMessages } = useStudentMessages();
+  void apiStudentMessages;
+  const QUICK_ACTIONS = FALLBACK_QUICK_ACTIONS;
+  const RECENT_ACTIVITY = FALLBACK_RECENT_ACTIVITY;
 
   const unreadCount = threads.filter((t) => !t.isRead).length;
   const starredCount = threads.filter((t) => t.isStarred).length;

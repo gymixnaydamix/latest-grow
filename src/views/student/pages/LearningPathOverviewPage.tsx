@@ -34,7 +34,7 @@ const _MODULES = [
   { title: 'Multivariable Calculus', status: 'locked', xp: 550 },
 ];
 
-const ACHIEVEMENTS = [
+const FALLBACK_ACHIEVEMENTS = [
   { title: 'First Steps', desc: 'Complete your first module', earned: true, icon: Star },
   { title: 'Week Warrior', desc: '7-day study streak', earned: true, icon: Flame },
   { title: 'Speed Learner', desc: 'Complete a module in under 2 hours', earned: true, icon: Clock },
@@ -43,7 +43,7 @@ const ACHIEVEMENTS = [
   { title: 'Pathfinder', desc: 'Complete an entire learning path', earned: false, icon: Route },
 ];
 
-const LEADERBOARD = [
+const FALLBACK_LEADERBOARD = [
   { name: 'Sarah Chen', xp: 4820, rank: 1, avatar: 'SC' },
   { name: 'You', xp: 3900, rank: 2, avatar: 'ME' },
   { name: 'James Miller', xp: 3650, rank: 3, avatar: 'JM' },
@@ -51,7 +51,7 @@ const LEADERBOARD = [
   { name: 'David Kim', xp: 2980, rank: 5, avatar: 'DK' },
 ];
 
-const SKILLS = [
+const FALLBACK_SKILLS = [
   { name: 'Problem Solving', level: 88 },
   { name: 'Critical Thinking', level: 82 },
   { name: 'Research', level: 75 },
@@ -64,9 +64,12 @@ export default function LearningPathOverviewPage() {
   const [activePath, setActivePath] = useState('stem');
 
   /* ── API data ── */
-  const { data: _apiPaths } = useStudentLearningPaths();
-  const paths = (_apiPaths as any[]) ?? [];
+  const { data: apiPaths } = useStudentLearningPaths();
+  const paths = (apiPaths as any[]) ?? [];
   const modules = (paths.find((p: any) => p.id === activePath)?.modules as any[]) ?? [];
+  const achievements = (apiPaths as any)?.achievements ?? FALLBACK_ACHIEVEMENTS;
+  const leaderboard = (apiPaths as any)?.leaderboard ?? FALLBACK_LEADERBOARD;
+  const skills = (apiPaths as any)?.skills ?? FALLBACK_SKILLS;
 
   const currentPath = paths.find((p: any) => p.id === activePath) ?? paths[0];
   const totalXP = paths.reduce((s: number, p: any) => s + (p.xp ?? 0), 0);
@@ -168,7 +171,7 @@ export default function LearningPathOverviewPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
-                  {LEADERBOARD.map((l) => (
+                  {leaderboard.map((l: any) => (
                     <div key={l.rank} className={cn(
                       'flex items-center gap-3 rounded-lg border border-white/6 bg-white/2 p-2.5',
                       l.name === 'You' && 'border-cyan-500/20 bg-cyan-500/5',
@@ -193,7 +196,7 @@ export default function LearningPathOverviewPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-2 sm:grid-cols-2">
-                  {ACHIEVEMENTS.map((a) => (
+                  {achievements.map((a: any) => (
                     <div key={a.title} className={cn(
                       'flex items-center gap-2.5 rounded-lg border border-white/6 bg-white/2 p-2.5',
                       !a.earned && 'opacity-40',
@@ -223,7 +226,7 @@ export default function LearningPathOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2.5">
-              {SKILLS.map((s) => (
+              {skills.map((s: any) => (
                 <div key={s.name}>
                   <div className="flex justify-between text-[9px] mb-0.5">
                     <span className="text-white/50">{s.name}</span>

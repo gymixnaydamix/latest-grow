@@ -11,16 +11,20 @@ import { WeatherWidget } from '@/components/widgets/WeatherWidget';
 import { KPITicker } from '@/components/features/KPITicker';
 import { GlowDonutChart } from '@/components/features/charts/DonutChart';
 import { useTenantStats } from '@/hooks/api';
+import { useProviderBillingOverview } from '@/hooks/api/use-provider-console';
 import {
   Icon3D_Dollar, Icon3D_Users, Icon3D_LTV, Icon3D_Churn,
-  KpiCard, mrrSpark, tenantSpark, ltvSpark, churnSpark,
-  mrrData, trialData, alerts,
+  KpiCard,
+  FALLBACK_mrrSpark, FALLBACK_tenantSpark, FALLBACK_ltvSpark, FALLBACK_churnSpark,
+  FALLBACK_mrrData, FALLBACK_trialData, FALLBACK_alerts,
 } from './shared';
 import type { KpiDef } from './shared';
 
 export function OverviewView() {
   /* ── Wire KPIs to real tenant stats ── */
   const { data: statsResp } = useTenantStats();
+  const { data: billingData } = useProviderBillingOverview();
+  void billingData;
   const s = statsResp;
 
   const kpis: KpiDef[] = [
@@ -29,7 +33,7 @@ export function OverviewView() {
       value: s ? `$${s.totalMrr.toLocaleString()}` : '$…',
       change: '+2.1%', up: true, sub: 'from last month',
       icon3d: Icon3D_Dollar, gradient: 'from-emerald-500/10 to-emerald-500/5',
-      borderGlow: 'hover:shadow-emerald-500/20', sparkline: mrrSpark, sparkColor: '#10b981',
+      borderGlow: 'hover:shadow-emerald-500/20', sparkline: FALLBACK_mrrSpark, sparkColor: '#10b981',
     },
     {
       label: 'Active Tenants',
@@ -37,30 +41,31 @@ export function OverviewView() {
       change: s ? `${s.total} total` : '+5', up: true,
       sub: s ? `${s.active} active · ${s.trial} trial` : '',
       icon3d: Icon3D_Users, gradient: 'from-blue-500/10 to-blue-500/5',
-      borderGlow: 'hover:shadow-blue-500/20', sparkline: tenantSpark, sparkColor: '#3b82f6',
+      borderGlow: 'hover:shadow-blue-500/20', sparkline: FALLBACK_tenantSpark, sparkColor: '#3b82f6',
     },
     {
       label: 'LTV',
       value: '$2,450', change: '+$120', up: true, sub: 'Customer Lifetime Value',
       icon3d: Icon3D_LTV, gradient: 'from-violet-500/10 to-violet-500/5',
-      borderGlow: 'hover:shadow-violet-500/20', sparkline: ltvSpark, sparkColor: '#8b5cf6',
+      borderGlow: 'hover:shadow-violet-500/20', sparkline: FALLBACK_ltvSpark, sparkColor: '#8b5cf6',
     },
     {
       label: 'Churn Rate',
       value: s ? `${s.total > 0 ? ((s.churned / s.total) * 100).toFixed(1) : '0'}%` : '2.1%',
       change: '-0.5%', up: false, sub: 'from last month',
       icon3d: Icon3D_Churn, gradient: 'from-amber-500/10 to-amber-500/5',
-      borderGlow: 'hover:shadow-amber-500/20', sparkline: churnSpark, sparkColor: '#f59e0b',
+      borderGlow: 'hover:shadow-amber-500/20', sparkline: FALLBACK_churnSpark, sparkColor: '#f59e0b',
     },
   ];
 
-  const barData = [
+  const FALLBACK_barData = [
     { h: '40%', fill: '60%' }, { h: '60%', fill: '40%' }, { h: '75%', fill: '80%' },
     { h: '45%', fill: '50%' }, { h: '85%', fill: '90%' }, { h: '65%', fill: '70%' },
     { h: '95%', fill: '85%' },
   ];
+  const barData = FALLBACK_barData;
 
-  const tickerItems = [
+  const FALLBACK_tickerItems = [
     { label: 'MRR', value: s ? `$${s.totalMrr.toLocaleString()}` : '$15.2K', change: '+2.1%', trend: 'up' as const },
     { label: 'Active Tenants', value: s ? String(s.active) : '124', change: '+5', trend: 'up' as const },
     { label: 'Churn Rate', value: s ? `${s.total > 0 ? ((s.churned / s.total) * 100).toFixed(1) : '0'}%` : '2.1%', change: '-0.5%', trend: 'down' as const },
@@ -68,13 +73,15 @@ export function OverviewView() {
     { label: 'Trial → Paid', value: '68%', change: '+3%', trend: 'up' as const },
     { label: 'Uptime', value: '99.9%', trend: 'up' as const },
   ];
+  const tickerItems = FALLBACK_tickerItems;
 
-  const planDistribution = [
+  const FALLBACK_planDistribution = [
     { name: 'Professional', value: 45, color: '#818cf8' },
     { name: 'Enterprise', value: 28, color: '#34d399' },
     { name: 'Starter', value: 18, color: '#fbbf24' },
     { name: 'Trial', value: 9, color: '#f472b6' },
   ];
+  const planDistribution = FALLBACK_planDistribution;
 
   return (
     <div className="flex flex-col gap-1.5 h-full min-h-0 overflow-hidden">
@@ -104,11 +111,11 @@ export function OverviewView() {
               </div>
             </div>
             <span className="flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[8px] font-bold text-red-600">
-              {alerts.length} active
-            </span>
+            {FALLBACK_alerts.length} active
+          </span>
           </div>
           <div className="flex flex-1 flex-col gap-1 px-2.5 pb-2 overflow-hidden min-h-0">
-            {alerts.map((alert, i) => {
+            {FALLBACK_alerts.map((alert: typeof FALLBACK_alerts[number], i: number) => {
               const Icon = alert.icon;
               return (
                 <div key={i} className={`group/alert relative flex items-center gap-2 rounded-lg border ${alert.color.border} ${alert.color.bg} px-2 py-1.5 transition-all duration-250 hover:translate-x-0.5 hover:shadow-sm cursor-pointer`}>
@@ -149,7 +156,7 @@ export function OverviewView() {
           </div>
           <div className="flex-1 px-1 pb-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={mrrData}>
+              <AreaChart data={FALLBACK_mrrData}>
                 <defs>
                   <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={0.3} /><stop offset="40%" stopColor="#10b981" stopOpacity={0.12} /><stop offset="100%" stopColor="#10b981" stopOpacity={0} /></linearGradient>
                   <linearGradient id="mrrStroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#10b981" /><stop offset="100%" stopColor="#059669" /></linearGradient>
@@ -186,7 +193,7 @@ export function OverviewView() {
           </div>
           <div className="flex-1 px-1 pb-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={trialData}>
+              <BarChart data={FALLBACK_trialData}>
                 <defs>
                   <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.95} /><stop offset="100%" stopColor="#7c3aed" stopOpacity={0.5} /></linearGradient>
                   <linearGradient id="barGradHover" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#a78bfa" stopOpacity={1} /><stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.7} /></linearGradient>
@@ -265,7 +272,7 @@ export function OverviewView() {
             </div>
             <div className="mb-1.5 flex-1 min-h-0 w-full overflow-hidden rounded-md bg-slate-900/50 p-1 border border-slate-800/50">
               <div className="flex h-full w-full items-end justify-between gap-0.5">
-                {barData.map((bar, i) => (
+                {barData.map((bar: typeof barData[number], i: number) => (
                   <div key={i} className="flex-1 rounded-sm bg-indigo-500/30" style={{ height: bar.h }}>
                     <div className="w-full rounded-sm bg-linear-to-t from-indigo-600 to-indigo-400 transition-all duration-300" style={{ height: bar.fill }} />
                   </div>

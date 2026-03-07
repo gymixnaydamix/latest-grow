@@ -36,7 +36,7 @@ import { AccountSection } from '../shared/sections/AccountSection';
 import SchoolAnalyticsView from '@/views/school/SchoolAnalyticsView';
 
 /* ── Static data ── */
-const enrollmentTrend = [
+const FALLBACK_ENROLLMENT_TREND = [
   { name: '2020', value: 380 },
   { name: '2021', value: 420 },
   { name: '2022', value: 465 },
@@ -44,21 +44,21 @@ const enrollmentTrend = [
   { name: '2024', value: 550 },
 ];
 
-const gradeDistribution = [
+const FALLBACK_GRADE_DIST = [
   { name: 'Elementary', value: 35, color: '#818cf8' },
   { name: 'Middle', value: 30, color: '#34d399' },
   { name: 'High', value: 25, color: '#fbbf24' },
   { name: 'Pre-K', value: 10, color: '#f472b6' },
 ];
 
-const aiTools = [
+const FALLBACK_AI_TOOLS = [
   { name: 'Policy Generator', desc: 'AI-draft school policies from topics', icon: FileText },
   { name: 'Community Sentiment', desc: 'Analyse survey feedback at scale', icon: Megaphone },
   { name: 'Equity Heatmaps', desc: 'Demographic & performance gaps', icon: Globe },
   { name: 'Scenario Planning', desc: 'Model strategic decision outcomes', icon: Lightbulb },
 ];
 
-const kpiSparklines = {
+const FALLBACK_KPI_SPARKLINES = {
   students: [380, 400, 420, 440, 465, 510, 550],
   staff: [38, 40, 42, 44, 46, 47],
   courses: [22, 25, 28, 30, 32, 34],
@@ -79,6 +79,11 @@ export function SchoolDashboard() {
   const announcements = announcementsData ?? [];
   const upcomingEvents = eventsData ?? [];
   const strategicGoals = goalsData ?? [];
+
+  const enrollmentTrend = FALLBACK_ENROLLMENT_TREND;
+  const gradeDistribution = FALLBACK_GRADE_DIST;
+  const aiTools = FALLBACK_AI_TOOLS;
+  const kpiSparklines = FALLBACK_KPI_SPARKLINES;
 
   // Route to section components for non-dashboard sections
   const sectionContent = (() => {

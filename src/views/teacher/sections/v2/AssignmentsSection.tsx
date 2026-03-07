@@ -17,7 +17,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCourses, useAssignments } from '@/hooks/api';
-import { useCreateAssignment, useGradeSubmission } from '@/hooks/api/use-teacher';
+import { useCreateAssignment, useGradeSubmission, useTeacherAssignments } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course, Assignment } from '@root/types';
@@ -26,7 +26,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  assignmentsDemo, teacherClassesDemo,
+  assignmentsDemo as FALLBACK_assignmentsDemo, teacherClassesDemo as FALLBACK_teacherClassesDemo,
   formatDateLabel, type AssignmentDemo,
 } from './teacher-demo-data';
 
@@ -80,12 +80,14 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
 
   const createAssignment = useCreateAssignment();
   const gradeSubmission = useGradeSubmission();
+  const { data: teacherAssignmentsApi } = useTeacherAssignments();
+  void teacherAssignmentsApi;
 
   const { data: coursesRes } = useCourses(schoolId);
   const courses: Course[] = coursesRes ?? [];
   const classes = courses.length > 0
     ? courses.filter(c => !teacherId || c.teacherId === teacherId)
-    : teacherClassesDemo;
+    : FALLBACK_teacherClassesDemo;
 
   /* ── Pick first real course for hook ── */
   const firstCourseId = classes.length > 0 && 'id' in classes[0] ? (classes[0] as { id: string }).id : null;
@@ -108,7 +110,7 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
         status: 'active' as const,
       }));
     }
-    return assignmentsDemo;
+    return FALLBACK_assignmentsDemo;
   }, [apiAssignments]);
 
   /* ── Filters ── */

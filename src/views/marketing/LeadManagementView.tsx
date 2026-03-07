@@ -59,7 +59,7 @@ export default function LeadManagementView() {
   const { data: apiLeads } = useCrmDeals();
   const createDeal = useCreateCrmDeal();
 
-  const MOCK_LEADS: Lead[] = (apiLeads as any[])?.map((d: any) => ({
+  const leads: Lead[] = (apiLeads as any[])?.map((d: any) => ({
     id: d.id, name: d.name ?? d.title ?? '', email: d.email ?? '', phone: d.phone ?? '',
     source: d.source ?? '', stage: (d.stage?.toLowerCase() ?? 'new') as LeadStage,
     interest: d.interest ?? d.description ?? '', score: d.score ?? d.value ?? 0,
@@ -67,12 +67,12 @@ export default function LeadManagementView() {
     value: d.value ?? 0,
   })) ?? FALLBACK_LEADS;
 
-  const filtered = MOCK_LEADS.filter(
+  const filtered = leads.filter(
     (l) => l.name.toLowerCase().includes(search.toLowerCase()) || l.interest.toLowerCase().includes(search.toLowerCase()),
   );
 
-  const pipelineTotal = MOCK_LEADS.filter((l) => l.stage !== 'lost').reduce((s, l) => s + l.value, 0);
-  const conversionRate = MOCK_LEADS.length > 0 ? Math.round((MOCK_LEADS.filter((l) => l.stage === 'enrolled').length / MOCK_LEADS.length) * 100) : 0;
+  const pipelineTotal = leads.filter((l) => l.stage !== 'lost').reduce((s, l) => s + l.value, 0);
+  const conversionRate = leads.length > 0 ? Math.round((leads.filter((l) => l.stage === 'enrolled').length / leads.length) * 100) : 0;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -96,10 +96,10 @@ export default function LeadManagementView() {
       {/* KPIs */}
       <div data-animate className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: 'Total Leads', value: MOCK_LEADS.length.toString(), cls: 'text-white/90' },
+          { label: 'Total Leads', value: leads.length.toString(), cls: 'text-white/90' },
           { label: 'Pipeline Value', value: fmt(pipelineTotal), cls: 'text-emerald-400' },
           { label: 'Conversion Rate', value: `${conversionRate}%`, cls: 'text-indigo-400' },
-          { label: 'New This Week', value: MOCK_LEADS.filter(l => l.stage === 'new').length.toString(), cls: 'text-cyan-400' },
+          { label: 'New This Week', value: leads.filter(l => l.stage === 'new').length.toString(), cls: 'text-cyan-400' },
         ].map((kpi) => (
           <Card key={kpi.label} className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="flex flex-col gap-1 p-4">

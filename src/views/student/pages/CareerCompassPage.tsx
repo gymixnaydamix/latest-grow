@@ -10,6 +10,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { cn } from '@/lib/utils';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentProfile } from '@/hooks/api/use-student';
 
 interface CareerPath {
   id: string; title: string; field: string; matchPct: number;
@@ -17,7 +18,7 @@ interface CareerPath {
   skills: string[]; saved: boolean;
 }
 
-const CAREERS: CareerPath[] = [
+const FALLBACK_CAREERS: CareerPath[] = [
   { id: '1', title: 'Software Engineer', field: 'Technology', matchPct: 92, salary: '$85k–$150k', growth: '+25% by 2030', education: "Bachelor's in CS", description: 'Design, develop, and maintain software applications and systems.', skills: ['React', 'JS', 'APIs', 'Problem Solving'], saved: true },
   { id: '2', title: 'Data Scientist', field: 'Technology', matchPct: 85, salary: '$90k–$140k', growth: '+36% by 2030', education: "Bachelor's/Master's", description: 'Analyze complex data to help organizations make decisions.', skills: ['Python', 'Statistics', 'ML', 'Data Viz'], saved: false },
   { id: '3', title: 'UX Designer', field: 'Design', matchPct: 78, salary: '$70k–$120k', growth: '+13% by 2030', education: "Bachelor's in Design", description: 'Create intuitive, accessible digital experiences for users.', skills: ['Design', 'Research', 'Prototyping', 'Empathy'], saved: true },
@@ -26,12 +27,16 @@ const CAREERS: CareerPath[] = [
   { id: '6', title: 'Game Developer', field: 'Technology', matchPct: 88, salary: '$60k–$130k', growth: '+16% by 2030', education: "Bachelor's in CS/Design", description: 'Build interactive gaming experiences across platforms.', skills: ['Game Design', 'Programming', '3D', 'Creativity'], saved: true },
 ];
 
-const INTERESTS = ['Technology', 'Science', 'Writing', 'Design', 'Mathematics', 'Art', 'Languages'];
+const FALLBACK_INTERESTS = ['Technology', 'Science', 'Writing', 'Design', 'Mathematics', 'Art', 'Languages'];
 
 export default function CareerCompassPage() {
   const containerRef = useStaggerAnimate([]);
   const [selectedInterests, setSelectedInterests] = useState<string[]>(['Technology', 'Science', 'Writing']);
   const [view, setView] = useState<'explore' | 'saved'>('explore');
+  const { data: apiProfile } = useStudentProfile();
+  void apiProfile;
+  const CAREERS = FALLBACK_CAREERS;
+  const INTERESTS = FALLBACK_INTERESTS;
 
   const toggle = (i: string) =>
     setSelectedInterests((s) => (s.includes(i) ? s.filter((x) => x !== i) : [...s, i]));

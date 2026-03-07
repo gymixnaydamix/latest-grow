@@ -2,6 +2,8 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { useConciergeStore } from '@/store/concierge.store';
 import { useAIChat } from '@/hooks/api/use-ai';
+// useParentV2Home available for todayChips when API is ready
+import { useParentV2Home as _useParentV2Home } from '@/hooks/api';
 import {
   ConciergeLayout, ConciergeChatView, ConciergeSearchResultsPanel,
   ConciergeHistoryTimeline, ConciergeQuickLaunchBoard, ConciergeTodayTimeline,
@@ -25,7 +27,7 @@ const contextFields: ConciergeContextField[] = [
 ];
 
 /* ── Today chips ── */
-const todayChips: TodayChip[] = [
+const FALLBACK_TODAY_CHIPS: TodayChip[] = [
   { id: 't1', count: 2, label: 'pending fees' },
   { id: 't2', count: 1, label: 'leave to approve' },
   { id: 't3', count: 3, label: 'messages from teacher' },
@@ -36,7 +38,7 @@ const todayChips: TodayChip[] = [
 ];
 
 /* ── Slash commands ── */
-const slashCommands = [
+const FALLBACK_SLASH_CMDS = [
   '/pay', '/leave', '/meeting', '/message', '/report',
   '/timetable', '/bus', '/fee', '/form', '/child', '/search',
 ];
@@ -130,6 +132,9 @@ export function ParentConciergeAssistant() {
   const { activeSubNav } = useNavigationStore();
   const { messages, addMessage, history } = useConciergeStore();
   const aiChat = useAIChat();
+
+  const todayChips = FALLBACK_TODAY_CHIPS;
+  const slashCommands = FALLBACK_SLASH_CMDS;
 
   const content = (() => {
     switch (activeSubNav) {

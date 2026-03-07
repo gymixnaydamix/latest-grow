@@ -1,12 +1,15 @@
 /* ─── MarketView — Premium bento grid with competitive matrix, NPS ─── */
 import { ArrowUpRight, TrendingUp } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { KpiCard, mrrData } from './shared';
+import { KpiCard, FALLBACK_mrrData } from './shared';
 import type { KpiDef } from './shared';
 import { useMarketIntelligence } from '@/hooks/api';
+import { useProviderReports } from '@/hooks/api/use-provider-console';
 
 export function MarketView() {
   const { data: apiData } = useMarketIntelligence();
+  const { data: reportsData } = useProviderReports();
+  void reportsData;
   /* ── Inline 3D SVG Icons ── */
   const Icon3D_TAM = () => (
     <svg viewBox="0 0 40 40" className="h-9 w-9 drop-shadow-lg" style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.35))' }}>
@@ -59,21 +62,23 @@ export function MarketView() {
     { label: 'NPS Score', value: apiKpis?.[2]?.value ?? '72', change: apiKpis?.[2]?.change ?? '+5 pts', up: true, sub: 'Excellent', icon3d: Icon3D_NPSHeart, gradient: 'from-red-500/10 to-red-500/5', borderGlow: 'hover:shadow-red-500/20', sparkline: apiKpis?.[2]?.sparkline ?? [58, 60, 62, 63, 65, 66, 67, 68, 69, 70, 71, 72], sparkColor: '#ef4444', prefix: 'm_' },
     { label: 'Growth Rate', value: apiKpis?.[3]?.value ?? '18% YoY', change: apiKpis?.[3]?.change ?? '+3.2%', up: true, sub: 'Revenue growth', icon3d: Icon3D_Rocket, gradient: 'from-emerald-500/10 to-emerald-500/5', borderGlow: 'hover:shadow-emerald-500/20', sparkline: apiKpis?.[3]?.sparkline ?? [10, 11, 12, 12.5, 13.2, 14, 14.8, 15.5, 16, 16.8, 17.4, 18], sparkColor: '#10b981', prefix: 'm_' },
   ];
-  const marketGrowthData = mrrData.map(d => ({ month: d.month, size: parseFloat((d.mrr / 15230 * 12.4).toFixed(1)) }));
-  const features = [
+  const marketGrowthData = FALLBACK_mrrData.map(d => ({ month: d.month, size: parseFloat((d.mrr / 15230 * 12.4).toFixed(1)) }));
+  const FALLBACK_features = [
     { feat: 'AI Concierge', us: true, compA: false, compB: false },
     { feat: 'Multi-tenant', us: true, compA: true, compB: false },
     { feat: 'White Labeling', us: true, compA: false, compB: true },
     { feat: 'Overlay Apps', us: true, compA: false, compB: false },
     { feat: 'Gamification', us: true, compA: false, compB: false },
   ];
-  const opportunities = [
+  const features = FALLBACK_features;
+  const FALLBACK_opportunities = [
     { name: 'AI Tutoring Platform', priority: 'High' as const, color: 'from-blue-500', desc: 'Personalized learning paths' },
     { name: 'International Expansion', priority: 'High' as const, color: 'from-emerald-500', desc: 'EU & APAC markets' },
     { name: 'Enterprise Tier', priority: 'Med' as const, color: 'from-violet-500', desc: 'Large district packages' },
     { name: 'Mobile-First Redesign', priority: 'Med' as const, color: 'from-amber-500', desc: 'Native app experience' },
     { name: 'API Marketplace', priority: 'Med' as const, color: 'from-pink-500', desc: 'Third-party integrations' },
   ];
+  const opportunities = FALLBACK_opportunities;
   const threatColors: Record<string, { color: string; bg: string }> = {
     High: { color: 'text-red-400', bg: 'bg-red-500/10' },
     Medium: { color: 'text-amber-400', bg: 'bg-amber-500/10' },
@@ -135,7 +140,7 @@ export function MarketView() {
             <div className="grid grid-cols-4 gap-1 text-[8px] font-semibold text-muted-foreground mb-0.5">
               <span>Feature</span><span className="text-center border-b-2 border-primary/40 pb-0.5 text-foreground">Us</span><span className="text-center">Comp A</span><span className="text-center">Comp B</span>
             </div>
-            {features.map((f) => (
+            {features.map((f: typeof features[number]) => (
               <div key={f.feat} className="group/row grid grid-cols-4 gap-1 items-center rounded-lg border border-border/20 bg-muted/5 px-1.5 py-1 transition-all duration-200 hover:bg-muted/20 hover:shadow-sm">
                 <div className="flex items-center gap-1">
                   <div className="flex h-4 w-4 items-center justify-center rounded-md bg-linear-to-br from-violet-500 to-purple-600"><svg className="size-2 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg></div>
@@ -158,7 +163,7 @@ export function MarketView() {
             </div>
           </div>
           <div className="flex flex-1 flex-col gap-0.5 px-2.5 pb-2 overflow-auto min-h-0">
-            {opportunities.map((opp) => (
+            {opportunities.map((opp: typeof opportunities[number]) => (
               <div key={opp.name} className="group/opp relative flex items-center gap-2 rounded-lg border border-border/30 px-2 py-1.5 transition-all duration-200 hover:translate-x-0.5 hover:bg-muted/20 hover:shadow-sm cursor-pointer">
                 <div className={`absolute left-0 top-1/2 -translate-y-1/2 h-5 w-0.75 rounded-r-full bg-linear-to-b ${opp.color} to-transparent`} />
                 <div className="ml-1 flex-1 min-w-0"><p className="text-[10px] font-semibold leading-tight">{opp.name}</p><p className="text-[8px] text-muted-foreground">{opp.desc}</p></div>

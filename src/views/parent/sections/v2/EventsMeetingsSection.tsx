@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useParentV2Events, useRsvpParentV2Event } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateLabel, parentEventsDemo } from './parent-v2-demo-data';
+import { childDisplayName, filterByChild, formatDateLabel, parentEventsDemo as FALLBACK_EVENTS } from './parent-v2-demo-data';
 import type { ParentEventDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -14,7 +14,7 @@ const TYPE_FILTERS = ['ALL', 'MEETING', 'EVENT', 'WORKSHOP', 'CONFERENCE'] as co
 export function EventsMeetingsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawRows } = useParentV2Events({ scope, childId });
   const rsvpMutation = useRsvpParentV2Event();
-  const allRows: ParentEventDemo[] = (rawRows as ParentEventDemo[] | undefined) ?? filterByChild(parentEventsDemo, childId, scope);
+  const allRows: ParentEventDemo[] = (rawRows as ParentEventDemo[] | undefined) ?? filterByChild(FALLBACK_EVENTS, childId, scope);
 
   const [typeFilter, setTypeFilter] = useState<(typeof TYPE_FILTERS)[number]>('ALL');
 

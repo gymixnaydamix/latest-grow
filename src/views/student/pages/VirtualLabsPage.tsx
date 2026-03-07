@@ -14,8 +14,9 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentSessions } from '@/hooks/api/use-student';
 
-const LABS = [
+const FALLBACK_LABS = [
   { id: '1', title: 'Acid-Base Titration', subject: 'Chemistry', icon: FlaskConical, difficulty: 'Beginner', progress: 100, rating: 4.8, duration: '20 min', locked: false },
   { id: '2', title: 'Pendulum Motion', subject: 'Physics', icon: Gauge, difficulty: 'Intermediate', progress: 60, rating: 4.5, duration: '25 min', locked: false },
   { id: '3', title: 'Cell Division Stages', subject: 'Biology', icon: Microscope, difficulty: 'Beginner', progress: 85, rating: 4.9, duration: '15 min', locked: false },
@@ -24,13 +25,13 @@ const LABS = [
   { id: '6', title: 'Atomic Structure', subject: 'Chemistry', icon: Atom, difficulty: 'Advanced', progress: 0, rating: 4.4, duration: '40 min', locked: true },
 ];
 
-const RECENT_RESULTS = [
+const FALLBACK_RECENT_RESULTS = [
   { lab: 'Acid-Base Titration', score: 95, accuracy: 98, date: '1 d ago', badge: 'Perfect Run' },
   { lab: 'Cell Division Stages', score: 87, accuracy: 92, date: '3 d ago', badge: null },
   { lab: 'Pendulum Motion', score: 78, accuracy: 85, date: '5 d ago', badge: null },
 ];
 
-const ACTIVE_STEPS = [
+const FALLBACK_ACTIVE_STEPS = [
   { label: 'Prepare Equipment', done: true },
   { label: 'Measure solutions', done: true },
   { label: 'Add indicator', done: false },
@@ -48,6 +49,11 @@ export default function VirtualLabsPage() {
   const containerRef = useStaggerAnimate([]);
   const [filter, setFilter] = useState<string>('all');
   const [activeLab, setActiveLab] = useState<string | null>(null);
+  const { data: apiSessions } = useStudentSessions();
+  void apiSessions;
+  const LABS = FALLBACK_LABS;
+  const RECENT_RESULTS = FALLBACK_RECENT_RESULTS;
+  const ACTIVE_STEPS = FALLBACK_ACTIVE_STEPS;
 
   const filtered = filter === 'all' ? LABS : LABS.filter((l) => l.subject === filter);
 

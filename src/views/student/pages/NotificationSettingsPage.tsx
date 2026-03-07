@@ -55,7 +55,7 @@ const CATEGORIES: NotifCategory[] = [
   { id: 'marketing', label: 'Marketing & Promotions', desc: 'New features, special offers, newsletters', icon: Megaphone, color: 'bg-orange-500/10 text-orange-400', enabled: false, priority: 'low' },
 ];
 
-const RECENT_NOTIFS = [
+const FALLBACK_RECENT_NOTIFS = [
   { title: 'Math Assignment Due', desc: 'Chapter 5 homework due in 2 days', time: '1h ago', type: 'assignment', read: false },
   { title: 'New Grade Posted', desc: 'English Literature — Essay: A-', time: '3h ago', type: 'grade', read: false },
   { title: 'Schedule Change', desc: 'Physics lab moved to Room 204', time: '5h ago', type: 'schedule', read: true },
@@ -71,10 +71,10 @@ export default function NotificationSettingsPage() {
   const [categories, setCategories] = useState(CATEGORIES);
 
   /* ── API data ── */
-  const { data: _apiNotifs } = useStudentNotifications();
+  const { data: apiNotifs } = useStudentNotifications();
   const markAllReadMut = useMarkAllNotificationsRead();
-  const recentNotifs = (_apiNotifs as any[]) ?? [];
-  const notifsData = recentNotifs.length > 0 ? recentNotifs : RECENT_NOTIFS;
+  const recentNotifs = (apiNotifs as any[])?.length > 0 ? (apiNotifs as any[]) : FALLBACK_RECENT_NOTIFS;
+  const notifsData = recentNotifs;
 
   const enabledChannels = channels.filter((c) => c.status === 'enabled').length;
   const enabledCategories = categories.filter((c) => c.enabled).length;

@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCourses, useAssignments, useCourseGrades } from '@/hooks/api';
-import { useSaveGrades, useExportGrades, useAddComment } from '@/hooks/api/use-teacher';
+import { useSaveGrades, useExportGrades, useAddComment, useTeacherCommentBank } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course } from '@root/types';
@@ -23,8 +23,8 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  gradebookStudentsDemo, gradebookAssignmentsDemo, teacherClassesDemo,
-  commentBankDemo, classPerformanceDemo,
+  gradebookStudentsDemo as FALLBACK_gradebookStudentsDemo, gradebookAssignmentsDemo as FALLBACK_gradebookAssignmentsDemo, teacherClassesDemo as FALLBACK_teacherClassesDemo,
+  commentBankDemo as FALLBACK_commentBankDemo, classPerformanceDemo as FALLBACK_classPerformanceDemo,
   type GradebookStudentDemo,
 } from './teacher-demo-data';
 
@@ -72,7 +72,7 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const courses: Course[] = coursesRes ?? [];
   const classes = courses.length > 0
     ? courses.filter(c => !teacherId || c.teacherId === teacherId)
-    : teacherClassesDemo;
+    : FALLBACK_teacherClassesDemo;
 
   /* ── Class selector ── */
   const [selectedClass, setSelectedClass] = useState(classes[0]?.id ?? 'c1');
@@ -84,10 +84,12 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const saveGradesMut = useSaveGrades();
   const exportGradesMut = useExportGrades();
   const addCommentMut = useAddComment();
+  const { data: apiCommentBank } = useTeacherCommentBank();
+  const commentBank = (apiCommentBank as unknown as typeof FALLBACK_commentBankDemo) ?? FALLBACK_commentBankDemo;
 
   /* ── Gradebook data ── */
-  const students = gradebookStudentsDemo;
-  const gbAssignments = gradebookAssignmentsDemo;
+  const students = FALLBACK_gradebookStudentsDemo;
+  const gbAssignments = FALLBACK_gradebookAssignmentsDemo;
 
   /* ── Editable cells state ── */
   const [editedScores, setEditedScores] = useState<Record<string, Record<string, string>>>({});
@@ -109,7 +111,7 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const [commentSearch, setCommentSearch] = useState('');
   const [commentCategory, setCommentCategory] = useState<string>('all');
   const [newCommentText, setNewCommentText] = useState('');
-  const filteredComments = commentBankDemo.filter(c => {
+  const filteredComments = commentBank.filter(c => {
     const matchCat = commentCategory === 'all' || c.category === commentCategory;
     const matchSearch = !commentSearch || c.text.toLowerCase().includes(commentSearch.toLowerCase());
     return matchCat && matchSearch;
@@ -277,7 +279,7 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const renderReports = () => (
     <div className="space-y-4" data-animate>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {classPerformanceDemo.map(cp => {
+        {FALLBACK_classPerformanceDemo.map(cp => {
           const dist = gradeDistribution(cp.avgGrade);
           return (
             <GlassCard key={cp.classId}>
@@ -369,10 +371,10 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <MetricCard label="Total Comments" value={commentBankDemo.length} accent="#818cf8" />
-        <MetricCard label="Positive" value={commentBankDemo.filter(c => c.category === 'positive').length} accent="#34d399" />
-        <MetricCard label="Improvement" value={commentBankDemo.filter(c => c.category === 'improvement').length} accent="#fbbf24" />
-        <MetricCard label="Most Used" value={Math.max(...commentBankDemo.map(c => c.uses))} suffix=" times" accent="#f472b6" />
+        <MetricCard label="Total Comments" value={commentBank.length} accent="#818cf8" />
+        <MetricCard label="Positive" value={commentBank.filter(c => c.category === 'positive').length} accent="#34d399" />
+        <MetricCard label="Improvement" value={commentBank.filter(c => c.category === 'improvement').length} accent="#fbbf24" />
+        <MetricCard label="Most Used" value={Math.max(...commentBank.map(c => c.uses))} suffix=" times" accent="#f472b6" />
       </div>
 
       {filteredComments.length === 0 ? (

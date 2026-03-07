@@ -2,6 +2,7 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { useConciergeStore } from '@/store/concierge.store';
 import { useAIChat } from '@/hooks/api/use-ai';
+import { useStudentMyDay as _useStudentMyDay } from '@/hooks/api/use-student';
 import {
   ConciergeLayout, ConciergeChatView, ConciergeSearchResultsPanel,
   ConciergeHistoryTimeline, ConciergeQuickLaunchBoard, ConciergeTodayTimeline,
@@ -25,7 +26,7 @@ const contextFields: ConciergeContextField[] = [
 ];
 
 /* ── Today chips ── */
-const todayChips: TodayChip[] = [
+const FALLBACK_TODAY_CHIPS: TodayChip[] = [
   { id: 't1', count: 6, label: 'classes today' },
   { id: 't2', count: 3, label: 'homework due' },
   { id: 't3', count: 2, label: 'exams this week' },
@@ -36,7 +37,7 @@ const todayChips: TodayChip[] = [
 ];
 
 /* ── Slash commands ── */
-const slashCommands = [
+const FALLBACK_SLASH_CMDS = [
   '/homework', '/grade', '/timetable', '/submit', '/leave',
   '/message', '/library', '/exam', '/study', '/club', '/search',
 ];
@@ -132,6 +133,9 @@ export function StudentConciergeAssistant() {
   const { activeSubNav } = useNavigationStore();
   const { messages, addMessage, history } = useConciergeStore();
   const aiChat = useAIChat();
+
+  const todayChips = FALLBACK_TODAY_CHIPS;
+  const slashCommands = FALLBACK_SLASH_CMDS;
 
   const content = (() => {
     switch (activeSubNav) {

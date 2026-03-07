@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { useParentV2Profile, useUpdateParentV2Profile } from '@/hooks/api/use-parent-v2';
-import { parentChildrenDemo } from './parent-v2-demo-data';
+import { parentChildrenDemo as FALLBACK_CHILDREN } from './parent-v2-demo-data';
 import type { ParentChildDemo } from './parent-v2-demo-data';
 import { ParentSectionShell } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -25,7 +25,7 @@ export function ProfileSettingsSection(_props: ParentSectionProps) {
   const [notifyGrades, setNotifyGrades] = useState(false);
   const [notifyTransport, setNotifyTransport] = useState(true);
 
-  const children: ParentChildDemo[] = useMemo(() => parentChildrenDemo, []);
+  const children: ParentChildDemo[] = useMemo(() => FALLBACK_CHILDREN, []);
 
   return (
     <ParentSectionShell

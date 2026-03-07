@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
+import { usePlatformConfigs } from '@/hooks/api/use-settings';
 
 /* ── SubNav → Route mapping (student-specific split pages) ── */
 const STUDENT_SUB_NAV_ROUTES: Record<string, string> = {
@@ -62,7 +63,7 @@ export function ToolsSection() {
 
 /* ── Overview ──────────────────────────────────────────────────── */
 
-const overviewStats = [
+const FALLBACK_OVERVIEW_STATS = [
   { label: 'Focus Sessions', value: '24', desc: 'This week', icon: Timer, color: 'bg-indigo-500/10 text-indigo-400' },
   { label: 'Mind Maps', value: '8', desc: 'Created', icon: GitBranch, color: 'bg-violet-500/10 text-violet-400' },
   { label: 'Lab Experiments', value: '12', desc: 'Completed', icon: FlaskConical, color: 'bg-emerald-500/10 text-emerald-400' },
@@ -70,6 +71,9 @@ const overviewStats = [
 ];
 
 function ToolsOverview() {
+  const { data: platformConfigsData } = usePlatformConfigs();
+  void platformConfigsData;
+
   return (
     <>
       <div data-animate>
@@ -78,7 +82,7 @@ function ToolsOverview() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        {overviewStats.map((m) => (
+        {FALLBACK_OVERVIEW_STATS.map((m) => (
           <div key={m.label} className="rounded-2xl border border-white/6 bg-white/3 backdrop-blur-xl p-4 flex items-center gap-3">
             <div className={`flex size-9 items-center justify-center rounded-lg ${m.color}`}>
               <m.icon className="size-4" />
@@ -359,13 +363,13 @@ function ARLabView() {
 }
 
 function FinanceSimView() {
-  const simMetrics = [
+  const FALLBACK_SIM_METRICS = [
     { label: 'Portfolio Value', value: '$10,450', change: '+4.5%', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { label: 'Budget Remaining', value: '$1,320', change: '44% left', color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { label: 'Credit Score', value: '742', change: '+12 pts', color: 'text-amber-400', bg: 'bg-amber-500/10' },
   ];
 
-  const modules = [
+  const FALLBACK_MODULES = [
     { title: 'Stock Market Basics', progress: 85, from: 'from-indigo-500', to: 'to-violet-600' },
     { title: 'Creating a Budget', progress: 100, from: 'from-emerald-500', to: 'to-teal-600' },
     { title: 'Understanding Loans', progress: 60, from: 'from-amber-500', to: 'to-orange-600' },
@@ -380,7 +384,7 @@ function FinanceSimView() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3" data-animate>
-        {simMetrics.map((m) => (
+        {FALLBACK_SIM_METRICS.map((m) => (
           <div key={m.label} className="rounded-2xl border border-white/6 bg-white/3 backdrop-blur-xl p-5 text-center">
             <p className="text-xs text-white/40">{m.label}</p>
             <p className={`text-2xl font-bold mt-1 ${m.color}`}>{m.value}</p>
@@ -392,7 +396,7 @@ function FinanceSimView() {
       <div data-animate className="rounded-2xl border border-white/6 bg-white/3 backdrop-blur-xl p-5">
         <h3 className="text-sm font-semibold text-white/85 mb-4">Simulation Modules</h3>
         <div className="grid gap-3 sm:grid-cols-2">
-          {modules.map((mod) => (
+          {FALLBACK_MODULES.map((mod) => (
             <div key={mod.title} className="space-y-1.5 rounded-xl border border-white/6 bg-white/2 p-3">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-white/70">{mod.title}</span>

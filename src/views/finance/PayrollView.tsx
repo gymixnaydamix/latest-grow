@@ -47,7 +47,7 @@ export default function PayrollView() {
 
   const { data: apiPayroll } = usePayroll();
 
-  const MOCK_PAYROLL: PayrollEntry[] = (apiPayroll as any[])?.map((p: any) => ({
+  const payroll: PayrollEntry[] = (apiPayroll as any[])?.map((p: any) => ({
     id: p.id, name: p.staffName ?? p.staffId ?? '', role: p.role ?? '',
     department: p.department ?? '', baseSalary: Number(p.grossAmount ?? 0),
     bonus: Number(p.bonus ?? 0),
@@ -57,14 +57,14 @@ export default function PayrollView() {
     payDate: p.period ?? p.createdAt ?? '',
   })) ?? FALLBACK_PAYROLL;
 
-  const filtered = MOCK_PAYROLL.filter((e) => {
+  const filtered = payroll.filter((e) => {
     const s = statusFilter === 'all' || e.status === statusFilter;
     const q = e.name.toLowerCase().includes(search.toLowerCase()) || e.department.toLowerCase().includes(search.toLowerCase());
     return s && q;
   });
 
-  const totalNet = MOCK_PAYROLL.reduce((s, e) => s + e.netPay, 0);
-  const totalBonus = MOCK_PAYROLL.reduce((s, e) => s + e.bonus, 0);
+  const totalNet = payroll.reduce((s, e) => s + e.netPay, 0);
+  const totalBonus = payroll.reduce((s, e) => s + e.bonus, 0);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -77,7 +77,7 @@ export default function PayrollView() {
       {/* KPIs */}
       <div data-animate className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <StatCard label="Total Payroll" value={totalNet} prefix="$" icon={<DollarSign className="size-5" />} trend="up" trendLabel="+2.1%" />
-        <StatCard label="Employees" value={MOCK_PAYROLL.length} icon={<Users className="size-5" />} trend="up" trendLabel="+1%" />
+        <StatCard label="Employees" value={payroll.length} icon={<Users className="size-5" />} trend="up" trendLabel="+1%" />
         <StatCard label="Total Bonuses" value={totalBonus} prefix="$" icon={<DollarSign className="size-5" />} trend="up" trendLabel="+15%" />
         <StatCard label="Pay Date" value={15} suffix=" Mar" icon={<Calendar className="size-5" />} />
       </div>

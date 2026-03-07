@@ -45,7 +45,7 @@ const TYPE_LABELS: Record<FinanceRequest['type'], string> = {
   other: 'Other',
 };
 
-const MOCK: FinanceRequest[] = [
+const FALLBACK_FINANCE_REQUESTS: FinanceRequest[] = [
   { id: '1', title: 'Tuition Fee Breakdown', type: 'fee_inquiry', status: 'approved', submittedAt: '2026-02-12', updatedAt: '2026-02-14', description: 'Requesting detailed breakdown of spring semester tuition and fees.', response: 'Breakdown has been emailed to your school account.' },
   { id: '2', title: 'Lab Fee Refund', type: 'refund', amount: 150, status: 'in-review', submittedAt: '2026-02-20', updatedAt: '2026-02-22', description: 'Dropped Chemistry 201 before deadline. Requesting lab fee refund of $150.' },
   { id: '3', title: 'Monthly Payment Plan', type: 'payment_plan', amount: 4800, status: 'pending', submittedAt: '2026-03-01', updatedAt: '2026-03-01', description: 'Would like to set up a 4-month payment plan for remaining balance.' },
@@ -62,15 +62,15 @@ export default function DeptFinancePage() {
   const [search, setSearch] = useState('');
 
   /* ── API data ── */
-  const { data: _apiDeptReqs } = useStudentDeptRequests();
-  const financeReqs = ((_apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'finance');
+  const { data: apiDeptReqs } = useStudentDeptRequests();
+  const financeReqs = ((apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'finance');
 
-  const filtered = (financeReqs.length > 0 ? financeReqs : MOCK)
+  const filtered = (financeReqs.length > 0 ? financeReqs : FALLBACK_FINANCE_REQUESTS)
     .filter((r) => filter === 'all' || r.status === filter)
     .filter((r) => typeFilter === 'all' || r.type === typeFilter)
     .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()));
 
-  const items = financeReqs.length > 0 ? financeReqs : MOCK;
+  const items = financeReqs.length > 0 ? financeReqs : FALLBACK_FINANCE_REQUESTS;
   const pending = items.filter((r: any) => r.status === 'pending').length;
   const approved = items.filter((r: any) => r.status === 'approved').length;
   const totalAmount = items.filter((r: any) => r.amount).reduce((s: number, r: any) => s + (r.amount ?? 0), 0);

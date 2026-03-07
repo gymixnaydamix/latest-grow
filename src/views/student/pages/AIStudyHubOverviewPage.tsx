@@ -15,14 +15,16 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentSessions } from '@/hooks/api/use-student';
+import { useAIChat } from '@/hooks/api/use-ai';
 
-const AI_TOOLS = [
+const FALLBACK_AI_TOOLS = [
   { id: 'ai_tutor', title: 'AI Tutor', desc: 'Ask questions and get instant, personalized explanations', icon: Brain, color: 'bg-violet-500/20 text-violet-400', sessions: 34, streak: 5 },
   { id: 'planner', title: 'Study Planner', desc: 'AI-optimized study schedules tailored to your workload', icon: Clock, color: 'bg-indigo-500/20 text-indigo-400', sessions: 12, streak: 3 },
   { id: 'visualizer', title: 'Concept Visualizer', desc: 'Turn complex topics into mind maps, flowcharts, and diagrams', icon: Lightbulb, color: 'bg-amber-500/20 text-amber-400', sessions: 8, streak: 2 },
 ];
 
-const RECENT_SESSIONS = [
+const FALLBACK_RECENT_SESSIONS = [
   { tool: 'AI Tutor', topic: 'Quadratic formula derivation', time: '25 min', date: '2 h ago', rating: 5 },
   { tool: 'Study Planner', topic: 'Weekly schedule optimization', time: '10 min', date: '1 d ago', rating: 4 },
   { tool: 'AI Tutor', topic: 'Photosynthesis light reactions', time: '18 min', date: '1 d ago', rating: 5 },
@@ -30,14 +32,14 @@ const RECENT_SESSIONS = [
   { tool: 'AI Tutor', topic: 'Shakespeare sonnet analysis', time: '20 min', date: '3 d ago', rating: 5 },
 ];
 
-const SUGGESTED_TOPICS = [
+const FALLBACK_SUGGESTED_TOPICS = [
   { topic: 'Acid-Base Equilibrium', subject: 'Chemistry', reason: 'Upcoming test in 3 days' },
   { topic: 'Integration by Parts', subject: 'Calculus', reason: 'Low quiz score last week' },
   { topic: 'Hamlet Act 3 Analysis', subject: 'English', reason: 'Essay due Friday' },
   { topic: 'Newton\'s Third Law', subject: 'Physics', reason: 'Practice problems pending' },
 ];
 
-const WEEKLY_USAGE = [
+const FALLBACK_WEEKLY_USAGE = [
   { day: 'Mon', minutes: 45 },
   { day: 'Tue', minutes: 30 },
   { day: 'Wed', minutes: 55 },
@@ -47,7 +49,7 @@ const WEEKLY_USAGE = [
   { day: 'Sun', minutes: 35 },
 ];
 
-const MASTERY = [
+const FALLBACK_MASTERY = [
   { subject: 'Computer Science', level: 92, improvement: '+8%' },
   { subject: 'English', level: 85, improvement: '+3%' },
   { subject: 'Mathematics', level: 78, improvement: '+12%' },
@@ -58,6 +60,14 @@ const MASTERY = [
 export default function AIStudyHubOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const [quickQuestion, setQuickQuestion] = useState('');
+  const { data: apiSessions } = useStudentSessions();
+  const aiChat = useAIChat();
+  void apiSessions; void aiChat;
+  const AI_TOOLS = FALLBACK_AI_TOOLS;
+  const RECENT_SESSIONS = FALLBACK_RECENT_SESSIONS;
+  const SUGGESTED_TOPICS = FALLBACK_SUGGESTED_TOPICS;
+  const WEEKLY_USAGE = FALLBACK_WEEKLY_USAGE;
+  const MASTERY = FALLBACK_MASTERY;
 
   const totalSessions = AI_TOOLS.reduce((s, t) => s + t.sessions, 0);
   const maxMinutes = Math.max(...WEEKLY_USAGE.map((w) => w.minutes));

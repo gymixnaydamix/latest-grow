@@ -25,7 +25,7 @@ interface MapNode {
   children: string[];
 }
 
-const SAMPLE_MAPS = [
+const FALLBACK_SAMPLE_MAPS = [
   { id: '1', title: 'Cell Biology Concepts', nodes: 14, lastEdited: '2 h ago', starred: true, color: 'bg-indigo-500/20 text-indigo-400' },
   { id: '2', title: 'World War II Timeline', nodes: 22, lastEdited: '1 d ago', starred: false, color: 'bg-amber-500/20 text-amber-400' },
   { id: '3', title: 'Essay Brainstorm — AI Ethics', nodes: 9, lastEdited: '3 d ago', starred: true, color: 'bg-emerald-500/20 text-emerald-400' },
@@ -43,21 +43,22 @@ const ACTIVE_NODES: MapNode[] = [
   { id: 'n6', label: 'Mitosis', color: 'bg-orange-500', x: 80, y: 10, children: [] },
 ];
 
-const COLORS = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-violet-500', 'bg-cyan-500', 'bg-orange-500', 'bg-teal-500'];
+const FALLBACK_COLORS = ['bg-indigo-500', 'bg-emerald-500', 'bg-amber-500', 'bg-rose-500', 'bg-violet-500', 'bg-cyan-500', 'bg-orange-500', 'bg-teal-500'];
 
 export default function MindMapperPage() {
   const containerRef = useStaggerAnimate([]);
   const [search, setSearch] = useState('');
-  const [selectedMap, setSelectedMap] = useState(SAMPLE_MAPS[0].id);
+  const [selectedMap, setSelectedMap] = useState(FALLBACK_SAMPLE_MAPS[0].id);
   const [zoom, setZoom] = useState(100);
   const [showNewMap, setShowNewMap] = useState(false);
 
   /* ── API data ── */
-  const { data: _apiMindMaps } = useStudentMindMaps();
+  const { data: apiMindMaps } = useStudentMindMaps();
   const createMindMapMut = useCreateMindMap();
-  const sampleMaps = (_apiMindMaps as any[]) ?? [];
+  const sampleMaps = (apiMindMaps as any[])?.length > 0 ? (apiMindMaps as any[]) : FALLBACK_SAMPLE_MAPS;
+  const colors = (apiMindMaps as any)?.colors ?? FALLBACK_COLORS;
 
-  const filteredMaps = (sampleMaps.length > 0 ? sampleMaps : SAMPLE_MAPS).filter((m: any) => m.title?.toLowerCase().includes(search.toLowerCase()));
+  const filteredMaps = sampleMaps.filter((m: any) => m.title?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -65,9 +66,9 @@ export default function MindMapperPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Total Maps" value={(sampleMaps.length > 0 ? sampleMaps : SAMPLE_MAPS).length} icon={<Network className="h-5 w-5" />} />
-        <StatCard label="Total Nodes" value={(sampleMaps.length > 0 ? sampleMaps : SAMPLE_MAPS).reduce((s: number, m: any) => s + (m.nodes ?? 0), 0)} icon={<GitBranch className="h-5 w-5" />} />
-        <StatCard label="Starred" value={(sampleMaps.length > 0 ? sampleMaps : SAMPLE_MAPS).filter((m: any) => m.starred).length} icon={<Star className="h-5 w-5" />} />
+        <StatCard label="Total Maps" value={sampleMaps.length} icon={<Network className="h-5 w-5" />} />
+        <StatCard label="Total Nodes" value={sampleMaps.reduce((s: number, m: any) => s + (m.nodes ?? 0), 0)} icon={<GitBranch className="h-5 w-5" />} />
+        <StatCard label="Starred" value={sampleMaps.filter((m: any) => m.starred).length} icon={<Star className="h-5 w-5" />} />
         <StatCard label="AI Suggestions" value={12} icon={<Sparkles className="h-5 w-5" />} trend="up" trendLabel="+3 today" />
       </div>
 
@@ -93,7 +94,7 @@ export default function MindMapperPage() {
               <div className="rounded-lg border border-dashed border-indigo-500/30 bg-indigo-500/5 p-2.5 mb-1">
                 <Input placeholder="New map title…" className="mb-2 h-7 text-xs bg-white/3 border-white/8 text-white/70 placeholder:text-white/25" />
                 <div className="flex gap-1 flex-wrap mb-2">
-                  {COLORS.map((c) => <div key={c} className={cn('size-4 rounded-full cursor-pointer ring-1 ring-white/10', c)} />)}
+                  {colors.map((c: any) => <div key={c} className={cn('size-4 rounded-full cursor-pointer ring-1 ring-white/10', c)} />)}
                 </div>
                 <Button size="sm" className="w-full text-xs bg-indigo-600 hover:bg-indigo-500 text-white" onClick={() => createMindMapMut.mutate({} as any, { onSuccess: () => notifySuccess('Mind Map', 'New map created') })}>Create Map</Button>
               </div>

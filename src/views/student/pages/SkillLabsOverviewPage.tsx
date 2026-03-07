@@ -12,8 +12,9 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentSessions } from '@/hooks/api/use-student';
 
-const LABS = [
+const FALLBACK_LABS = [
   {
     title: 'Debate Simulator',
     desc: 'AI-powered debate practice with real-time feedback and scoring',
@@ -56,7 +57,7 @@ const LABS = [
   },
 ];
 
-const SKILL_POINTS = [
+const FALLBACK_SKILL_POINTS = [
   { skill: 'Critical Thinking', points: 340, max: 500, color: 'from-indigo-500 to-violet-600' },
   { skill: 'Scientific Method', points: 280, max: 500, color: 'from-emerald-500 to-teal-600' },
   { skill: 'Public Speaking', points: 210, max: 500, color: 'from-amber-500 to-orange-600' },
@@ -64,7 +65,7 @@ const SKILL_POINTS = [
   { skill: 'Spatial Reasoning', points: 150, max: 500, color: 'from-rose-500 to-pink-600' },
 ];
 
-const RECENT_RESULTS = [
+const FALLBACK_RECENT_RESULTS = [
   { lab: 'Debate Simulator', topic: 'Universal Basic Income', score: 91, date: 'May 14' },
   { lab: 'Virtual Labs', topic: 'Titration Experiment', score: 95, date: 'May 12' },
   { lab: 'Finance Sim', topic: 'Stock Market Basics', score: 85, date: 'May 11' },
@@ -73,6 +74,11 @@ const RECENT_RESULTS = [
 
 export default function SkillLabsOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
+  const { data: apiSessions } = useStudentSessions();
+  void apiSessions;
+  const LABS = FALLBACK_LABS;
+  const SKILL_POINTS = FALLBACK_SKILL_POINTS;
+  const RECENT_RESULTS = FALLBACK_RECENT_RESULTS;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">

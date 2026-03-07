@@ -7,8 +7,9 @@ import { StatCard } from '@/components/features/StatCard';
 import { NeonBarChart } from '@/components/features/charts/BarChart';
 import { GlowLineChart } from '@/components/features/charts/LineChart';
 import { GlowPieChart } from '@/components/features/charts/PieChart';
+import { useMarketIntelligence } from '@/hooks/api';
 
-const MARKET_POSITION = [
+const FALLBACK_MARKET_POSITION = [
   { name: "Your School", value: 35, color: '#818cf8' },
   { name: "Competitor A", value: 25, color: '#34d399' },
   { name: "Competitor B", value: 20, color: '#fbbf24' },
@@ -16,7 +17,7 @@ const MARKET_POSITION = [
   { name: "Others", value: 8, color: '#60a5fa' },
 ];
 
-const ENROLLMENT_COMPARISON = [
+const FALLBACK_ENROLLMENT_COMP = [
   { name: '2020', yours: 420, district: 380 },
   { name: '2021', yours: 445, district: 390 },
   { name: '2022', yours: 470, district: 405 },
@@ -25,7 +26,7 @@ const ENROLLMENT_COMPARISON = [
   { name: '2025', yours: 578, district: 430 },
 ];
 
-const DEMAND_TREND = [
+const FALLBACK_DEMAND_TREND = [
   { name: 'Sep', inquiries: 85 },
   { name: 'Oct', inquiries: 92 },
   { name: 'Nov', inquiries: 78 },
@@ -35,7 +36,7 @@ const DEMAND_TREND = [
   { name: 'Mar', inquiries: 168 },
 ];
 
-const COMPETITOR_BENCHMARKS = [
+const FALLBACK_BENCHMARKS = [
   { name: 'Student : Teacher Ratio', yours: '18:1', district: '22:1', status: 'better' },
   { name: 'Avg Class Size', yours: '24', district: '28', status: 'better' },
   { name: 'Graduation Rate', yours: '96%', district: '91%', status: 'better' },
@@ -46,6 +47,13 @@ const COMPETITOR_BENCHMARKS = [
 
 export default function AdminMarketView() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
+  const { data: apiMarket } = useMarketIntelligence();
+
+  const MARKET_POSITION = FALLBACK_MARKET_POSITION;
+  const ENROLLMENT_COMPARISON = FALLBACK_ENROLLMENT_COMP;
+  const DEMAND_TREND = FALLBACK_DEMAND_TREND;
+  const COMPETITOR_BENCHMARKS = FALLBACK_BENCHMARKS;
+  void apiMarket;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">

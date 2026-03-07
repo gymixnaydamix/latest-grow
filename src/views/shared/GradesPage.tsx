@@ -43,21 +43,21 @@ export default function GradesPage() {
   const { user } = useAuthStore();
   const { data: apiGrades } = useStudentGrades(user?.id ?? null);
 
-  const MOCK_GRADES: GradeEntry[] = (apiGrades as any[])?.map((g: any) => ({
+  const grades: GradeEntry[] = (apiGrades as any[])?.map((g: any) => ({
     id: g.id, subject: g.courseName ?? g.subject ?? '', assignment: g.assignmentTitle ?? g.assignment ?? '',
     score: Number(g.score ?? 0), maxScore: Number(g.maxScore ?? 100),
     date: g.gradedAt ?? g.date ?? '', type: (g.type ?? 'homework') as GradeEntry['type'],
     weight: Number(g.weight ?? 10),
   })) ?? FALLBACK_GRADES;
 
-  const subjects = [...new Set(MOCK_GRADES.map((g) => g.subject))];
-  const filtered = filterSubject === 'all' ? MOCK_GRADES : MOCK_GRADES.filter((g) => g.subject === filterSubject);
+  const subjects = [...new Set(grades.map((g) => g.subject))];
+  const filtered = filterSubject === 'all' ? grades : grades.filter((g) => g.subject === filterSubject);
 
-  const avg = Math.round(MOCK_GRADES.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / (MOCK_GRADES.length || 1));
+  const avg = Math.round(grades.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / (grades.length || 1));
 
   // GPA by subject
   const subjectAvgs = subjects.map((subj) => {
-    const items = MOCK_GRADES.filter((g) => g.subject === subj);
+    const items = grades.filter((g) => g.subject === subj);
     const a = Math.round(items.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / items.length);
     return { subject: subj, average: a };
   });
@@ -75,14 +75,14 @@ export default function GradesPage() {
         <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
           <CardContent className="flex flex-col items-center gap-1 p-4">
             <span className="text-[10px] text-white/40 uppercase">Assignments</span>
-            <span className="text-2xl font-bold text-white/90 tabular-nums">{MOCK_GRADES.length}</span>
+            <span className="text-2xl font-bold text-white/90 tabular-nums">{grades.length}</span>
           </CardContent>
         </Card>
         <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
           <CardContent className="flex flex-col items-center gap-1 p-4">
             <span className="text-[10px] text-white/40 uppercase">Highest</span>
             <span className="text-2xl font-bold text-emerald-400 tabular-nums">
-              {Math.max(...MOCK_GRADES.map((g) => Math.round((g.score / g.maxScore) * 100)))}%
+              {Math.max(...grades.map((g) => Math.round((g.score / g.maxScore) * 100)))}%
             </span>
           </CardContent>
         </Card>

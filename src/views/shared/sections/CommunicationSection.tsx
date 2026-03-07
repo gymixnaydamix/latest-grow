@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
-import { useMessageThreads, useMessageThread, useCreateThread, useSendMessage } from '@/hooks/api';
+import { useMessageThreads, useMessageThread, useCreateThread, useSendMessage, useBroadcasts } from '@/hooks/api';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /* ── Student SubNav → Route mapping (split-page navigation) ───── */
@@ -35,20 +35,20 @@ const STUDENT_HEADER_ROUTES: Record<string, string> = {
 };
 
 /* ── Demo data ─────────────────────────────────────────────────── */
-const socialPosts = [
+const FALLBACK_SOCIAL_POSTS = [
   { platform: 'Facebook', content: 'Congratulations to our debate team for winning regionals! 🏆', likes: 234, comments: 45, time: '2 hours ago' },
   { platform: 'Instagram', content: 'Spring campus photos — our gardens are in full bloom 🌸', likes: 512, comments: 67, time: '5 hours ago' },
   { platform: 'Twitter/X', content: 'Registration is open for Summer STEM Camp 2025! Link in bio.', likes: 89, comments: 12, time: '1 day ago' },
 ];
 
-const communityChannels = [
+const FALLBACK_COMMUNITY_CHANNELS = [
   { name: 'General', members: 450, messages: 1240, lastActive: '2 min ago', icon: Hash },
   { name: 'Announcements', members: 550, messages: 89, lastActive: '1 hour ago', icon: MessageSquare },
   { name: 'Staff Lounge', members: 45, messages: 567, lastActive: '15 min ago', icon: Users },
   { name: 'Parent Forum', members: 320, messages: 890, lastActive: '30 min ago', icon: Globe },
 ];
 
-const templates = [
+const FALLBACK_TEMPLATES = [
   { name: 'Welcome Letter', category: 'Onboarding', lastUsed: 'May 1, 2025' },
   { name: 'Absence Notification', category: 'Attendance', lastUsed: 'May 10, 2025' },
   { name: 'Report Card Cover', category: 'Academics', lastUsed: 'Apr 20, 2025' },
@@ -361,6 +361,10 @@ function ThreadDetailPane({ selectedThreadId, isDetailLoading, selectedThread, s
 }
 
 function SocialMediaView() {
+  const schoolId = useAuthStore((s) => s.schoolId);
+  const { data: broadcastsData } = useBroadcasts(schoolId);
+  void broadcastsData;
+
   return (
     <>
       <div className="flex items-center justify-between" data-animate>
@@ -397,7 +401,7 @@ function SocialMediaView() {
           <CardTitle className="text-base text-white/85">Recent Posts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {socialPosts.map((post, i) => (
+          {FALLBACK_SOCIAL_POSTS.map((post, i) => (
             <div key={i} className="flex items-start gap-3 rounded-xl border border-white/6 bg-white/2 p-3 transition-all hover:bg-white/4 hover:border-white/12">
               <Badge variant="outline" className="shrink-0 text-[10px] border-white/10 text-white/50">{post.platform}</Badge>
               <div className="flex-1 min-w-0">
@@ -428,7 +432,7 @@ function CommunityView({ subNav }: { subNav: string }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2" data-animate>
-        {communityChannels.map((ch) => (
+        {FALLBACK_COMMUNITY_CHANNELS.map((ch) => (
           <Card key={ch.name} className="border-white/6 bg-white/3 backdrop-blur-xl cursor-pointer hover:border-white/12 hover:bg-white/4 transition-all">
             <CardContent className="flex items-center gap-4 py-4">
               <div className="flex size-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
@@ -459,7 +463,7 @@ function TemplatesView() {
       </div>
 
       <div className="space-y-2" data-animate>
-        {templates.map((t) => (
+        {FALLBACK_TEMPLATES.map((t) => (
           <Card key={t.name} className="border-white/6 bg-white/3 backdrop-blur-xl cursor-pointer hover:border-white/12 hover:bg-white/4 transition-all">
             <CardContent className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3">

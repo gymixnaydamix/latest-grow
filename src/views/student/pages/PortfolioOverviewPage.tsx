@@ -17,14 +17,14 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { useStudentPortfolio, useAddPortfolioWork } from '@/hooks/api/use-student';
 
-const WORK_TYPES = [
+const FALLBACK_WORK_TYPES = [
   { type: 'Essay', icon: FileText, color: 'bg-blue-500/20 text-blue-400' },
   { type: 'Art', icon: Image, color: 'bg-pink-500/20 text-pink-400' },
   { type: 'Code', icon: Code, color: 'bg-emerald-500/20 text-emerald-400' },
   { type: 'Presentation', icon: Presentation, color: 'bg-amber-500/20 text-amber-400' },
 ];
 
-const PORTFOLIO_ITEMS = [
+const FALLBACK_PORTFOLIO_ITEMS = [
   { title: 'Climate Change Research Paper', type: 'Essay', subject: 'Science', date: 'May 2025', featured: true, grade: 'A+', views: 142 },
   { title: 'Digital Self-Portrait', type: 'Art', subject: 'Art', date: 'Apr 2025', featured: true, grade: 'A', views: 89 },
   { title: 'Python Data Visualization App', type: 'Code', subject: 'CS', date: 'Mar 2025', featured: true, grade: 'A+', views: 234 },
@@ -35,7 +35,7 @@ const PORTFOLIO_ITEMS = [
   { title: 'Economic Policy Debate Slides', type: 'Presentation', subject: 'Economics', date: 'Jan 2025', featured: false, grade: 'B+', views: 32 },
 ];
 
-const SKILLS_MAP = [
+const FALLBACK_SKILLS_MAP = [
   { name: 'Research & Analysis', level: 90 },
   { name: 'Creative Writing', level: 85 },
   { name: 'Programming', level: 82 },
@@ -44,14 +44,14 @@ const SKILLS_MAP = [
   { name: 'Data Science', level: 60 },
 ];
 
-const CERTIFICATES = [
+const FALLBACK_CERTIFICATES = [
   { title: 'Python Programming', issuer: 'CodeAcademy', date: 'Apr 2025', verified: true },
   { title: 'Digital Art Foundations', issuer: 'Creative Academy', date: 'Mar 2025', verified: true },
   { title: 'Research Methodology', issuer: 'STEM Board', date: 'Feb 2025', verified: true },
   { title: 'Public Speaking', issuer: 'Toastmasters Jr.', date: 'Jan 2025', verified: false },
 ];
 
-const CAREER_READINESS = [
+const FALLBACK_CAREER_READINESS = [
   { area: 'Communication', score: 88 },
   { area: 'Technology', score: 85 },
   { area: 'Analysis', score: 82 },
@@ -64,11 +64,15 @@ export default function PortfolioOverviewPage() {
   const [filter, setFilter] = useState<string>('all');
 
   /* ── API data ── */
-  const { data: _apiPortfolio } = useStudentPortfolio();
+  const { data: apiPortfolio } = useStudentPortfolio();
   // @ts-expect-error TS6133 — mutation available for wiring
   const _addWorkMut = useAddPortfolioWork();
-  const portfolioItems = (_apiPortfolio as any[]) ?? [];
-  const portfolio = portfolioItems.length > 0 ? portfolioItems : PORTFOLIO_ITEMS;
+  const portfolioData = (apiPortfolio as any) ?? {};
+  const portfolio = (portfolioData?.items as any[])?.length > 0 ? (portfolioData.items as any[]) : FALLBACK_PORTFOLIO_ITEMS;
+  const workTypes = (portfolioData?.workTypes as any[])?.length > 0 ? (portfolioData.workTypes as any[]) : FALLBACK_WORK_TYPES;
+  const skillsMap = (portfolioData?.skillsMap as any[])?.length > 0 ? (portfolioData.skillsMap as any[]) : FALLBACK_SKILLS_MAP;
+  const certificates = (portfolioData?.certificates as any[])?.length > 0 ? (portfolioData.certificates as any[]) : FALLBACK_CERTIFICATES;
+  const careerReadiness = (portfolioData?.careerReadiness as any[])?.length > 0 ? (portfolioData.careerReadiness as any[]) : FALLBACK_CAREER_READINESS;
   const totalViews = portfolio.reduce((s: number, p: any) => s + (p.views ?? 0), 0);
 
   const filtered = filter === 'all'
@@ -85,13 +89,13 @@ export default function PortfolioOverviewPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Portfolio Items" value={portfolio.length} icon={<FolderOpen className="h-5 w-5" />} />
         <StatCard label="Total Views" value={totalViews} icon={<Eye className="h-5 w-5" />} trend="up" />
-        <StatCard label="Certificates" value={CERTIFICATES.length} icon={<Award className="h-5 w-5" />} accentColor="#a78bfa" />
+        <StatCard label="Certificates" value={certificates.length} icon={<Award className="h-5 w-5" />} accentColor="#a78bfa" />
         <StatCard label="Featured Works" value={portfolio.filter((p: any) => p.featured).length} icon={<Star className="h-5 w-5" />} accentColor="#f59e0b" />
       </div>
 
       {/* Filters */}
       <div className="flex items-center gap-2 flex-wrap" data-animate>
-        {[{ key: 'all', label: 'All Works' }, { key: 'featured', label: 'Featured' }, ...WORK_TYPES.map((w) => ({ key: w.type, label: w.type }))].map((f) => (
+        {[{ key: 'all', label: 'All Works' }, { key: 'featured', label: 'Featured' }, ...workTypes.map((w: any) => ({ key: w.type, label: w.type }))].map((f) => (
           <Button
             key={f.key}
             variant="ghost"
@@ -113,7 +117,7 @@ export default function PortfolioOverviewPage() {
           {/* Portfolio grid */}
           <div className="grid gap-3 sm:grid-cols-2" data-animate>
             {filtered.map((item, i) => {
-              const typeInfo = WORK_TYPES.find((w) => w.type === item.type) ?? WORK_TYPES[0];
+              const typeInfo = workTypes.find((w: any) => w.type === item.type) ?? workTypes[0];
               return (
                 <Card key={i} className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/12 transition-all group cursor-pointer" onClick={() => notifySuccess('Portfolio', 'Opening work details…')}>
                   <CardContent className="p-4">
@@ -146,7 +150,7 @@ export default function PortfolioOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {CERTIFICATES.map((c, i) => (
+              {certificates.map((c: any, i: number) => (
                 <div key={i} className="flex items-center gap-3 rounded-lg border border-white/6 bg-white/2 p-2.5">
                   <div className="size-8 rounded-lg bg-violet-500/10 flex items-center justify-center shrink-0">
                     <Trophy className="size-3.5 text-violet-400" />
@@ -173,7 +177,7 @@ export default function PortfolioOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2.5">
-              {SKILLS_MAP.map((s) => (
+              {skillsMap.map((s: any) => (
                 <div key={s.name}>
                   <div className="flex justify-between text-[9px] mb-0.5">
                     <span className="text-white/50">{s.name}</span>
@@ -193,7 +197,7 @@ export default function PortfolioOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {CAREER_READINESS.map((c) => (
+              {careerReadiness.map((c: any) => (
                 <div key={c.area} className="flex items-center gap-2">
                   <span className="text-[9px] text-white/40 w-20">{c.area}</span>
                   <div className="flex-1 h-5 bg-white/3 rounded-full overflow-hidden">
@@ -217,7 +221,7 @@ export default function PortfolioOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2">
-              {WORK_TYPES.map((w) => {
+              {workTypes.map((w: any) => {
                 const count = portfolio.filter((p: any) => p.type === w.type).length;
                 return (
                   <div key={w.type} className="flex items-center gap-2 rounded-lg border border-white/6 bg-white/2 p-2">

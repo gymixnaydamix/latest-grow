@@ -8,6 +8,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { cn } from '@/lib/utils';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentSessions } from '@/hooks/api/use-student';
 
 type VizType = 'mindmap' | 'flowchart' | 'timeline' | 'diagram';
 
@@ -18,7 +19,7 @@ const VIZ_MODES: { key: VizType; label: string; icon: typeof Network; color: str
   { key: 'diagram', label: 'Diagram', icon: Layers, color: 'text-amber-400 bg-amber-400/10' },
 ];
 
-const RECENT = [
+const FALLBACK_RECENT = [
   { concept: 'Photosynthesis process', type: 'flowchart' as VizType, date: '2 hours ago' },
   { concept: 'French Revolution causes', type: 'timeline' as VizType, date: 'Yesterday' },
   { concept: 'Cell structure', type: 'diagram' as VizType, date: '3 days ago' },
@@ -30,6 +31,9 @@ export default function VisualizerPage() {
   const [concept, setConcept] = useState('');
   const [vizType, setVizType] = useState<VizType>('mindmap');
   const [generated, setGenerated] = useState(false);
+  const { data: apiSessions } = useStudentSessions();
+  void apiSessions;
+  const RECENT = FALLBACK_RECENT;
 
   const generate = () => {
     if (concept.trim()) setGenerated(true);

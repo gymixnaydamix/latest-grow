@@ -15,7 +15,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useCourses, useCurriculumStandards } from '@/hooks/api';
-import { useCreateLessonPlan, useUploadResource } from '@/hooks/api/use-teacher';
+import { useCreateLessonPlan, useUploadResource, useTeacherLessonPlans } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course, CurriculumStandard } from '@root/types';
@@ -24,7 +24,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  lessonPlansDemo, teacherClassesDemo, formatDateLabel,
+  lessonPlansDemo as FALLBACK_lessonPlansDemo, teacherClassesDemo as FALLBACK_teacherClassesDemo, formatDateLabel,
 } from './teacher-demo-data';
 
 /* ── Week helpers ── */
@@ -84,10 +84,12 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
   const standards: CurriculumStandard[] = standardsRes ?? [];
   const classes = courses.length > 0
     ? courses.filter(c => !teacherId || c.teacherId === teacherId)
-    : teacherClassesDemo;
+    : FALLBACK_teacherClassesDemo;
 
   const createLessonMut = useCreateLessonPlan();
   const uploadResourceMut = useUploadResource();
+  const { data: apiLessonPlans } = useTeacherLessonPlans();
+  const lessonPlans = (apiLessonPlans as unknown as typeof FALLBACK_lessonPlansDemo) ?? FALLBACK_lessonPlansDemo;
 
   /* ── Calendar state ── */
   const [weekOffset, setWeekOffset] = useState(0);
@@ -102,7 +104,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
 
   /* ── My lessons filter ── */
   const [lessonFilter, setLessonFilter] = useState<'all' | 'draft' | 'ready' | 'taught'>('all');
-  const filteredLessons = lessonPlansDemo.filter(
+  const filteredLessons = lessonPlans.filter(
     lp => lessonFilter === 'all' || lp.status === lessonFilter,
   );
 
@@ -136,7 +138,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
 
       <div className="grid grid-cols-5 gap-2">
         {weekDates.map(day => {
-          const plans = lessonPlansDemo.filter(lp => lp.date === day.iso);
+          const plans = lessonPlans.filter(lp => lp.date === day.iso);
           return (
             <div key={day.iso} className="rounded-xl border border-white/6 bg-white/3 p-3 min-h-[160px]">
               <p className="text-[11px] font-medium text-white/40 mb-2">{day.label}</p>

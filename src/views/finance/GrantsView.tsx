@@ -54,7 +54,7 @@ export default function GrantsView() {
   const { data: apiGrants } = useGrants(schoolId);
   const createGrant = useCreateGrant(schoolId ?? '');
 
-  const MOCK_GRANTS: Grant[] = (apiGrants as any[])?.map((g: any) => ({
+  const grants: Grant[] = (apiGrants as any[])?.map((g: any) => ({
     id: g.id, title: g.name ?? g.title ?? '', funder: g.source ?? g.funder ?? '',
     amount: Number(g.amount ?? 0), spent: Number(g.spent ?? 0),
     status: (g.status?.toLowerCase() ?? 'pending') as GrantStatus,
@@ -62,14 +62,14 @@ export default function GrantsView() {
     category: g.category ?? 'General', description: g.description ?? '',
   })) ?? FALLBACK_GRANTS;
 
-  const filtered = MOCK_GRANTS.filter((g) => {
+  const filtered = grants.filter((g) => {
     const s = statusFilter === 'all' || g.status === statusFilter;
     const q = g.title.toLowerCase().includes(search.toLowerCase()) || g.funder.toLowerCase().includes(search.toLowerCase());
     return s && q;
   });
 
-  const totalFunding = MOCK_GRANTS.filter((g) => g.status === 'active').reduce((s, g) => s + g.amount, 0);
-  const totalSpent = MOCK_GRANTS.filter((g) => g.status === 'active').reduce((s, g) => s + g.spent, 0);
+  const totalFunding = grants.filter((g) => g.status === 'active').reduce((s, g) => s + g.amount, 0);
+  const totalSpent = grants.filter((g) => g.status === 'active').reduce((s, g) => s + g.spent, 0);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -106,7 +106,7 @@ export default function GrantsView() {
         <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
           <CardContent className="flex flex-col gap-1 p-4">
             <span className="text-[10px] text-white/40 uppercase">Total Grants</span>
-            <span className="text-xl font-bold text-white/90">{MOCK_GRANTS.length}</span>
+            <span className="text-xl font-bold text-white/90">{grants.length}</span>
           </CardContent>
         </Card>
       </div>

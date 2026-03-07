@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useDecideParentV2Approval, useParentV2Approvals } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateLabel, parentApprovalsDemo } from './parent-v2-demo-data';
+import { childDisplayName, filterByChild, formatDateLabel, parentApprovalsDemo as FALLBACK_APPROVALS } from './parent-v2-demo-data';
 import type { ParentApprovalDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, PriorityBadge, StatusBadge, UrgentInline } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -16,7 +16,7 @@ export function ApprovalsFormsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawRows } = useParentV2Approvals({ scope, childId });
   const decisionMutation = useDecideParentV2Approval();
 
-  const allRows: ParentApprovalDemo[] = (rawRows as ParentApprovalDemo[] | undefined) ?? filterByChild(parentApprovalsDemo, childId, scope);
+  const allRows: ParentApprovalDemo[] = (rawRows as ParentApprovalDemo[] | undefined) ?? filterByChild(FALLBACK_APPROVALS, childId, scope);
   const [notesById, setNotesById] = useState<Record<string, string>>({});
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>('ALL');

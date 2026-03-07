@@ -34,12 +34,12 @@ const PLAN = {
   usage: { courses: { used: 8, total: 25 }, storage: { used: 12.4, total: 50 }, aiQueries: { used: 342, total: 'Unlimited' } },
 };
 
-const PAYMENT_METHODS = [
+const FALLBACK_PAYMENT_METHODS = [
   { id: '1', type: 'Visa', last4: '4242', expiry: '12/2026', isDefault: true },
   { id: '2', type: 'Mastercard', last4: '8888', expiry: '03/2027', isDefault: false },
 ];
 
-const INVOICES = [
+const FALLBACK_INVOICES = [
   { id: 'INV-2026-03', date: 'Mar 1, 2026', amount: '$49.00', status: 'paid' as const },
   { id: 'INV-2026-02', date: 'Feb 1, 2026', amount: '$49.00', status: 'paid' as const },
   { id: 'INV-2026-01', date: 'Jan 1, 2026', amount: '$49.00', status: 'paid' as const },
@@ -48,7 +48,7 @@ const INVOICES = [
   { id: 'INV-2025-10', date: 'Oct 1, 2025', amount: '$49.00', status: 'paid' as const },
 ];
 
-const TRANSACTIONS = [
+const FALLBACK_TRANSACTIONS = [
   { desc: 'Monthly subscription', date: 'Mar 1, 2026', amount: '-$49.00', type: 'charge' },
   { desc: 'Referral credit', date: 'Feb 20, 2026', amount: '+$10.00', type: 'credit' },
   { desc: 'Monthly subscription', date: 'Feb 1, 2026', amount: '-$49.00', type: 'charge' },
@@ -56,7 +56,7 @@ const TRANSACTIONS = [
   { desc: 'Monthly subscription', date: 'Jan 1, 2026', amount: '-$49.00', type: 'charge' },
 ];
 
-const SPENDING_MONTHS = [
+const FALLBACK_SPENDING_MONTHS = [
   { month: 'Oct', amount: 49 },
   { month: 'Nov', amount: 49 },
   { month: 'Dec', amount: 49 },
@@ -67,16 +67,18 @@ const SPENDING_MONTHS = [
 
 export default function BillingSettingsPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
-  const maxSpend = Math.max(...SPENDING_MONTHS.map((m) => m.amount));
   const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
 
   /* ── API data ── */
-  const { data: _apiFees } = useStudentFees();
+  const { data: apiFees } = useStudentFees();
   // @ts-expect-error TS6133 — mutation available for wiring
   const _payInvoiceMut = usePayInvoice();
-  const feesData = (_apiFees as any) ?? {};
-  const invoices = ((feesData?.invoices ?? []) as any[]).length > 0 ? (feesData.invoices as any[]) : INVOICES;
-  const transactions = ((feesData?.transactions ?? []) as any[]).length > 0 ? (feesData.transactions as any[]) : TRANSACTIONS;
+  const feesData = (apiFees as any) ?? {};
+  const paymentMethods = (feesData?.paymentMethods as any[])?.length > 0 ? (feesData.paymentMethods as any[]) : FALLBACK_PAYMENT_METHODS;
+  const invoices = (feesData?.invoices as any[])?.length > 0 ? (feesData.invoices as any[]) : FALLBACK_INVOICES;
+  const transactions = (feesData?.transactions as any[])?.length > 0 ? (feesData.transactions as any[]) : FALLBACK_TRANSACTIONS;
+  const spendingMonths = (feesData?.spendingMonths as any[])?.length > 0 ? (feesData.spendingMonths as any[]) : FALLBACK_SPENDING_MONTHS;
+  const maxSpend = Math.max(...spendingMonths.map((m: any) => m.amount));
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -157,7 +159,7 @@ export default function BillingSettingsPage() {
               <Button size="sm" className="text-[10px] h-7 bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => notifySuccess('Payment', 'Add card form opened')}>+ Add Card</Button>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {PAYMENT_METHODS.map((pm) => (
+              {paymentMethods.map((pm: any) => (
                 <div key={pm.id} className={cn(
                   'flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-3',
                   pm.isDefault && 'border-indigo-500/15 bg-indigo-500/5',
@@ -267,7 +269,7 @@ export default function BillingSettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-end gap-2 h-20">
-                {SPENDING_MONTHS.map((m) => (
+                {spendingMonths.map((m: any) => (
                   <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
                     <div
                       className="w-full rounded-t-sm bg-gradient-to-t from-emerald-500/30 to-emerald-500/60"

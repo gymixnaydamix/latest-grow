@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigationStore } from '@/store/navigation.store';
+import { usePlatformConfigs } from '@/hooks/api/use-settings';
 import {
   useIntegrations,
   useCreateIntegration,
@@ -26,6 +27,8 @@ import type { PlatformIntegration, ApiKeyRecord } from '@/hooks/api/use-platform
 export function ToolPlatformSection() {
   const { activeHeader, activeSubNav } = useNavigationStore();
   const containerRef = useStaggerAnimate<HTMLDivElement>([activeHeader, activeSubNav]);
+  const { data: platformConfigsData } = usePlatformConfigs();
+  void platformConfigsData;
 
   const view = (() => {
     switch (activeHeader) {
@@ -60,7 +63,7 @@ function MarketplaceView() {
     Identity: 'bg-cyan-500/10 text-cyan-400',
   };
 
-  const fallbackApps = [
+  const FALLBACK_APPS = [
     { id: 'f1', name: 'Google Workspace', description: 'Classroom, Drive, Calendar sync', category: 'Productivity', status: 'installed' },
     { id: 'f2', name: 'Microsoft 365', description: 'Teams, OneDrive, Outlook', category: 'Productivity', status: 'available' },
     { id: 'f3', name: 'Zoom', description: 'Virtual classrooms and meetings', category: 'Communication', status: 'installed' },
@@ -71,7 +74,7 @@ function MarketplaceView() {
     { id: 'f8', name: 'PowerSchool', description: 'SIS data import', category: 'Learning', status: 'installed' },
   ];
 
-  const apps = (integrations as PlatformIntegration[] | undefined) ?? fallbackApps;
+  const apps = (integrations as PlatformIntegration[] | undefined) ?? FALLBACK_APPS;
   const filtered = apps.filter((a) =>
     a.name.toLowerCase().includes(search.toLowerCase()) || (a.description ?? '').toLowerCase().includes(search.toLowerCase()),
   );
@@ -148,14 +151,14 @@ function MyIntegrationsView() {
   const { data: integrations, isLoading, refetch } = useIntegrations();
   const updateMut = useUpdateIntegration();
 
-  const fallbackInstalled = [
+  const FALLBACK_INSTALLED = [
     { id: 'i1', name: 'Google Workspace', status: 'active', lastSyncAt: '5 min ago', errorCount: 0, category: 'Productivity' },
     { id: 'i2', name: 'Zoom', status: 'active', lastSyncAt: '2h ago', errorCount: 0, category: 'Communication' },
     { id: 'i3', name: 'Stripe', status: 'active', lastSyncAt: '1h ago', errorCount: 0, category: 'Finance' },
     { id: 'i4', name: 'PowerSchool', status: 'warning', lastSyncAt: '12h ago', errorCount: 3, category: 'Learning' },
   ];
 
-  const installed = ((integrations as PlatformIntegration[] | undefined) ?? fallbackInstalled).filter(
+  const installed = ((integrations as PlatformIntegration[] | undefined) ?? FALLBACK_INSTALLED).filter(
     (i) => i.status === 'active' || i.status === 'installed' || i.status === 'warning',
   );
 
@@ -249,13 +252,13 @@ function APIKeysView() {
   const [newKeyName, setNewKeyName] = useState('');
   const [showRawKey, setShowRawKey] = useState<string | null>(null);
 
-  const fallbackKeys = [
+  const FALLBACK_KEYS = [
     { id: 'k1', name: 'Production Key', prefix: 'gyn_prod_****8xK2', createdAt: 'Jan 15, 2025', lastUsedAt: '2 min ago', status: 'active' },
     { id: 'k2', name: 'Staging Key', prefix: 'gyn_stg_****3mP9', createdAt: 'Feb 8, 2025', lastUsedAt: '3h ago', status: 'active' },
     { id: 'k3', name: 'Development Key', prefix: 'gyn_dev_****7wL5', createdAt: 'Mar 22, 2025', lastUsedAt: '1d ago', status: 'active' },
   ];
 
-  const keys = (keysData as ApiKeyRecord[] | undefined) ?? fallbackKeys;
+  const keys = (keysData as ApiKeyRecord[] | undefined) ?? FALLBACK_KEYS;
 
   const handleGenerate = () => {
     if (!newKeyName.trim()) return;
@@ -376,7 +379,7 @@ function APIKeysView() {
 function APILogsView() {
   const { data: auditData, isLoading, refetch } = useAuditLog();
 
-  const fallbackLogs = [
+  const FALLBACK_LOGS = [
     { method: 'GET', path: '/api/v1/students', status: 200, time: '45ms', ts: '14:32:15' },
     { method: 'POST', path: '/api/v1/courses', status: 201, time: '120ms', ts: '14:31:42' },
     { method: 'GET', path: '/api/v1/attendance', status: 200, time: '38ms', ts: '14:30:08' },
@@ -400,7 +403,7 @@ function APILogsView() {
           ts: entry.createdAt ? new Date(entry.createdAt).toLocaleTimeString('en-US', { hour12: false }) : '',
         };
       })
-    : fallbackLogs;
+    : FALLBACK_LOGS;
 
   const methodColor: Record<string, string> = {
     GET: 'border-emerald-500/30 text-emerald-400',

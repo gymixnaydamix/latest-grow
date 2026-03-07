@@ -17,26 +17,26 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
 import {
   useAIChat, useAIGenerate, useAIFeedbackAnalysis,
-  useAIPredictBudget,
+  useAIPredictBudget, useSystemHealth,
 } from '@/hooks/api';
 
 /* ── Demo data ─────────────────────────────────────────────────── */
 
-const aiMetrics = [
+const FALLBACK_AI_METRICS = [
   { label: 'Queries Today', value: '142', change: '+18%', icon: MessageSquare, color: 'text-indigo-400', bg: 'bg-indigo-500/10' },
   { label: 'Avg Response Time', value: '1.2s', change: '-0.3s', icon: Clock, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   { label: 'Resolution Rate', value: '94%', change: '+2%', icon: TrendingUp, color: 'text-blue-400', bg: 'bg-blue-500/10' },
   { label: 'Active Users', value: '38', change: '+5', icon: Users, color: 'text-amber-400', bg: 'bg-amber-500/10' },
 ];
 
-const operationMetrics = [
+const FALLBACK_OPERATION_METRICS = [
   { label: 'CPU Usage', value: 34, status: 'healthy', color: 'from-emerald-500 to-emerald-600' },
   { label: 'Memory', value: 62, status: 'healthy', color: 'from-blue-500 to-blue-600' },
   { label: 'Queue Depth', value: 8, status: 'healthy', color: 'from-indigo-500 to-indigo-600' },
   { label: 'Error Rate', value: 1.2, status: 'healthy', color: 'from-emerald-500 to-emerald-600' },
 ];
 
-const devTools = [
+const FALLBACK_DEV_TOOLS = [
   { id: 'code_gen', title: 'Code Generator', desc: 'Generate boilerplate and utility code', icon: FileCode, color: 'text-blue-400', bg: 'bg-blue-500/10' },
   { id: 'db_schema', title: 'DB Schema Helper', desc: 'Design and modify database schemas', icon: Database, color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
   { id: 'log_analysis', title: 'Log Analysis', desc: 'AI-powered log pattern detection', icon: Activity, color: 'text-amber-400', bg: 'bg-amber-500/10' },
@@ -181,7 +181,7 @@ function AIAnalyticsView() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        {aiMetrics.map((m) => (
+        {FALLBACK_AI_METRICS.map((m) => (
           <Card key={m.label} className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="flex items-center gap-3 py-4">
               <div className={`flex size-9 items-center justify-center rounded-lg ${m.bg}`}>
@@ -226,6 +226,9 @@ function AIAnalyticsView() {
 }
 
 function OperationsView({ subNav }: { subNav: string }) {
+  const { data: systemHealthData } = useSystemHealth();
+  void systemHealthData;
+
   // Route to specific operations sub-views
   if (subNav === 'tenant_ai') return <TenantAIManagementView />;
   if (subNav === 'support') return <AISupportView />;
@@ -238,7 +241,7 @@ function OperationsView({ subNav }: { subNav: string }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2" data-animate>
-        {operationMetrics.map((m) => (
+        {FALLBACK_OPERATION_METRICS.map((m) => (
           <Card key={m.label} className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">
@@ -258,7 +261,7 @@ function OperationsView({ subNav }: { subNav: string }) {
 }
 
 function TenantAIManagementView() {
-  const tenantAIData = [
+  const FALLBACK_TENANT_AI_DATA = [
     { name: 'Springfield Academy', queries: 1240, satisfaction: 94, model: 'GPT-4o', status: 'active' },
     { name: 'Oakwood Institute', queries: 890, satisfaction: 91, model: 'GPT-4o-mini', status: 'active' },
     { name: 'Cedar Valley School', queries: 456, satisfaction: 87, model: 'GPT-4o', status: 'limited' },
@@ -271,7 +274,7 @@ function TenantAIManagementView() {
         <p className="text-sm text-white/40">Configure AI access and quotas per tenant</p>
       </div>
       <div className="space-y-2" data-animate>
-        {tenantAIData.map(t => (
+        {FALLBACK_TENANT_AI_DATA.map(t => (
           <Card key={t.name} className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/12 transition-all">
             <CardContent className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3">
@@ -301,7 +304,7 @@ function TenantAIManagementView() {
 }
 
 function AISupportView() {
-  const tickets = [
+  const FALLBACK_TICKETS = [
     { id: 'T-001', user: 'Admin @ Springfield', issue: 'AI responses slow during peak hours', priority: 'high', status: 'open', time: '2h ago' },
     { id: 'T-002', user: 'Teacher @ Oakwood', issue: 'Incorrect grading suggestions', priority: 'medium', status: 'investigating', time: '5h ago' },
     { id: 'T-003', user: 'Parent @ Cedar Valley', issue: 'Chat not loading on mobile', priority: 'low', status: 'resolved', time: '1d ago' },
@@ -328,7 +331,7 @@ function AISupportView() {
         ))}
       </div>
       <div className="space-y-2" data-animate>
-        {tickets.map(t => (
+        {FALLBACK_TICKETS.map(t => (
           <Card key={t.id} className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/12 transition-all">
             <CardContent className="flex items-center justify-between py-3">
               <div>
@@ -351,7 +354,7 @@ function AISupportView() {
 }
 
 function DevelopmentView({ subNav }: { subNav: string }) {
-  const activeTool = devTools.find((t) => t.id === subNav) ?? devTools[0];
+  const activeTool = FALLBACK_DEV_TOOLS.find((t) => t.id === subNav) ?? FALLBACK_DEV_TOOLS[0];
   const [prompt, setPrompt] = useState('');
   const [result, setResult] = useState<string | null>(null);
   const generateMut = useAIGenerate();
@@ -375,7 +378,7 @@ function DevelopmentView({ subNav }: { subNav: string }) {
         <p className="text-sm text-white/40">AI-powered code generation and project management</p>
       </div>
 
-      {subNav && subNav !== devTools[0].id ? (
+      {subNav && subNav !== FALLBACK_DEV_TOOLS[0].id ? (
         <Card data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
           <CardHeader>
             <div className="flex items-center gap-3">
@@ -417,7 +420,7 @@ function DevelopmentView({ subNav }: { subNav: string }) {
         </Card>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-          {devTools.map((tool) => (
+          {FALLBACK_DEV_TOOLS.map((tool) => (
             <Card key={tool.id} className="border-white/6 bg-white/3 backdrop-blur-xl cursor-pointer hover:border-white/12 hover:bg-white/4 transition-all">
               <CardContent className="flex flex-col items-center gap-2 py-6 text-center">
                 <div className={`flex size-10 items-center justify-center rounded-lg ${tool.bg}`}>
@@ -473,7 +476,7 @@ function AISettingsView({ subNav }: { subNav: string }) {
 }
 
 function AIDataSourcesView() {
-  const sources = [
+  const FALLBACK_SOURCES = [
     { name: 'Student Information System', type: 'SIS', status: 'connected', records: '12,450', lastSync: '5 min ago', color: 'text-emerald-400', bg: 'bg-emerald-500/10' },
     { name: 'Learning Management System', type: 'LMS', status: 'connected', records: '8,920', lastSync: '15 min ago', color: 'text-blue-400', bg: 'bg-blue-500/10' },
     { name: 'Financial System', type: 'Finance', status: 'connected', records: '3,200', lastSync: '1h ago', color: 'text-amber-400', bg: 'bg-amber-500/10' },
@@ -487,7 +490,7 @@ function AIDataSourcesView() {
         <p className="text-sm text-white/40">Connected data sources feeding the AI model</p>
       </div>
       <div className="space-y-2" data-animate>
-        {sources.map(s => (
+        {FALLBACK_SOURCES.map(s => (
           <Card key={s.name} className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/12 transition-all">
             <CardContent className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3">
@@ -541,7 +544,7 @@ function AIUsageView() {
 }
 
 function AITrainingView() {
-  const sessions = [
+  const FALLBACK_SESSIONS = [
     { date: 'Mar 1, 2026', type: 'Full Retrain', records: '25,000', duration: '4h 20m', status: 'completed' },
     { date: 'Feb 15, 2026', type: 'Incremental', records: '3,200', duration: '45m', status: 'completed' },
     { date: 'Feb 1, 2026', type: 'Full Retrain', records: '22,800', duration: '3h 50m', status: 'completed' },
@@ -571,7 +574,7 @@ function AITrainingView() {
           <CardTitle className="text-base text-white/85">Training History</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
-          {sessions.map(s => (
+          {FALLBACK_SESSIONS.map(s => (
             <div key={s.date} className="flex items-center justify-between rounded-xl border border-white/6 bg-white/2 p-3 hover:bg-white/4 transition-all">
               <div>
                 <p className="text-sm text-white/70">{s.type}</p>

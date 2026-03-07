@@ -10,7 +10,7 @@ import {
   useParentV2SupportTickets,
   useReplyParentV2SupportTicket,
 } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateTimeLabel, parentSupportTicketsDemo } from './parent-v2-demo-data';
+import { childDisplayName, filterByChild, formatDateTimeLabel, parentSupportTicketsDemo as FALLBACK_SUPPORT_TICKETS } from './parent-v2-demo-data';
 import type { ParentSupportTicketDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, PriorityBadge, StatusBadge } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -22,7 +22,7 @@ export function SupportSection({ scope, childId }: ParentSectionProps) {
   const createTicketMutation = useCreateParentV2SupportTicket();
   const replyMutation = useReplyParentV2SupportTicket();
 
-  const allRows: ParentSupportTicketDemo[] = (rawRows as ParentSupportTicketDemo[] | undefined) ?? filterByChild(parentSupportTicketsDemo, childId, scope);
+  const allRows: ParentSupportTicketDemo[] = (rawRows as ParentSupportTicketDemo[] | undefined) ?? filterByChild(FALLBACK_SUPPORT_TICKETS, childId, scope);
 
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>('ALL');
   const [showCreate, setShowCreate] = useState(false);

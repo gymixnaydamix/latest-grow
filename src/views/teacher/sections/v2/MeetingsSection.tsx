@@ -15,14 +15,14 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useNavigationStore } from '@/store/navigation.store';
-import { useScheduleMeeting } from '@/hooks/api/use-teacher';
+import { useScheduleMeeting, useTeacherMeetings } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import {
   TeacherSectionShell, GlassCard, MetricCard, StatusBadge, EmptyState,
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  meetingsDemo, formatDateLabel, formatTimeRange, type MeetingDemo,
+  meetingsDemo as FALLBACK_meetingsDemo, formatDateLabel, formatTimeRange, type MeetingDemo,
 } from './teacher-demo-data';
 
 /* ── Meeting type styling ── */
@@ -59,8 +59,9 @@ export function MeetingsSection(_props: TeacherSectionProps) {
   const { activeHeader, setHeader } = useNavigationStore();
   const header = activeHeader || 'upcoming_meetings';
   const scheduleMeetingMut = useScheduleMeeting();
+  const { data: apiMeetings } = useTeacherMeetings();
 
-  const meetings: MeetingDemo[] = meetingsDemo;
+  const meetings: MeetingDemo[] = (apiMeetings as unknown as MeetingDemo[]) ?? FALLBACK_meetingsDemo;
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');

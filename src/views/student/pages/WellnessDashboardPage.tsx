@@ -40,7 +40,7 @@ const METRICS: Metric[] = [
   { label: 'Mindfulness', value: 15,   max: 20,    unit: 'min',    icon: Wind,       color: 'text-amber-400' },
 ];
 
-const MOOD_LOG = [
+const FALLBACK_MOOD_LOG = [
   { date: '2026-03-04', mood: 'great' as Mood, note: 'Aced my math test!' },
   { date: '2026-03-03', mood: 'good' as Mood, note: 'Good study session' },
   { date: '2026-03-02', mood: 'okay' as Mood, note: 'Regular day' },
@@ -50,12 +50,12 @@ const MOOD_LOG = [
   { date: '2026-02-26', mood: 'good' as Mood, note: 'Hung out with friends' },
 ];
 
-const WEEKLY_TREND = [
+const FALLBACK_WEEKLY_TREND = [
   { day: 'Mon', score: 72 }, { day: 'Tue', score: 78 }, { day: 'Wed', score: 85 },
   { day: 'Thu', score: 80 }, { day: 'Fri', score: 88 }, { day: 'Sat', score: 92 }, { day: 'Sun', score: 86 },
 ];
 
-const TIPS = [
+const FALLBACK_TIPS = [
   { title: 'Take a 5-Minute Break', desc: 'Step away from screens and stretch', icon: Timer, color: 'text-emerald-400 bg-emerald-400/10' },
   { title: 'Deep Breathing', desc: 'Try 4-7-8 breathing technique', icon: Wind, color: 'text-indigo-400 bg-indigo-400/10' },
   { title: 'Stay Hydrated', desc: 'Drink water between classes', icon: Droplets, color: 'text-cyan-400 bg-cyan-400/10' },
@@ -67,13 +67,15 @@ export default function WellnessDashboardPage() {
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
 
   /* ── API data ── */
-  const { data: _apiWellness } = useStudentWellness();
-  const { data: _apiMoodHist } = useStudentMoodHistory();
+  const { data: apiWellness } = useStudentWellness();
+  const { data: apiMoodHist } = useStudentMoodHistory();
   const logMoodMut = useLogMood();
-  const metricsData = ((_apiWellness as any)?.metrics as any[]) ?? [];
+  const metricsData = ((apiWellness as any)?.metrics as any[]) ?? [];
   const metrics = metricsData.length > 0 ? metricsData : METRICS;
-  const moodLogData = (_apiMoodHist as any[]) ?? [];
-  const moodLog = moodLogData.length > 0 ? moodLogData : MOOD_LOG;
+  const moodLogData = (apiMoodHist as any[]) ?? [];
+  const moodLog = moodLogData.length > 0 ? moodLogData : FALLBACK_MOOD_LOG;
+  const weeklyTrend = (apiWellness as any)?.weeklyTrend ?? FALLBACK_WEEKLY_TREND;
+  const tips = (apiWellness as any)?.tips ?? FALLBACK_TIPS;
 
   const wellnessScore = Math.round(metrics.reduce((s: number, m: any) => s + ((m.value ?? 0) / (m.max ?? 1)), 0) / (metrics.length || 1) * 100);
   const streakDays = 7;
@@ -164,7 +166,7 @@ export default function WellnessDashboardPage() {
           <Card data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardHeader><CardTitle className="text-white/90 text-sm flex items-center gap-2"><Sparkles className="size-4 text-amber-400" />Wellness Tips</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {TIPS.map((tip) => (
+              {tips.map((tip: any) => (
                 <div key={tip.title} className="flex items-start gap-2.5 rounded-lg border border-white/6 bg-white/2 p-3 hover:bg-white/4 transition-colors cursor-pointer" onClick={() => notifySuccess('Tip', 'Wellness tip opened')}>
                   <div className={cn('size-7 shrink-0 rounded-lg flex items-center justify-center', tip.color)}>
                     <tip.icon className="size-3.5" />
@@ -183,7 +185,7 @@ export default function WellnessDashboardPage() {
             <CardHeader><CardTitle className="text-white/90 text-sm">Weekly Wellness Trend</CardTitle></CardHeader>
             <CardContent>
               <div className="flex items-end gap-2 h-28">
-                {WEEKLY_TREND.map((d) => (
+                {weeklyTrend.map((d: any) => (
                   <div key={d.day} className="flex-1 flex flex-col items-center gap-1">
                     <div
                       className="w-full rounded-t-md bg-gradient-to-t from-indigo-500/30 to-indigo-500/60"

@@ -8,9 +8,9 @@ import { useParentV2Invoices, useParentV2Payments } from '@/hooks/api/use-parent
 import {
   childDisplayName,
   filterByChild,
-  parentInvoicesDemo,
-  parentPaymentsDemo,
-  parentReceiptsDemo,
+  parentInvoicesDemo as FALLBACK_INVOICES,
+  parentPaymentsDemo as FALLBACK_PAYMENTS,
+  parentReceiptsDemo as FALLBACK_RECEIPTS,
   formatDateLabel,
 } from './parent-v2-demo-data';
 import type { ParentInvoiceDemo, ParentPaymentDemo, ParentReceiptDemo } from './parent-v2-demo-data';
@@ -24,9 +24,9 @@ export function FeesPaymentsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawInvoices } = useParentV2Invoices({ scope, childId });
   const { data: rawPayments } = useParentV2Payments({ scope, childId });
 
-  const invoices: ParentInvoiceDemo[] = (rawInvoices as ParentInvoiceDemo[] | undefined) ?? filterByChild(parentInvoicesDemo, childId, scope);
-  const payments: ParentPaymentDemo[] = (rawPayments as ParentPaymentDemo[] | undefined) ?? filterByChild(parentPaymentsDemo, childId, scope);
-  const receipts: ParentReceiptDemo[] = filterByChild(parentReceiptsDemo, childId, scope);
+  const invoices: ParentInvoiceDemo[] = (rawInvoices as ParentInvoiceDemo[] | undefined) ?? filterByChild(FALLBACK_INVOICES, childId, scope);
+  const payments: ParentPaymentDemo[] = (rawPayments as ParentPaymentDemo[] | undefined) ?? filterByChild(FALLBACK_PAYMENTS, childId, scope);
+  const receipts: ParentReceiptDemo[] = filterByChild(FALLBACK_RECEIPTS, childId, scope);
 
   const [tab, setTab] = useState<Tab>('invoices');
   const [query, setQuery] = useState('');

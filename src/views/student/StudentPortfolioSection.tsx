@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useStudentData } from '@/hooks/use-student-data';
+import { useStudentPortfolio } from '@/hooks/api/use-student';
 import { notifySuccess } from '@/lib/notify';
 
 type WorkType = 'essay' | 'project' | 'artwork' | 'presentation' | 'code';
@@ -33,7 +34,7 @@ const WORK_COLORS: Record<WorkType, string> = {
   code: 'text-cyan-400 bg-cyan-400/10',
 };
 
-const MOCK: PortfolioItem[] = [
+const FALLBACK_PORTFOLIO: PortfolioItem[] = [
   { id: '1', title: 'Climate Change Research Paper', type: 'essay', subject: 'Science', date: '2025-03-10', grade: 'A', tags: ['research', 'environment'], featured: true, description: 'In-depth analysis of climate change effects on coastal ecosystems.' },
   { id: '2', title: 'Solar System 3D Model', type: 'project', subject: 'Physics', date: '2025-03-05', grade: 'A+', tags: ['3d', 'physics', 'space'], featured: true, description: 'Interactive 3D model of the solar system with orbital mechanics.' },
   { id: '3', title: 'Self-Portrait in Oil', type: 'artwork', subject: 'Art', date: '2025-02-28', tags: ['painting', 'portrait'], featured: false, description: 'Oil painting self-portrait exploring impressionist technique.' },
@@ -46,8 +47,10 @@ export default function StudentPortfolioSection() {
   const containerRef = useStaggerAnimate([]);
   const [filter, setFilter] = useState<'all' | 'featured'>('all');
   const store = useStudentData();
+  const { data: apiData } = useStudentPortfolio();
+  const portfolio = (apiData as unknown as PortfolioItem[]) ?? FALLBACK_PORTFOLIO;
 
-  const items = filter === 'featured' ? MOCK.filter((m) => m.featured) : MOCK;
+  const items = filter === 'featured' ? portfolio.filter((m) => m.featured) : portfolio;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -56,7 +59,7 @@ export default function StudentPortfolioSection() {
         <div className="flex items-center gap-2">
           <FolderOpen className="size-5 text-violet-400" />
           <h2 className="text-lg font-bold text-white/90">My Portfolio</h2>
-          <Badge className="border-0 bg-white/5 text-white/40 text-[10px]">{MOCK.length} works</Badge>
+          <Badge className="border-0 bg-white/5 text-white/40 text-[10px]">{portfolio.length} works</Badge>
         </div>
         <div className="flex gap-2">
           <div className="flex border border-white/8 rounded-md overflow-hidden text-[11px]">

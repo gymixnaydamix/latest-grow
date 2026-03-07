@@ -56,13 +56,13 @@ export default function LibraryPage() {
   const { schoolId } = useAuthStore();
   const { data: apiItems } = useLibraryItems(schoolId);
 
-  const MOCK_RESOURCES: Resource[] = (apiItems as any[])?.map((item: any) => ({
+  const resources: Resource[] = (apiItems as any[])?.map((item: any) => ({
     id: item.id, title: item.title ?? '', type: (item.category?.toLowerCase() ?? 'document') as ResourceType,
     subject: item.subject ?? item.category ?? '', author: item.author ?? '',
     date: item.createdAt ?? '', size: '', downloads: 0, starred: false,
   })) ?? FALLBACK_RESOURCES;
 
-  const filtered = MOCK_RESOURCES.filter((r) => {
+  const filtered = resources.filter((r) => {
     const matchSearch = r.title.toLowerCase().includes(search.toLowerCase()) || r.subject.toLowerCase().includes(search.toLowerCase());
     const matchType = filterType === 'all' || r.type === filterType;
     return matchSearch && matchType;

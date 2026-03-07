@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { StatCard } from '@/components/features/StatCard';
 import { GlowLineChart } from '@/components/features/charts/LineChart';
+import { useSystemHealth } from '@/hooks/api';
 
 
-const UPTIME_HISTORY = [
+const FALLBACK_UPTIME = [
   { name: 'Mon', uptime: 99.9 },
   { name: 'Tue', uptime: 99.8 },
   { name: 'Wed', uptime: 100 },
@@ -17,7 +18,7 @@ const UPTIME_HISTORY = [
   { name: 'Sun', uptime: 100 },
 ];
 
-const RESOURCE_USAGE = [
+const FALLBACK_RESOURCES = [
   { name: '6am', cpu: 22, memory: 45, storage: 62 },
   { name: '9am', cpu: 68, memory: 72, storage: 62 },
   { name: '12pm', cpu: 85, memory: 78, storage: 63 },
@@ -26,7 +27,7 @@ const RESOURCE_USAGE = [
   { name: '9pm', cpu: 28, memory: 48, storage: 63 },
 ];
 
-const ACTIVE_SERVICES = [
+const FALLBACK_SERVICES = [
   { name: 'LMS Platform', status: 'healthy', uptime: '99.9%', latency: '42ms' },
   { name: 'Student Portal', status: 'healthy', uptime: '99.8%', latency: '38ms' },
   { name: 'Email Service', status: 'healthy', uptime: '100%', latency: '120ms' },
@@ -35,14 +36,14 @@ const ACTIVE_SERVICES = [
   { name: 'Backup Service', status: 'healthy', uptime: '100%', latency: '—' },
 ];
 
-const RECENT_INCIDENTS = [
+const FALLBACK_INCIDENTS = [
   { title: 'Video service latency spike', time: '2h ago', severity: 'warning', resolved: false },
   { title: 'Scheduled maintenance completed', time: '12h ago', severity: 'info', resolved: true },
   { title: 'Storage threshold alert (80%)', time: '2d ago', severity: 'warning', resolved: true },
   { title: 'DDoS attempt blocked', time: '5d ago', severity: 'critical', resolved: true },
 ];
 
-const SECURITY_METRICS = [
+const FALLBACK_SECURITY = [
   { label: 'Blocked Threats', value: '1,247', period: 'last 30 days' },
   { label: 'SSL Certificate', value: 'Valid', period: 'expires in 286 days' },
   { label: 'Last Security Scan', value: 'Clean', period: '2 hours ago' },
@@ -51,6 +52,13 @@ const SECURITY_METRICS = [
 
 export default function AdminSystemView() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
+  const { data: apiSystem } = useSystemHealth();
+
+  const UPTIME_HISTORY = FALLBACK_UPTIME;
+  const RESOURCE_USAGE = FALLBACK_RESOURCES;
+  const ACTIVE_SERVICES = apiSystem?.services?.map(s => ({ name: s.name, status: s.status, uptime: '—', latency: '—' })) ?? FALLBACK_SERVICES;
+  const RECENT_INCIDENTS = FALLBACK_INCIDENTS;
+  const SECURITY_METRICS = FALLBACK_SECURITY;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">

@@ -30,18 +30,18 @@ import {
   formatCurrency,
   formatDateLabel,
   formatDateTimeLabel,
-  parentActionItemsDemo,
-  parentAnnouncementsDemo,
-  parentApprovalsDemo,
-  parentAssignmentsDemo,
-  parentAttendanceDemo,
-  parentCalendarDemo,
-  parentChildrenDemo,
-  parentEventsDemo,
-  parentExamsDemo,
-  parentInvoicesDemo,
-  parentMessageThreadsDemo,
-  parentTimetableDemo,
+  parentActionItemsDemo as FALLBACK_ACTION_ITEMS,
+  parentAnnouncementsDemo as FALLBACK_ANNOUNCEMENTS,
+  parentApprovalsDemo as FALLBACK_APPROVALS,
+  parentAssignmentsDemo as FALLBACK_ASSIGNMENTS,
+  parentAttendanceDemo as FALLBACK_ATTENDANCE,
+  parentCalendarDemo as FALLBACK_CALENDAR,
+  parentChildrenDemo as FALLBACK_CHILDREN,
+  parentEventsDemo as FALLBACK_EVENTS,
+  parentExamsDemo as FALLBACK_EXAMS,
+  parentInvoicesDemo as FALLBACK_INVOICES,
+  parentMessageThreadsDemo as FALLBACK_MESSAGES,
+  parentTimetableDemo as FALLBACK_TIMETABLE,
 } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, PriorityBadge, StatusBadge, UrgentInline } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -68,18 +68,18 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
   useMarkParentV2AnnouncementRead();
   const rsvpMut = useRsvpParentV2Event();
 
-  const children: ParentChildDemo[] = (homeData?.children as ParentChildDemo[] | undefined) ?? filterChildren(parentChildrenDemo, childId, scope);
-  const actionRequired: ParentActionItemDemo[] = (homeData?.actionRequired as ParentActionItemDemo[] | undefined) ?? filterByChild(parentActionItemsDemo, childId, scope);
-  const timetable: ParentTimetableItemDemo[] = (homeData?.todayTimetable as ParentTimetableItemDemo[] | undefined) ?? filterByChild(parentTimetableDemo, childId, scope);
-  const announcements: ParentAnnouncementDemo[] = (homeData?.announcements as ParentAnnouncementDemo[] | undefined) ?? filterByChild(parentAnnouncementsDemo, childId, scope);
-  const invoices: ParentInvoiceDemo[] = (homeData?.invoices as ParentInvoiceDemo[] | undefined) ?? filterByChild(parentInvoicesDemo, childId, scope);
-  const approvals: ParentApprovalDemo[] = (homeData?.approvals as ParentApprovalDemo[] | undefined) ?? filterByChild(parentApprovalsDemo, childId, scope);
-  const messages: ParentMessageThreadDemo[] = (homeData?.messages as ParentMessageThreadDemo[] | undefined) ?? filterByChild(parentMessageThreadsDemo, childId, scope);
-  const events: ParentEventDemo[] = (homeData?.events as ParentEventDemo[] | undefined) ?? filterByChild(parentEventsDemo, childId, scope);
-  const assignments: ParentAssignmentDemo[] = filterByChild(parentAssignmentsDemo, childId, scope);
-  const attendance: ParentAttendanceDemo[] = filterByChild(parentAttendanceDemo, childId, scope);
-  const exams: ParentExamDemo[] = filterByChild(parentExamsDemo, childId, scope);
-  const calendarItems: ParentCalendarItemDemo[] = filterByChild(parentCalendarDemo, childId, scope);
+  const children: ParentChildDemo[] = (homeData?.children as ParentChildDemo[] | undefined) ?? filterChildren(FALLBACK_CHILDREN, childId, scope);
+  const actionRequired: ParentActionItemDemo[] = (homeData?.actionRequired as ParentActionItemDemo[] | undefined) ?? filterByChild(FALLBACK_ACTION_ITEMS, childId, scope);
+  const timetable: ParentTimetableItemDemo[] = (homeData?.todayTimetable as ParentTimetableItemDemo[] | undefined) ?? filterByChild(FALLBACK_TIMETABLE, childId, scope);
+  const announcements: ParentAnnouncementDemo[] = (homeData?.announcements as ParentAnnouncementDemo[] | undefined) ?? filterByChild(FALLBACK_ANNOUNCEMENTS, childId, scope);
+  const invoices: ParentInvoiceDemo[] = (homeData?.invoices as ParentInvoiceDemo[] | undefined) ?? filterByChild(FALLBACK_INVOICES, childId, scope);
+  const approvals: ParentApprovalDemo[] = (homeData?.approvals as ParentApprovalDemo[] | undefined) ?? filterByChild(FALLBACK_APPROVALS, childId, scope);
+  const messages: ParentMessageThreadDemo[] = (homeData?.messages as ParentMessageThreadDemo[] | undefined) ?? filterByChild(FALLBACK_MESSAGES, childId, scope);
+  const events: ParentEventDemo[] = (homeData?.events as ParentEventDemo[] | undefined) ?? filterByChild(FALLBACK_EVENTS, childId, scope);
+  const assignments: ParentAssignmentDemo[] = filterByChild(FALLBACK_ASSIGNMENTS, childId, scope);
+  const attendance: ParentAttendanceDemo[] = filterByChild(FALLBACK_ATTENDANCE, childId, scope);
+  const exams: ParentExamDemo[] = filterByChild(FALLBACK_EXAMS, childId, scope);
+  const calendarItems: ParentCalendarItemDemo[] = filterByChild(FALLBACK_CALENDAR, childId, scope);
 
   // Derived operational signals
   const unreadAnnouncementCount = announcements.filter((a) => !a.read).length;

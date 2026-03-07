@@ -15,6 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCourses } from '@/hooks/api';
+import { useTeacherSchedule, useTeacherActionItems } from '@/hooks/api/use-teacher';
 import { useAuthStore } from '@/store/auth.store';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course } from '@root/types';
@@ -23,11 +24,11 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  todayScheduleDemo,
-  actionItemsDemo,
-  studentAlertsDemo,
-  gradingQueueDemo,
-  teacherClassesDemo,
+  todayScheduleDemo as FALLBACK_todayScheduleDemo,
+  actionItemsDemo as FALLBACK_actionItemsDemo,
+  studentAlertsDemo as FALLBACK_studentAlertsDemo,
+  gradingQueueDemo as FALLBACK_gradingQueueDemo,
+  teacherClassesDemo as FALLBACK_teacherClassesDemo,
   type ScheduleItemDemo,
 } from './teacher-demo-data';
 
@@ -35,6 +36,9 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
   const { user } = useAuthStore();
   const { setSection, setHeader } = useNavigationStore();
   const { data: coursesRes } = useCourses(schoolId);
+  const { data: apiSchedule } = useTeacherSchedule();
+  const { data: apiActionItems } = useTeacherActionItems();
+  void apiSchedule; void apiActionItems;
   const courses: Course[] = coursesRes ?? [];
   const teacherCourses = teacherId ? courses.filter(c => c.teacherId === teacherId) : courses;
 
@@ -60,16 +64,16 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
         } satisfies ScheduleItemDemo;
       });
     }
-    return todayScheduleDemo;
+    return FALLBACK_todayScheduleDemo;
   }, [teacherCourses]);
 
   const classCount = schedule.filter(s => s.type === 'class').length;
   const totalStudents = teacherCourses.length > 0
     ? teacherCourses.reduce((sum, c) => sum + (c._count?.enrollments ?? 25), 0)
-    : teacherClassesDemo.reduce((sum, c) => sum + c.studentCount, 0);
+    : FALLBACK_teacherClassesDemo.reduce((sum, c) => sum + c.studentCount, 0);
 
-  const urgentActions = actionItemsDemo.filter(a => a.priority === 'HIGH');
-  const ungradedCount = gradingQueueDemo.reduce((sum, g) => sum + g.submitted, 0);
+  const urgentActions = FALLBACK_actionItemsDemo.filter(a => a.priority === 'HIGH');
+  const ungradedCount = FALLBACK_gradingQueueDemo.reduce((sum, g) => sum + g.submitted, 0);
 
   // Current/next period detection
   const currentPeriodIdx = schedule.findIndex(s => {
@@ -113,7 +117,7 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
         <MetricCard label="Classes Today" value={classCount} accent="#818cf8" />
         <MetricCard label="Students" value={totalStudents} accent="#34d399" />
         <MetricCard label="To Grade" value={ungradedCount} accent="#f472b6" trend="down" />
-        <MetricCard label="Alerts" value={studentAlertsDemo.filter(a => a.severity === 'high').length} accent="#fbbf24" />
+        <MetricCard label="Alerts" value={FALLBACK_studentAlertsDemo.filter(a => a.severity === 'high').length} accent="#fbbf24" />
       </div>
 
       {/* ── Main Content: Schedule + Actions ── */}
@@ -187,10 +191,10 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
             <div className="flex items-center gap-2 mb-3">
               <Zap className="size-4 text-amber-400" />
               <h3 className="text-sm font-semibold text-white/80">Action Required</h3>
-              <Badge variant="outline" className="ml-auto text-[9px] border-amber-500/30 text-amber-400">{actionItemsDemo.length}</Badge>
+              <Badge variant="outline" className="ml-auto text-[9px] border-amber-500/30 text-amber-400">{FALLBACK_actionItemsDemo.length}</Badge>
             </div>
             <div className="space-y-2">
-              {actionItemsDemo.slice(0, 5).map(a => (
+              {FALLBACK_actionItemsDemo.slice(0, 5).map(a => (
                 <div key={a.id} className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/2 p-3">
                   <div className={`mt-0.5 size-2 rounded-full shrink-0 ${a.priority === 'HIGH' ? 'bg-rose-400' : a.priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                   <div className="min-w-0 flex-1">
@@ -209,7 +213,7 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
               <h3 className="text-sm font-semibold text-white/80">Student Alerts</h3>
             </div>
             <div className="space-y-2">
-              {studentAlertsDemo.slice(0, 4).map(al => (
+              {FALLBACK_studentAlertsDemo.slice(0, 4).map(al => (
                 <div key={al.id} className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/2 p-3">
                   <Avatar className="size-7 border border-white/10 shrink-0">
                     <AvatarFallback className={`text-[9px] ${al.severity === 'high' ? 'bg-rose-500/10 text-rose-400' : al.severity === 'medium' ? 'bg-amber-500/10 text-amber-400' : 'bg-sky-500/10 text-sky-400'}`}>
@@ -234,7 +238,7 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
           <div className="flex items-center gap-2">
             <ClipboardList className="size-4 text-pink-400" />
             <h3 className="text-sm font-semibold text-white/80">Grading Queue</h3>
-            <Badge variant="outline" className="text-[9px] border-pink-500/30 text-pink-400">{gradingQueueDemo.length} items</Badge>
+            <Badge variant="outline" className="text-[9px] border-pink-500/30 text-pink-400">{FALLBACK_gradingQueueDemo.length} items</Badge>
           </div>
           <Button
             variant="ghost"
@@ -246,7 +250,7 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
           </Button>
         </div>
         <div className="space-y-2">
-          {gradingQueueDemo.map(g => (
+          {FALLBACK_gradingQueueDemo.map(g => (
             <div key={g.id} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/2 px-4 py-3">
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-white/75 truncate">{g.assignment}</p>

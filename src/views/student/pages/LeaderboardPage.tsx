@@ -31,8 +31,8 @@ const LEADERBOARD: LeaderboardEntry[] = [
   { rank: 10, name: 'Noah Williams', avatar: 'NW', xp: 3350, streak: 2, trend: 'down', change: 3 },
 ];
 
-const RANK_ICONS = [Crown, Medal, Medal];
-const RANK_COLORS = ['text-amber-400', 'text-zinc-300', 'text-amber-600'];
+const FALLBACK_RANK_ICONS = [Crown, Medal, Medal];
+const FALLBACK_RANK_COLORS = ['text-amber-400', 'text-zinc-300', 'text-amber-600'];
 
 export default function LeaderboardPage() {
   const containerRef = useStaggerAnimate([]);
@@ -80,14 +80,14 @@ export default function LeaderboardPage() {
       <div className="space-y-2" data-animate>
         {LEADERBOARD.map((entry) => {
           const isTop3 = entry.rank <= 3;
-          const RankIcon = isTop3 ? RANK_ICONS[entry.rank - 1] : null;
+          const RankIcon = isTop3 ? FALLBACK_RANK_ICONS[entry.rank - 1] : null;
           return (
             <Card key={entry.rank} className={cn('transition-colors', entry.isCurrentUser && 'ring-1 ring-primary/30 border-primary/20')}>
               <CardContent className="flex items-center gap-4 py-3 px-4">
                 {/* Rank */}
                 <div className="w-8 text-center shrink-0">
                   {RankIcon ? (
-                    <RankIcon className={cn('size-6 mx-auto', RANK_COLORS[entry.rank - 1])} />
+                    <RankIcon className={cn('size-6 mx-auto', FALLBACK_RANK_COLORS[entry.rank - 1])} />
                   ) : (
                     <span className="text-sm font-bold text-muted-foreground">#{entry.rank}</span>
                   )}

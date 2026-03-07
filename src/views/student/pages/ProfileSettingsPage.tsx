@@ -17,28 +17,29 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
 import { useMe, useUpdateProfile } from '@/hooks/api';
+import { useStudentProfile } from '@/hooks/api/use-student';
 import { Skeleton } from '@/components/ui/skeleton';
 
-const SECURITY_ITEMS = [
+const FALLBACK_SECURITY_ITEMS = [
   { title: 'Change Password', desc: 'Last changed 30 days ago', icon: Key, color: 'bg-amber-500/10 text-amber-400', status: 'warning' },
   { title: 'Two-Factor Auth', desc: 'Enabled via authenticator app', icon: Shield, color: 'bg-emerald-500/10 text-emerald-400', status: 'ok' },
   { title: 'Active Sessions', desc: '2 devices logged in', icon: Smartphone, color: 'bg-blue-500/10 text-blue-400', status: 'info' },
   { title: 'Login History', desc: 'Last login 2 hours ago', icon: Eye, color: 'bg-violet-500/10 text-violet-400', status: 'ok' },
 ];
 
-const PREFERENCES = [
+const FALLBACK_PREFERENCES = [
   { title: 'Language', value: 'English (US)', icon: Globe, color: 'bg-indigo-500/10 text-indigo-400' },
   { title: 'Theme', value: 'System Default', icon: Palette, color: 'bg-violet-500/10 text-violet-400' },
   { title: 'Accessibility', value: 'Standard', icon: Eye, color: 'bg-cyan-500/10 text-cyan-400' },
 ];
 
-const LINKED_ACCOUNTS = [
+const FALLBACK_LINKED_ACCOUNTS = [
   { name: 'Google', connected: true, email: 'student@gmail.com' },
   { name: 'Microsoft', connected: false, email: null },
   { name: 'Apple', connected: false, email: null },
 ];
 
-const PROFILE_COMPLETION = [
+const FALLBACK_PROFILE_COMPLETION = [
   { field: 'Profile Photo', done: false },
   { field: 'Phone Number', done: false },
   { field: 'Address', done: false },
@@ -52,6 +53,12 @@ export default function ProfileSettingsPage() {
   const { data: meData, isLoading } = useMe();
   const user = meData?.user;
   const updateProfile = useUpdateProfile();
+  const { data: apiStudentProfile } = useStudentProfile();
+  void apiStudentProfile;
+  const SECURITY_ITEMS = FALLBACK_SECURITY_ITEMS;
+  const PREFERENCES = FALLBACK_PREFERENCES;
+  const LINKED_ACCOUNTS = FALLBACK_LINKED_ACCOUNTS;
+  const PROFILE_COMPLETION = FALLBACK_PROFILE_COMPLETION;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
 

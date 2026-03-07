@@ -47,7 +47,7 @@ const TYPE_CFG: Record<HRRequest['type'], { label: string; icon: typeof Users; c
   other:         { label: 'Other', icon: FileText, color: 'text-white/50' },
 };
 
-const MOCK: HRRequest[] = [
+const FALLBACK_HR_REQUESTS: HRRequest[] = [
   { id: '1', title: 'Enrollment Verification Letter', type: 'enrollment', status: 'approved', submittedAt: '2026-02-10', updatedAt: '2026-02-12', description: 'Need an official enrollment verification letter for my visa renewal.', response: 'Letter is ready. Pick up at HR office, Room 202.', assignedTo: 'Sarah M.' },
   { id: '2', title: 'Replacement Student ID', type: 'id_card', status: 'approved', submittedAt: '2026-02-18', updatedAt: '2026-02-19', description: 'Lost my student ID card. Requesting a replacement.', response: 'New ID printed. $15 replacement fee applies. Pick up at security desk.', assignedTo: 'Tom K.' },
   { id: '3', title: 'Academic Clearance for Graduation', type: 'clearance', status: 'in-review', submittedAt: '2026-02-25', updatedAt: '2026-02-28', description: 'Requesting academic clearance check for Spring 2026 graduation candidacy.', assignedTo: 'Dr. Patel' },
@@ -64,15 +64,15 @@ export default function HumanResourcesPage() {
   const [search, setSearch] = useState('');
 
   /* ── API data ── */
-  const { data: _apiDeptReqs } = useStudentDeptRequests();
-  const hrReqs = ((_apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'hr' || r.department?.toLowerCase() === 'human resources');
+  const { data: apiDeptReqs } = useStudentDeptRequests();
+  const hrReqs = ((apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'hr' || r.department?.toLowerCase() === 'human resources');
 
-  const filtered = (hrReqs.length > 0 ? hrReqs : MOCK)
+  const filtered = (hrReqs.length > 0 ? hrReqs : FALLBACK_HR_REQUESTS)
     .filter((r) => filter === 'all' || r.status === filter)
     .filter((r) => typeFilter === 'all' || r.type === typeFilter)
     .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()));
 
-  const hrItems = hrReqs.length > 0 ? hrReqs : MOCK;
+  const hrItems = hrReqs.length > 0 ? hrReqs : FALLBACK_HR_REQUESTS;
   const pending = hrItems.filter((r: any) => r.status === 'pending').length;
   const inReview = hrItems.filter((r: any) => r.status === 'in-review').length;
   const approved = hrItems.filter((r: any) => r.status === 'approved').length;

@@ -7,8 +7,11 @@ import { StatCard } from '@/components/features/StatCard';
 import { NeonBarChart } from '@/components/features/charts/BarChart';
 import { GlowLineChart } from '@/components/features/charts/LineChart';
 import { GlowPieChart } from '@/components/features/charts/PieChart';
+import { useAnalyticsOverview } from '@/hooks/api';
+import { useAuthStore } from '@/store/auth.store';
+import { useSchoolGradebookSummary } from '@/hooks/api';
 
-const ENROLLMENT_TREND = [
+const FALLBACK_ENROLLMENT = [
   { name: 'Aug', students: 480 },
   { name: 'Sep', students: 520 },
   { name: 'Oct', students: 535 },
@@ -19,7 +22,7 @@ const ENROLLMENT_TREND = [
   { name: 'Mar', students: 570 },
 ];
 
-const GRADE_DISTRIBUTION = [
+const FALLBACK_GRADES = [
   { name: 'A', value: 28, color: '#34d399' },
   { name: 'B', value: 35, color: '#818cf8' },
   { name: 'C', value: 22, color: '#fbbf24' },
@@ -27,7 +30,7 @@ const GRADE_DISTRIBUTION = [
   { name: 'F', value: 5, color: '#f87171' },
 ];
 
-const DEPT_PERFORMANCE = [
+const FALLBACK_DEPTS = [
   { name: 'Math', avgGrade: 82, attendance: 94, satisfaction: 88 },
   { name: 'Science', avgGrade: 85, attendance: 92, satisfaction: 91 },
   { name: 'English', avgGrade: 78, attendance: 96, satisfaction: 85 },
@@ -36,7 +39,7 @@ const DEPT_PERFORMANCE = [
   { name: 'PE', avgGrade: 92, attendance: 88, satisfaction: 94 },
 ];
 
-const RECENT_ACHIEVEMENTS = [
+const FALLBACK_ACHIEVEMENTS = [
   { title: 'Regional Science Fair — 1st Place', date: '2025-03-12', student: 'Emma Chen, Grade 10' },
   { title: 'State Debate Championship Qualifier', date: '2025-03-08', student: 'Debate Team' },
   { title: 'Perfect Attendance Award', date: '2025-03-01', student: '23 students' },
@@ -45,6 +48,15 @@ const RECENT_ACHIEVEMENTS = [
 
 export default function SchoolAnalyticsView() {
   const containerRef = useStaggerAnimate([]);
+  const { schoolId } = useAuthStore();
+  const { data: apiAnalytics } = useAnalyticsOverview();
+  const { data: apiGradebook } = useSchoolGradebookSummary(schoolId);
+
+  const ENROLLMENT_TREND = apiAnalytics?.mrrData?.map(d => ({ name: d.month, students: d.mrr })) ?? FALLBACK_ENROLLMENT;
+  const GRADE_DISTRIBUTION = FALLBACK_GRADES;
+  const DEPT_PERFORMANCE = FALLBACK_DEPTS;
+  const RECENT_ACHIEVEMENTS = FALLBACK_ACHIEVEMENTS;
+  void apiGradebook;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">

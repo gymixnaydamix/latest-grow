@@ -14,8 +14,9 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentSessions } from '@/hooks/api/use-student';
 
-const AR_MODELS = [
+const FALLBACK_AR_MODELS = [
   { id: '1', title: 'Human Heart', subject: 'Biology', type: '3D Model', views: 2340, rating: 4.9, favorited: true, thumbnail: 'heart' },
   { id: '2', title: 'Solar System', subject: 'Astronomy', type: 'AR Scene', views: 3120, rating: 4.8, favorited: false, thumbnail: 'solar' },
   { id: '3', title: 'Molecule Viewer', subject: 'Chemistry', type: '3D Model', views: 1876, rating: 4.7, favorited: true, thumbnail: 'molecule' },
@@ -37,7 +38,7 @@ const THUMB_ICONS: Record<string, typeof Camera> = {
   heart: Heart, solar: Globe, molecule: Box, tectonic: Layers, rome: Globe, math: Box,
 };
 
-const RECENT_SESSIONS = [
+const FALLBACK_RECENT_SESSIONS = [
   { model: 'Human Heart', duration: '12 min', date: '1 d ago', interaction: 14 },
   { model: 'Solar System', duration: '8 min', date: '2 d ago', interaction: 9 },
   { model: 'Molecule Viewer', duration: '15 min', date: '4 d ago', interaction: 21 },
@@ -48,6 +49,10 @@ export default function ARLabPage() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [activeModel, setActiveModel] = useState<string | null>(null);
+  const { data: apiSessions } = useStudentSessions();
+  void apiSessions;
+  const AR_MODELS = FALLBACK_AR_MODELS;
+  const RECENT_SESSIONS = FALLBACK_RECENT_SESSIONS;
 
   const filtered = AR_MODELS.filter((m) => {
     const matchSearch = m.title.toLowerCase().includes(search.toLowerCase());

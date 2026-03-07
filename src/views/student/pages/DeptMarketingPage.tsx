@@ -53,7 +53,7 @@ const PRIORITY_CFG = {
   high:   { cls: 'text-red-400 bg-red-400/10', label: 'High' },
 };
 
-const MOCK: MarketingRequest[] = [
+const FALLBACK_MARKETING_REQUESTS: MarketingRequest[] = [
   { id: '1', title: 'Spring Dance Poster', type: 'poster_design', status: 'approved', priority: 'high', submittedAt: '2026-02-15', updatedAt: '2026-02-17', description: 'Need a poster design for the Spring Dance on April 5th. Theme: Enchanted Garden.', response: '3 design concepts sent to your email. Please select your preferred option.' },
   { id: '2', title: 'Robotics Club Instagram Feature', type: 'club_feature', status: 'in-review', priority: 'medium', submittedAt: '2026-02-22', updatedAt: '2026-02-24', description: 'Robotics Club won regionals. Requesting a feature post on the school Instagram.' },
   { id: '3', title: 'Science Fair Promo Video', type: 'photo_video', status: 'pending', priority: 'high', submittedAt: '2026-03-01', updatedAt: '2026-03-01', description: 'Requesting 30-second promo video for the upcoming Science Fair. Event date: March 28.' },
@@ -70,15 +70,15 @@ export default function DeptMarketingPage() {
   const [search, setSearch] = useState('');
 
   /* ── API data ── */
-  const { data: _apiDeptReqs } = useStudentDeptRequests();
-  const marketingReqs = ((_apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'marketing');
+  const { data: apiDeptReqs } = useStudentDeptRequests();
+  const marketingReqs = ((apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'marketing');
 
-  const filtered = (marketingReqs.length > 0 ? marketingReqs : MOCK)
+  const filtered = (marketingReqs.length > 0 ? marketingReqs : FALLBACK_MARKETING_REQUESTS)
     .filter((r) => filter === 'all' || r.status === filter)
     .filter((r) => typeFilter === 'all' || r.type === typeFilter)
     .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()));
 
-  const mktItems = marketingReqs.length > 0 ? marketingReqs : MOCK;
+  const mktItems = marketingReqs.length > 0 ? marketingReqs : FALLBACK_MARKETING_REQUESTS;
   const pending = mktItems.filter((r: any) => r.status === 'pending').length;
   const approved = mktItems.filter((r: any) => r.status === 'approved').length;
   const highPriority = mktItems.filter((r: any) => r.priority === 'high').length;

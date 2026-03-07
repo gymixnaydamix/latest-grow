@@ -13,12 +13,12 @@ import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
 import { useStudentCommunity } from '@/hooks/api/use-student';
 
-const CHANNELS = [
+const FALLBACK_CHANNELS = [
   { name: 'General', desc: 'Open discussion for all students and staff', members: 450, messages: 1240, icon: Hash, color: 'bg-indigo-500/20 text-indigo-400', active: '2 min ago' },
   { name: 'Announcements', desc: 'Official school announcements and updates', members: 550, messages: 89, icon: Megaphone, color: 'bg-amber-500/20 text-amber-400', active: '1 hour ago' },
 ];
 
-const RECENT_POSTS = [
+const FALLBACK_RECENT_POSTS = [
   { author: 'School Admin', channel: 'Announcements', preview: 'Final exam schedule released — check your portal', time: '1h ago', initials: 'SA', color: 'bg-amber-500/20 text-amber-400' },
   { author: 'Emma Wilson', channel: 'General', preview: 'Anyone want to form a Chemistry study group?', time: '2h ago', initials: 'EW', color: 'bg-indigo-500/20 text-indigo-400' },
   { author: 'Mr. Kim', channel: 'General', preview: 'Coding club meeting moved to Thursday', time: '3h ago', initials: 'MK', color: 'bg-emerald-500/20 text-emerald-400' },
@@ -26,7 +26,7 @@ const RECENT_POSTS = [
   { author: 'Library Staff', channel: 'General', preview: 'New books arrived — 50+ new titles!', time: '6h ago', initials: 'LS', color: 'bg-cyan-500/20 text-cyan-400' },
 ];
 
-const TRENDING = [
+const FALLBACK_TRENDING = [
   { tag: '#SpiritWeek', posts: 34 },
   { tag: '#APExams', posts: 45 },
   { tag: '#StudyGroup', posts: 18 },
@@ -36,8 +36,11 @@ export default function CommunityOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
 
   /* ── API data ── */
-  const { data: _apiCommunity } = useStudentCommunity();
-  const recentPosts = (_apiCommunity as any[]) ?? [];
+  const { data: apiCommunity } = useStudentCommunity();
+  const communityData = (apiCommunity as any) ?? {};
+  const channels = (communityData?.channels as any[])?.length > 0 ? (communityData.channels as any[]) : FALLBACK_CHANNELS;
+  const recentPosts = (communityData?.recentPosts as any[])?.length > 0 ? (communityData.recentPosts as any[]) : FALLBACK_RECENT_POSTS;
+  const trending = (communityData?.trending as any[])?.length > 0 ? (communityData.trending as any[]) : FALLBACK_TRENDING;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -55,7 +58,7 @@ export default function CommunityOverviewPage() {
       <div data-animate>
         <h3 className="text-sm font-semibold text-white/70 mb-3">Your Channels</h3>
         <div className="grid gap-4 sm:grid-cols-2">
-          {CHANNELS.map((ch) => (
+          {channels.map((ch: any) => (
             <Card key={ch.name} className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/12 hover:bg-white/5 transition-all cursor-pointer group" onClick={() => notifySuccess('Channel', 'Opening channel…')}>
               <CardContent className="p-5">
                 <div className="flex items-start gap-4">
@@ -88,7 +91,7 @@ export default function CommunityOverviewPage() {
             <CardTitle className="text-sm text-white/85">Recent Posts</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {(recentPosts.length > 0 ? recentPosts : RECENT_POSTS).map((post: any, i: number) => (
+            {recentPosts.map((post: any, i: number) => (
               <div key={i} className="flex items-start gap-3 rounded-lg border border-white/6 bg-white/2 p-3 hover:bg-white/4 transition-colors cursor-pointer" onClick={() => notifySuccess('Post', 'Opening post…')}>
                 <Avatar className="size-8 shrink-0">
                   <AvatarFallback className={`text-[10px] ${post.color}`}>{post.initials}</AvatarFallback>
@@ -114,7 +117,7 @@ export default function CommunityOverviewPage() {
               <CardTitle className="text-xs font-semibold text-white/60">Trending</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1.5">
-              {TRENDING.map((t) => (
+              {trending.map((t: any) => (
                 <div key={t.tag} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 px-2.5 py-1.5 hover:bg-white/4 cursor-pointer transition-colors" onClick={() => notifySuccess('Topic', 'Opening trending topic…')}>
                   <span className="text-xs font-medium text-indigo-400">{t.tag}</span>
                   <span className="text-[10px] text-white/30">{t.posts} posts</span>

@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useMessageThreads } from '@/hooks/api';
-import { useSendTeacherMessage, useCreateTeacherThread } from '@/hooks/api/use-teacher';
+import { useSendTeacherMessage, useCreateTeacherThread, useTeacherMessages } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
@@ -23,7 +23,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  messageThreadsDemo, type MessageThreadDemo,
+  messageThreadsDemo as FALLBACK_messageThreadsDemo, type MessageThreadDemo,
 } from './teacher-demo-data';
 
 /* ── Category styling map ── */
@@ -58,10 +58,12 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
   const header = activeHeader || 'inbox';
 
   const { data: apiThreads } = useMessageThreads(schoolId);
-  const threads: MessageThreadDemo[] = (apiThreads as unknown as MessageThreadDemo[]) ?? messageThreadsDemo;
+  const threads: MessageThreadDemo[] = (apiThreads as unknown as MessageThreadDemo[]) ?? FALLBACK_messageThreadsDemo;
 
   const sendMessageMut = useSendTeacherMessage();
   const createThreadMut = useCreateTeacherThread();
+  const { data: apiTeacherMessages } = useTeacherMessages();
+  void apiTeacherMessages;
 
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string | 'all'>('all');

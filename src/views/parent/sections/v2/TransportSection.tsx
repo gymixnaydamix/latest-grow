@@ -3,14 +3,14 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useParentV2Transport } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, parentTransportDemo } from './parent-v2-demo-data';
+import { childDisplayName, filterByChild, parentTransportDemo as FALLBACK_TRANSPORT } from './parent-v2-demo-data';
 import type { ParentTransportDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge, UrgentInline } from './shared';
 import type { ParentSectionProps } from './shared';
 
 export function TransportSection({ scope, childId }: ParentSectionProps) {
   const { data: rawRows } = useParentV2Transport({ scope, childId });
-  const rows: ParentTransportDemo[] = (rawRows as ParentTransportDemo[] | undefined) ?? filterByChild(parentTransportDemo, childId, scope);
+  const rows: ParentTransportDemo[] = (rawRows as ParentTransportDemo[] | undefined) ?? filterByChild(FALLBACK_TRANSPORT, childId, scope);
 
   const delayed = rows.filter((r) => r.status === 'DELAYED');
   const alertRows = rows.filter((r) => r.status === 'ALERT');

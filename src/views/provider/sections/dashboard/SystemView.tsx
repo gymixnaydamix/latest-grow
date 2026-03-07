@@ -4,9 +4,12 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaCh
 import { KpiCard } from './shared';
 import type { KpiDef } from './shared';
 import { useSystemHealth } from '@/hooks/api';
+import { useSystemHealth as useSystemHealthAnalytics } from '@/hooks/api/use-analytics';
 
 export function SystemView() {
   const { data: apiData } = useSystemHealth();
+  const { data: analyticsHealth } = useSystemHealthAnalytics();
+  void analyticsHealth; // available for future wiring
   /* ── Inline 3D SVG Icons ── */
   const Icon3D_Server = () => (
     <svg viewBox="0 0 40 40" className="h-9 w-9 drop-shadow-lg" style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.35))' }}>
@@ -75,13 +78,14 @@ export function SystemView() {
     { name: 'WebSocket', status: 'Warning' },
     { name: 'CDN', status: 'Healthy' },
   ]).map(s => ({ ...s, color: statusColorMap[s.status] ?? 'bg-gray-500' }));
-  const events = [
+  const FALLBACK_events = [
     { time: '2 min ago', msg: 'Auto-scaled API pods 3→4', type: 'info' },
     { time: '15 min ago', msg: 'SSL certificate renewed', type: 'success' },
     { time: '1h ago', msg: 'WebSocket latency spike (resolved)', type: 'warning' },
     { time: '3h ago', msg: 'Database backup completed', type: 'success' },
     { time: '6h ago', msg: 'Deployment v2.4.1 rolled out', type: 'info' },
   ];
+  const events = FALLBACK_events;
   const gauges = (apiGauges ?? [
     { label: 'CPU', pct: 34, color: '#3b82f6' },
     { label: 'Memory', pct: 62, color: '#10b981' },
@@ -155,7 +159,7 @@ export function SystemView() {
             </div>
           </div>
           <div className="flex flex-1 flex-col gap-0.5 px-2.5 pb-2 overflow-auto min-h-0">
-            {events.map((e, i) => (
+            {events.map((e: typeof events[number], i: number) => (
               <div key={i} className="flex items-start gap-2 rounded-lg border border-border/20 px-2 py-1.5 transition-all hover:bg-muted/20">
                 <span className={`mt-0.5 h-2 w-2 shrink-0 rounded-full ${e.type === 'success' ? 'bg-emerald-500' : e.type === 'warning' ? 'bg-amber-500' : 'bg-blue-500'}`} />
                 <div className="flex-1 min-w-0"><p className="text-[9px] font-medium leading-tight">{e.msg}</p><p className="text-[7px] text-muted-foreground">{e.time}</p></div>

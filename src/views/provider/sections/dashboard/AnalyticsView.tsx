@@ -1,12 +1,15 @@
 /* ─── AnalyticsView — Premium bento grid with heatmap, donut, top pages ─── */
 import { ArrowUpRight, TrendingUp, Activity } from 'lucide-react';
 import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaChart } from 'recharts';
-import { KpiCard, mrrData } from './shared';
+import { KpiCard, FALLBACK_mrrData } from './shared';
 import type { KpiDef } from './shared';
 import { usePlatformAnalytics } from '@/hooks/api';
+import { useProviderUsage } from '@/hooks/api/use-provider-console';
 
 export function AnalyticsView() {
   const { data: apiData } = usePlatformAnalytics();
+  const { data: usageData } = useProviderUsage();
+  void usageData;
   /* ── Inline 3D SVG Icons ── */
   const Icon3D_APICalls = () => (
     <svg viewBox="0 0 40 40" className="h-9 w-9 drop-shadow-lg" style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.35))' }}>
@@ -66,19 +69,20 @@ export function AnalyticsView() {
     { label: 'Active DAU', value: apiKpis?.[2]?.value ?? '3,420', change: apiKpis?.[2]?.change ?? '+8.1%', up: true, sub: 'Daily active users', icon3d: Icon3D_DAU, gradient: 'from-emerald-500/10 to-emerald-500/5', borderGlow: 'hover:shadow-emerald-500/20', sparkline: apiKpis?.[2]?.sparkline ?? [2800, 2900, 2950, 3020, 3080, 3120, 3180, 3220, 3280, 3340, 3380, 3420], sparkColor: '#10b981', prefix: 'a_' },
     { label: 'Bounce Rate', value: apiKpis?.[3]?.value ?? '26.8%', change: apiKpis?.[3]?.change ?? '-2.4%', up: false, sub: 'Improved from 29.2%', icon3d: Icon3D_Bounce, gradient: 'from-amber-500/10 to-amber-500/5', borderGlow: 'hover:shadow-amber-500/20', sparkline: apiKpis?.[3]?.sparkline ?? [34, 33, 32, 31, 30.5, 29.8, 29.2, 28.6, 28, 27.4, 27, 26.8], sparkColor: '#f59e0b', prefix: 'a_' },
   ];
-  const chartData = apiMrrData ?? mrrData;
+  const chartData = apiMrrData ?? FALLBACK_mrrData;
   const userGrowthData = chartData.map((d, i) => ({ month: d.month, users: 2800 + i * 120 }));
   const topPages = apiTopPages ?? [
     { page: '/dashboard', views: '45.2K', pct: 92 }, { page: '/courses', views: '32.1K', pct: 70 },
     { page: '/students', views: '28.4K', pct: 62 }, { page: '/settings', views: '18.7K', pct: 41 }, { page: '/reports', views: '12.3K', pct: 27 },
   ];
-  const heatmapGrid = [
+  const FALLBACK_heatmapGrid = [
     [0.2, 0.3, 0.8, 0.9, 0.7, 0.4], [0.1, 0.4, 0.7, 0.8, 0.6, 0.3], [0.3, 0.5, 0.9, 1.0, 0.8, 0.5],
     [0.2, 0.4, 0.8, 0.9, 0.7, 0.4], [0.3, 0.6, 0.9, 0.95, 0.8, 0.5], [0.1, 0.3, 0.5, 0.6, 0.4, 0.2], [0.05, 0.2, 0.3, 0.4, 0.3, 0.1],
   ];
+  const heatmapGrid = FALLBACK_heatmapGrid;
   const hmDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const hmSlots = ['6am', '9am', '12pm', '3pm', '6pm', '9pm'];
-  const activityFeed = [
+  const FALLBACK_activityFeed = [
     { text: 'New school signup: Lincoln Academy', color: 'bg-emerald-500', time: '12s ago' },
     { text: 'Payment received: $599/mo', color: 'bg-blue-500', time: '45s ago' },
     { text: 'User exported reports', color: 'bg-violet-500', time: '2m ago' },
@@ -87,10 +91,12 @@ export function AnalyticsView() {
     { text: 'Webhook delivery failed', color: 'bg-red-500', time: '12m ago' },
     { text: 'Bulk import completed: 240 students', color: 'bg-blue-500', time: '18m ago' },
   ];
-  const retentionWeeks = [
+  const activityFeed = FALLBACK_activityFeed;
+  const FALLBACK_retentionWeeks = [
     { week: 'W1', pct: 98 }, { week: 'W2', pct: 96 }, { week: 'W3', pct: 95 },
     { week: 'W4', pct: 94.8 }, { week: 'W5', pct: 94.5 }, { week: 'W6', pct: 94.3 }, { week: 'W7', pct: 94.2 },
   ];
+  const retentionWeeks = FALLBACK_retentionWeeks;
 
   return (
     <div className="flex gap-1.5 h-full min-h-0 overflow-hidden">
@@ -137,7 +143,7 @@ export function AnalyticsView() {
                 {hmSlots.map(s => <div key={s} className="text-[7px] text-muted-foreground text-center">{s}</div>)}
                 {hmDays.flatMap((day, di) => [
                   <div key={`l-${day}`} className="text-[7px] text-muted-foreground flex items-center">{day}</div>,
-                  ...heatmapGrid[di].map((val, si) => (
+                  ...heatmapGrid[di].map((val: number, si: number) => (
                     <div key={`c-${di}-${si}`} className="rounded-sm transition-transform duration-200 hover:scale-110 cursor-pointer" style={{ background: `rgba(59,130,246,${val})`, minHeight: 14 }} title={`${day} ${hmSlots[si]}: ${Math.round(val * 100)}%`} />
                   )),
                 ])}
@@ -230,7 +236,7 @@ export function AnalyticsView() {
               <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-medium text-emerald-500"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Live</span>
             </div>
             <div className="flex flex-1 flex-col gap-1 overflow-auto min-h-0">
-              {activityFeed.map((ev, i) => (
+              {activityFeed.map((ev: typeof activityFeed[number], i: number) => (
                 <div key={i} className="flex items-start gap-1.5 rounded-md bg-slate-900/50 p-1 border border-slate-800/50">
                   <span className={`mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full ${ev.color} ${i === 0 ? 'animate-pulse' : ''}`} />
                   <div className="min-w-0">
@@ -252,7 +258,7 @@ export function AnalyticsView() {
               <span className="text-sm font-bold text-emerald-400">94.2%</span>
             </div>
             <div className="flex items-end gap-0.5" style={{ height: 48 }}>
-              {retentionWeeks.map(w => (
+              {retentionWeeks.map((w: typeof retentionWeeks[number]) => (
                 <div key={w.week} className="flex-1 flex flex-col items-center gap-0.5">
                   <div className="w-full rounded-sm bg-linear-to-t from-emerald-600 to-emerald-400" style={{ height: `${(w.pct / 100) * 48}px` }} />
                   <span className="text-[6px] text-slate-500">{w.week}</span>

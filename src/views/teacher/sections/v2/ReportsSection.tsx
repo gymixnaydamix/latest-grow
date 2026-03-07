@@ -9,14 +9,15 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { useTeacherClassPerformance } from '@/hooks/api/use-teacher';
 import { useNavigationStore } from '@/store/navigation.store';
 import {
   TeacherSectionShell, GlassCard, MetricCard, StatusBadge, UrgentInline,
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  classPerformanceDemo, teacherClassesDemo,
-  gradebookStudentsDemo, type ClassPerformanceDemo,
+  classPerformanceDemo as FALLBACK_classPerformanceDemo, teacherClassesDemo as FALLBACK_teacherClassesDemo,
+  gradebookStudentsDemo as FALLBACK_gradebookStudentsDemo, type ClassPerformanceDemo,
 } from './teacher-demo-data';
 
 /* ── Grade letter helper ── */
@@ -66,7 +67,7 @@ interface StudentProgress {
   assignmentCompletion: number;
 }
 
-const studentProgressDemo: StudentProgress[] = gradebookStudentsDemo.map(s => ({
+const studentProgressDemo: StudentProgress[] = FALLBACK_gradebookStudentsDemo.map(s => ({
   id: s.id,
   name: s.name,
   initials: s.initials,
@@ -119,7 +120,8 @@ export function ReportsSection(_props: TeacherSectionProps) {
   const { activeHeader } = useNavigationStore();
   const header = activeHeader || 'class_analytics';
 
-  const classes: ClassPerformanceDemo[] = classPerformanceDemo;
+  const { data: apiClassPerformance } = useTeacherClassPerformance();
+  const classes: ClassPerformanceDemo[] = (apiClassPerformance as unknown as ClassPerformanceDemo[]) ?? FALLBACK_classPerformanceDemo;
   const [search, setSearch] = useState('');
 
   const overallAvg = classes.reduce((sum, c) => sum + c.avgGrade, 0) / classes.length;
@@ -150,7 +152,7 @@ export function ReportsSection(_props: TeacherSectionProps) {
         <div className="space-y-4" data-animate>
           <div className="grid gap-4 lg:grid-cols-2">
             {classes.map(cls => {
-              const tc = teacherClassesDemo.find(t => t.id === cls.classId);
+              const tc = FALLBACK_teacherClassesDemo.find(t => t.id === cls.classId);
               const accent = tc?.color ?? '#818cf8';
               return (
                 <GlassCard key={cls.classId}>

@@ -22,13 +22,13 @@ import {
   filterChildren,
   formatCurrency,
   formatDateLabel,
-  parentAssignmentsDemo,
-  parentAttendanceDemo,
-  parentChildrenDemo,
-  parentExamsDemo,
-  parentGradesDemo,
-  parentInvoicesDemo,
-  parentTransportDemo,
+  parentAssignmentsDemo as FALLBACK_ASSIGNMENTS,
+  parentAttendanceDemo as FALLBACK_ATTENDANCE,
+  parentChildrenDemo as FALLBACK_CHILDREN,
+  parentExamsDemo as FALLBACK_EXAMS,
+  parentGradesDemo as FALLBACK_GRADES,
+  parentInvoicesDemo as FALLBACK_INVOICES,
+  parentTransportDemo as FALLBACK_TRANSPORT,
 } from './parent-v2-demo-data';
 import type { ParentChildDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
@@ -36,22 +36,22 @@ import type { ParentSectionProps } from './shared';
 
 export function MyChildrenSection({ scope, childId }: ParentSectionProps) {
   const { data: childrenRaw } = useParentV2Children({ scope, childId });
-  const children: ParentChildDemo[] = (childrenRaw as ParentChildDemo[] | undefined) ?? filterChildren(parentChildrenDemo, childId, scope);
+  const children: ParentChildDemo[] = (childrenRaw as ParentChildDemo[] | undefined) ?? filterChildren(FALLBACK_CHILDREN, childId, scope);
 
-  const [activeChildId, setActiveChildId] = useState<string>(childId ?? children[0]?.id ?? parentChildrenDemo[0].id);
+  const [activeChildId, setActiveChildId] = useState<string>(childId ?? children[0]?.id ?? FALLBACK_CHILDREN[0].id);
   useParentV2ChildDetail(activeChildId);
 
   const activeChild = useMemo(
-    () => children.find((entry) => entry.id === activeChildId) ?? parentChildrenDemo.find((entry) => entry.id === activeChildId),
+    () => children.find((entry) => entry.id === activeChildId) ?? FALLBACK_CHILDREN.find((entry) => entry.id === activeChildId),
     [children, activeChildId],
   );
 
-  const invoiceSummary = parentInvoicesDemo.filter((entry) => entry.childId === activeChildId);
-  const transportSummary = parentTransportDemo.find((entry) => entry.childId === activeChildId);
-  const childExams = parentExamsDemo.filter((e) => e.childId === activeChildId && e.status === 'UPCOMING');
-  const childAssignments = parentAssignmentsDemo.filter((a) => a.childId === activeChildId);
-  const childGrades = parentGradesDemo.filter((g) => g.childId === activeChildId);
-  const childAttendance = parentAttendanceDemo.filter((a) => a.childId === activeChildId);
+  const invoiceSummary = FALLBACK_INVOICES.filter((entry) => entry.childId === activeChildId);
+  const transportSummary = FALLBACK_TRANSPORT.find((entry) => entry.childId === activeChildId);
+  const childExams = FALLBACK_EXAMS.filter((e) => e.childId === activeChildId && e.status === 'UPCOMING');
+  const childAssignments = FALLBACK_ASSIGNMENTS.filter((a) => a.childId === activeChildId);
+  const childGrades = FALLBACK_GRADES.filter((g) => g.childId === activeChildId);
+  const childAttendance = FALLBACK_ATTENDANCE.filter((a) => a.childId === activeChildId);
   const missingAssignments = childAssignments.filter((a) => a.status === 'MISSING' || a.status === 'LATE');
   const recentAbsences = childAttendance.filter((a) => a.status === 'ABSENT');
   const totalOwed = invoiceSummary.reduce((s, i) => s + Math.max(i.totalAmount - i.amountPaid, 0), 0);

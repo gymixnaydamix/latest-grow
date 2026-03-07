@@ -15,8 +15,9 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentSessions } from '@/hooks/api/use-student';
 
-const TOPICS = [
+const FALLBACK_TOPICS = [
   { id: '1', title: 'Should AI replace teachers?', category: 'Technology', difficulty: 'Intermediate', doneCount: 1432 },
   { id: '2', title: 'Universal Basic Income', category: 'Economics', difficulty: 'Advanced', doneCount: 987 },
   { id: '3', title: 'Space colonization priority', category: 'Science', difficulty: 'Beginner', doneCount: 2145 },
@@ -24,13 +25,13 @@ const TOPICS = [
   { id: '5', title: 'Nuclear energy expansion', category: 'Environment', difficulty: 'Advanced', doneCount: 754 },
 ];
 
-const MESSAGES = [
+const FALLBACK_MESSAGES = [
   { role: 'ai', text: "I'll argue FOR replacing traditional textbooks with AI tutors. Traditional textbooks are static, expensive, and can't adapt to individual learning paces.", timestamp: '2 min ago' },
   { role: 'user', text: "While AI tutors offer personalization, textbooks provide a structured, peer-reviewed foundation. They don't require internet access and promote deep reading skills.", timestamp: '1 min ago' },
   { role: 'ai', text: "Good point on accessibility. However, AI tutors can work offline too and provide instant feedback — something textbooks fundamentally can't do.", timestamp: 'Just now' },
 ];
 
-const PAST_DEBATES = [
+const FALLBACK_PAST_DEBATES = [
   { topic: 'Climate action responsibility', side: 'For', result: 'Won', score: 87, date: '2 d ago' },
   { topic: 'Social media bans in schools', side: 'Against', result: 'Lost', score: 72, date: '4 d ago' },
   { topic: 'Mandatory coding education', side: 'For', result: 'Won', score: 91, date: '1 w ago' },
@@ -46,6 +47,11 @@ export default function DebateSimulatorPage() {
   const containerRef = useStaggerAnimate([]);
   const [activeDebate, setActiveDebate] = useState(false);
   const [userInput, setUserInput] = useState('');
+  const { data: apiSessions } = useStudentSessions();
+  void apiSessions;
+  const TOPICS = FALLBACK_TOPICS;
+  const MESSAGES = FALLBACK_MESSAGES;
+  const PAST_DEBATES = FALLBACK_PAST_DEBATES;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">

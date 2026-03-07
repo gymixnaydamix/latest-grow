@@ -6,8 +6,9 @@ import { StatCard } from '@/components/features/StatCard';
 import { NeonBarChart } from '@/components/features/charts/BarChart';
 import { GlowLineChart } from '@/components/features/charts/LineChart';
 import { GlowPieChart } from '@/components/features/charts/PieChart';
+import { useAnalyticsOverview } from '@/hooks/api';
 
-const ENROLLMENT_TREND = [
+const FALLBACK_ENROLLMENT = [
   { name: 'Aug', students: 480 },
   { name: 'Sep', students: 520 },
   { name: 'Oct', students: 535 },
@@ -18,7 +19,7 @@ const ENROLLMENT_TREND = [
   { name: 'Mar', students: 578 },
 ];
 
-const GRADE_DISTRIBUTION = [
+const FALLBACK_GRADES = [
   { name: 'A', value: 28, color: '#34d399' },
   { name: 'B', value: 35, color: '#818cf8' },
   { name: 'C', value: 22, color: '#fbbf24' },
@@ -26,7 +27,7 @@ const GRADE_DISTRIBUTION = [
   { name: 'F', value: 5, color: '#f87171' },
 ];
 
-const DEPT_PERFORMANCE = [
+const FALLBACK_DEPTS = [
   { name: 'Math', avgGrade: 82, attendance: 94 },
   { name: 'Science', avgGrade: 85, attendance: 92 },
   { name: 'English', avgGrade: 78, attendance: 96 },
@@ -35,7 +36,7 @@ const DEPT_PERFORMANCE = [
   { name: 'PE', avgGrade: 92, attendance: 88 },
 ];
 
-const ATTENDANCE_TREND = [
+const FALLBACK_ATTENDANCE = [
   { name: 'Sep', rate: 94 },
   { name: 'Oct', rate: 92 },
   { name: 'Nov', rate: 88 },
@@ -47,6 +48,12 @@ const ATTENDANCE_TREND = [
 
 export default function AdminAnalyticsView() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
+  const { data: apiAnalytics } = useAnalyticsOverview();
+
+  const ENROLLMENT_TREND = apiAnalytics?.mrrData?.map(d => ({ name: d.month, students: d.mrr })) ?? FALLBACK_ENROLLMENT;
+  const GRADE_DISTRIBUTION = FALLBACK_GRADES;
+  const DEPT_PERFORMANCE = FALLBACK_DEPTS;
+  const ATTENDANCE_TREND = FALLBACK_ATTENDANCE;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">

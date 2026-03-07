@@ -56,19 +56,19 @@ export default function MediaHubView() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | MediaType>('all');
 
-  const MOCK_ASSETS: MediaAsset[] = (apiItems as any[])?.map((item: any) => ({
+  const assets: MediaAsset[] = (apiItems as any[])?.map((item: any) => ({
     id: item.id, title: item.title ?? '', type: (item.category ?? 'document') as MediaType,
     campaign: item.description ?? 'General', date: item.createdAt ?? '', dimensions: '',
     size: '', views: 0, likes: 0, status: 'published' as const,
   })) ?? FALLBACK_ASSETS;
 
-  const filtered = MOCK_ASSETS.filter((a) => {
+  const filtered = assets.filter((a) => {
     const t = typeFilter === 'all' || a.type === typeFilter;
     const q = a.title.toLowerCase().includes(search.toLowerCase()) || a.campaign.toLowerCase().includes(search.toLowerCase());
     return t && q;
   });
 
-  const totalViews = MOCK_ASSETS.reduce((s, a) => s + a.views, 0);
+  const totalViews = assets.reduce((s, a) => s + a.views, 0);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -76,7 +76,7 @@ export default function MediaHubView() {
         <div className="flex items-center gap-2">
           <Image className="size-5 text-violet-400" />
           <h2 className="text-lg font-bold text-white/90">Media Hub</h2>
-          <Badge className="border-0 bg-white/5 text-white/40 text-[10px]">{MOCK_ASSETS.length} assets</Badge>
+          <Badge className="border-0 bg-white/5 text-white/40 text-[10px]">{assets.length} assets</Badge>
         </div>
         <Button className="gap-1.5 bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 border border-violet-400/20 text-xs h-8">
           <Upload className="size-3" />Upload
@@ -86,9 +86,9 @@ export default function MediaHubView() {
       {/* Stats */}
       <div data-animate className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card className="border-white/6 bg-white/3 backdrop-blur-xl"><CardContent className="flex flex-col gap-1 p-4"><span className="text-[10px] text-white/40 uppercase">Total Views</span><span className="text-xl font-bold text-white/90 tabular-nums">{totalViews.toLocaleString()}</span></CardContent></Card>
-        <Card className="border-white/6 bg-white/3 backdrop-blur-xl"><CardContent className="flex flex-col gap-1 p-4"><span className="text-[10px] text-white/40 uppercase">Published</span><span className="text-xl font-bold text-emerald-400">{MOCK_ASSETS.filter((a) => a.status === 'published').length}</span></CardContent></Card>
-        <Card className="border-white/6 bg-white/3 backdrop-blur-xl"><CardContent className="flex flex-col gap-1 p-4"><span className="text-[10px] text-white/40 uppercase">Scheduled</span><span className="text-xl font-bold text-amber-400">{MOCK_ASSETS.filter((a) => a.status === 'scheduled').length}</span></CardContent></Card>
-        <Card className="border-white/6 bg-white/3 backdrop-blur-xl"><CardContent className="flex flex-col gap-1 p-4"><span className="text-[10px] text-white/40 uppercase">Drafts</span><span className="text-xl font-bold text-white/50">{MOCK_ASSETS.filter((a) => a.status === 'draft').length}</span></CardContent></Card>
+        <Card className="border-white/6 bg-white/3 backdrop-blur-xl"><CardContent className="flex flex-col gap-1 p-4"><span className="text-[10px] text-white/40 uppercase">Published</span><span className="text-xl font-bold text-emerald-400">{assets.filter((a) => a.status === 'published').length}</span></CardContent></Card>
+        <Card className="border-white/6 bg-white/3 backdrop-blur-xl"><CardContent className="flex flex-col gap-1 p-4"><span className="text-[10px] text-white/40 uppercase">Scheduled</span><span className="text-xl font-bold text-amber-400">{assets.filter((a) => a.status === 'scheduled').length}</span></CardContent></Card>
+        <Card className="border-white/6 bg-white/3 backdrop-blur-xl"><CardContent className="flex flex-col gap-1 p-4"><span className="text-[10px] text-white/40 uppercase">Drafts</span><span className="text-xl font-bold text-white/50">{assets.filter((a) => a.status === 'draft').length}</span></CardContent></Card>
       </div>
 
       {/* Filter */}

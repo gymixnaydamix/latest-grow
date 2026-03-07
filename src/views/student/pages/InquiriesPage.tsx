@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentDeptRequests } from '@/hooks/api/use-student';
 
 type InqStatus = 'open' | 'answered' | 'closed' | 'escalated';
 
@@ -47,7 +48,7 @@ const TOPIC_CFG: Record<Inquiry['topic'], { label: string; color: string }> = {
   general:    { label: 'General', color: 'text-white/40 bg-white/5' },
 };
 
-const MOCK: Inquiry[] = [
+const FALLBACK_INQUIRIES: Inquiry[] = [
   {
     id: '1', title: 'Library hours during exam week', department: 'Library Services', topic: 'facilities',
     status: 'answered', submittedAt: '2026-02-20', updatedAt: '2026-02-21',
@@ -95,20 +96,24 @@ export default function InquiriesPage() {
   const [showNew, setShowNew] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
+  /* ── API data ── */
+  const { data: apiDeptRequests } = useStudentDeptRequests();
+  const inquiries: Inquiry[] = (apiDeptRequests as unknown as Inquiry[]) ?? FALLBACK_INQUIRIES;
+
   const toggle = (id: string) => setExpanded((prev) => {
     const n = new Set(prev);
     n.has(id) ? n.delete(id) : n.add(id);
     return n;
   });
 
-  const filtered = MOCK
+  const filtered = inquiries
     .filter((r) => filter === 'all' || r.status === filter)
     .filter((r) => topicFilter === 'all' || r.topic === topicFilter)
     .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()) || r.question.toLowerCase().includes(search.toLowerCase()));
 
-  const open = MOCK.filter((r) => r.status === 'open').length;
-  const answered = MOCK.filter((r) => r.status === 'answered').length;
-  const esc = MOCK.filter((r) => r.status === 'escalated').length;
+  const open = inquiries.filter((r) => r.status === 'open').length;
+  const answered = inquiries.filter((r) => r.status === 'answered').length;
+  const esc = inquiries.filter((r) => r.status === 'escalated').length;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -116,7 +121,7 @@ export default function InquiriesPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Total Inquiries" value={MOCK.length} icon={<HelpCircle className="h-5 w-5" />} />
+        <StatCard label="Total Inquiries" value={inquiries.length} icon={<HelpCircle className="h-5 w-5" />} />
         <StatCard label="Open" value={open} icon={<MessageCircle className="h-5 w-5" />} trend={open > 0 ? 'up' : 'neutral'} />
         <StatCard label="Answered" value={answered} icon={<CheckCircle2 className="h-5 w-5" />} trend="up" />
         <StatCard label="Escalated" value={esc} icon={<AlertTriangle className="h-5 w-5" />} trend={esc > 0 ? 'down' : 'neutral'} />

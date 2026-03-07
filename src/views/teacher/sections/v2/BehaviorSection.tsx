@@ -14,14 +14,14 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useNavigationStore } from '@/store/navigation.store';
-import { useSaveBehaviorNote } from '@/hooks/api/use-teacher';
+import { useSaveBehaviorNote, useTeacherBehaviorNotes } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import {
   TeacherSectionShell, GlassCard, MetricCard, StatusBadge, EmptyState,
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  behaviorNotesDemo, attendanceStudentsDemo,
+  behaviorNotesDemo as FALLBACK_behaviorNotesDemo, attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo,
   formatDateLabel, type BehaviorNoteDemo,
 } from './teacher-demo-data';
 
@@ -36,8 +36,9 @@ export function BehaviorSection(_props: TeacherSectionProps) {
   const { activeHeader, setHeader } = useNavigationStore();
   const header = activeHeader || 'behavior_log';
   const saveBehaviorNoteMut = useSaveBehaviorNote();
+  const { data: apiBehaviorNotes } = useTeacherBehaviorNotes();
 
-  const notes: BehaviorNoteDemo[] = behaviorNotesDemo;
+  const notes: BehaviorNoteDemo[] = (apiBehaviorNotes as unknown as BehaviorNoteDemo[]) ?? FALLBACK_behaviorNotesDemo;
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -73,7 +74,7 @@ export function BehaviorSection(_props: TeacherSectionProps) {
   const matchingStudents = useMemo(() => {
     if (studentSearch.length < 2) return [];
     const q = studentSearch.toLowerCase();
-    return attendanceStudentsDemo.filter(s => s.name.toLowerCase().includes(q)).slice(0, 5);
+    return FALLBACK_attendanceStudentsDemo.filter(s => s.name.toLowerCase().includes(q)).slice(0, 5);
   }, [studentSearch]);
 
   const handleAddNote = () => {
