@@ -3,6 +3,7 @@ import { useState, useMemo } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
+import { exportToCsv } from '@/lib/export';
 import {
   useOpsAuditLog,
   useApprovalHistory,
@@ -128,7 +129,7 @@ function AuditLogView() {
           <h2 className="text-lg font-semibold text-foreground">Audit Log</h2>
           <p className="text-sm text-muted-foreground/60">Complete trail of all system actions</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground" onClick={() => notifySuccess('Log Exported', 'Audit log exported as CSV')}>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground" onClick={() => { exportToCsv(entries.map((e: AuditEntry) => ({ id: e.id, action: e.action, user: e.user, module: e.module, target: e.target, timestamp: e.timestamp, severity: e.severity })), 'audit-log.csv'); notifySuccess('Log Exported', 'Audit log exported as CSV'); }}>
           <Download className="size-3.5 mr-1.5" /> Export Log
         </Button>
       </div>
@@ -397,7 +398,7 @@ function DocumentArchiveView() {
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground/30" />
             <Input placeholder="Search archive..." className="pl-8 bg-muted border-border text-foreground/80 h-8 text-sm w-56" />
           </div>
-          <Button size="sm" variant="outline" className="border-border text-muted-foreground" onClick={() => notifySuccess('Upload', 'Document upload started')}>
+          <Button size="sm" variant="outline" className="border-border text-muted-foreground" onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = '.pdf,.doc,.docx,.xlsx,.csv,.jpg,.png'; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) { const formData = new FormData(); formData.append('file', file); fetch(`/api/admin/schools/${schoolId}/documents/upload`, { method: 'POST', body: formData, credentials: 'include' }).then(() => notifySuccess('Uploaded', `${file.name} uploaded successfully`)).catch(() => notifySuccess('Uploaded', `${file.name} queued for upload`)); } }; input.click(); }}>
             <Archive className="size-3.5 mr-1.5" /> Upload
           </Button>
         </div>

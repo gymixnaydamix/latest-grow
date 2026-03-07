@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentDeptRequests } from '@/hooks/api/use-student';
 
 type ReqStatus = 'pending' | 'approved' | 'denied' | 'in-review';
 
@@ -62,14 +63,19 @@ export default function HumanResourcesPage() {
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
 
-  const filtered = MOCK
+  /* ── API data ── */
+  const { data: _apiDeptReqs } = useStudentDeptRequests();
+  const hrReqs = ((_apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'hr' || r.department?.toLowerCase() === 'human resources');
+
+  const filtered = (hrReqs.length > 0 ? hrReqs : MOCK)
     .filter((r) => filter === 'all' || r.status === filter)
     .filter((r) => typeFilter === 'all' || r.type === typeFilter)
     .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()));
 
-  const pending = MOCK.filter((r) => r.status === 'pending').length;
-  const inReview = MOCK.filter((r) => r.status === 'in-review').length;
-  const approved = MOCK.filter((r) => r.status === 'approved').length;
+  const hrItems = hrReqs.length > 0 ? hrReqs : MOCK;
+  const pending = hrItems.filter((r: any) => r.status === 'pending').length;
+  const inReview = hrItems.filter((r: any) => r.status === 'in-review').length;
+  const approved = hrItems.filter((r: any) => r.status === 'approved').length;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -77,7 +83,7 @@ export default function HumanResourcesPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Total Requests" value={MOCK.length} icon={<Users className="h-5 w-5" />} />
+        <StatCard label="Total Requests" value={hrItems.length} icon={<Users className="h-5 w-5" />} />
         <StatCard label="Pending" value={pending} icon={<Clock className="h-5 w-5" />} trend={pending > 0 ? 'up' : 'neutral'} />
         <StatCard label="In Review" value={inReview} icon={<AlertTriangle className="h-5 w-5" />} />
         <StatCard label="Approved" value={approved} icon={<CheckCircle2 className="h-5 w-5" />} trend="up" />
@@ -183,9 +189,9 @@ export default function HumanResourcesPage() {
             <CardContent className="py-10 text-center text-white/30 text-sm">No requests match your filters.</CardContent>
           </Card>
         )}
-        {filtered.map((req) => {
-          const s = STATUS_CFG[req.status];
-          const tc = TYPE_CFG[req.type];
+        {filtered.map((req: any) => {
+          const s = STATUS_CFG[req.status as ReqStatus];
+          const tc = TYPE_CFG[req.type as keyof typeof TYPE_CFG];
           return (
             <Card key={req.id} className="border-white/6 bg-white/3 backdrop-blur-xl hover:bg-white/5 transition-colors">
               <CardContent className="flex flex-col gap-3 p-4">

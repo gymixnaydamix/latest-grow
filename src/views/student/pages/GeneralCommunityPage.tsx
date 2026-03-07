@@ -14,6 +14,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentCommunity, useCreateCommunityPost, useLikeCommunityPost } from '@/hooks/api/use-student';
 
 interface Post {
   id: string;
@@ -56,6 +57,12 @@ export default function GeneralCommunityPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const [message, setMessage] = useState('');
 
+  /* ── API data ── */
+  const { data: _apiCommunity } = useStudentCommunity();
+  const createPostMut = useCreateCommunityPost();
+  const likePostMut = useLikeCommunityPost();
+  const communityPosts = (_apiCommunity as any[]) ?? [];
+
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
       <PageHeader title="General Channel" description="Open discussion for all students and staff" />
@@ -93,7 +100,7 @@ export default function GeneralCommunityPage() {
                         </Button>
                       ))}
                     </div>
-                    <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs" onClick={() => notifySuccess('Posted', 'Your post has been shared')}>
+                    <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500 text-white text-xs" onClick={() => createPostMut.mutate({ content: message } as any, { onSuccess: () => { notifySuccess('Posted', 'Your post has been shared'); setMessage(''); } })}>
                       <Send className="mr-1 size-3" /> Post
                     </Button>
                   </div>
@@ -103,7 +110,7 @@ export default function GeneralCommunityPage() {
           </Card>
 
           {/* Posts */}
-          {POSTS.map((post) => (
+          {(communityPosts.length > 0 ? communityPosts : POSTS).map((post: any) => (
             <Card key={post.id} data-animate className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/10 transition-all">
               <CardContent className="pt-4 pb-3">
                 <div className="flex items-start gap-3">
@@ -119,7 +126,7 @@ export default function GeneralCommunityPage() {
                     </div>
                     <p className="text-sm text-white/60 mt-1.5 leading-relaxed">{post.content}</p>
                     <div className="flex items-center gap-4 mt-3">
-                      <button className="flex items-center gap-1 text-white/30 hover:text-indigo-400 transition-colors" onClick={() => notifySuccess('Liked', 'Post liked')}>
+                      <button className="flex items-center gap-1 text-white/30 hover:text-indigo-400 transition-colors" onClick={() => likePostMut.mutate(post.id, { onSuccess: () => notifySuccess('Liked', 'Post liked') })}>
                         <ThumbsUp className="size-3.5" />
                         <span className="text-xs">{post.likes}</span>
                       </button>

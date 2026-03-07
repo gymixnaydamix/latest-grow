@@ -3,9 +3,10 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeTemplatePicker } from '@/components/concierge/shared';
 import { MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTeacherClasses, useTeacherCommentBank, useSaveTeacherPreferences } from '@/hooks/api/use-teacher';
 
 /* ── Quick replies ── */
-const quickReplies = [
+const FALLBACK_QUICK_REPLIES = [
   { id: 'qr1', name: 'Homework reminder', preview: 'Please ensure your child completes the assigned homework by the due date.' },
   { id: 'qr2', name: 'Absence follow-up', preview: 'Your child was absent today. Please provide a reason at your earliest convenience.' },
   { id: 'qr3', name: 'Positive feedback', preview: 'I wanted to share that your child has been doing excellent work in class recently.' },
@@ -14,14 +15,14 @@ const quickReplies = [
 ];
 
 /* ── Grade scales ── */
-const gradeScales = [
+const FALLBACK_GRADE_SCALES = [
   { id: 'gs1', name: 'A–F Letter Grade', ranges: ['A: 90–100', 'B: 80–89', 'C: 70–79', 'D: 60–69', 'F: Below 60'], active: true },
   { id: 'gs2', name: 'Percentage (0–100%)', ranges: ['Pass: 60%+', 'Fail: Below 60%'], active: false },
   { id: 'gs3', name: 'GPA (4.0 Scale)', ranges: ['4.0: 93–100', '3.7: 90–92', '3.3: 87–89', '3.0: 83–86', '2.7: 80–82', '2.0: 73–76'], active: false },
 ];
 
 /* ── Class config ── */
-const classConfigs = [
+const FALLBACK_CLASS_CONFIGS = [
   { id: 'cc1', className: 'Grade 5A — Mathematics', students: 30, gradeScale: 'A–F', attendanceMode: 'Per-period', language: 'English' },
   { id: 'cc2', className: 'Grade 5B — Mathematics', students: 30, gradeScale: 'A–F', attendanceMode: 'Per-period', language: 'English' },
   { id: 'cc3', className: 'Grade 4C — Science', students: 28, gradeScale: 'Percentage', attendanceMode: 'Per-period', language: 'English' },
@@ -29,7 +30,7 @@ const classConfigs = [
 ];
 
 /* ── Settings templates ── */
-const settingsTemplates = [
+const FALLBACK_SETTINGS_TEMPLATES = [
   { id: 'st1', name: 'Lesson Plan Template', type: 'Lesson', lastUsed: 'Yesterday', fieldCount: 8 },
   { id: 'st2', name: 'Weekly Report Template', type: 'Report', lastUsed: '3 days ago', fieldCount: 6 },
   { id: 'st3', name: 'Assignment Rubric Template', type: 'Assessment', lastUsed: '1 week ago', fieldCount: 5 },
@@ -38,6 +39,14 @@ const settingsTemplates = [
 
 export function TeacherConciergeSettings() {
   const { activeSubNav } = useNavigationStore();
+  const { data: apiClasses } = useTeacherClasses();
+  const { data: apiCommentBank } = useTeacherCommentBank();
+  useSaveTeacherPreferences();
+
+  const quickReplies = (apiCommentBank as any[]) ?? FALLBACK_QUICK_REPLIES;
+  const gradeScales = FALLBACK_GRADE_SCALES;
+  const classConfigs = (apiClasses as any[]) ?? FALLBACK_CLASS_CONFIGS;
+  const settingsTemplates = FALLBACK_SETTINGS_TEMPLATES;
 
   /* ── Preferences (default) ── */
   if (!activeSubNav || activeSubNav === 'c_preferences') {

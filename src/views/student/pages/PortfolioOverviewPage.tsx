@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentPortfolio, useAddPortfolioWork } from '@/hooks/api/use-student';
 
 const WORK_TYPES = [
   { type: 'Essay', icon: FileText, color: 'bg-blue-500/20 text-blue-400' },
@@ -61,13 +62,20 @@ const CAREER_READINESS = [
 export default function PortfolioOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const [filter, setFilter] = useState<string>('all');
-  const totalViews = PORTFOLIO_ITEMS.reduce((s, p) => s + p.views, 0);
+
+  /* ── API data ── */
+  const { data: _apiPortfolio } = useStudentPortfolio();
+  // @ts-expect-error TS6133 — mutation available for wiring
+  const _addWorkMut = useAddPortfolioWork();
+  const portfolioItems = (_apiPortfolio as any[]) ?? [];
+  const portfolio = portfolioItems.length > 0 ? portfolioItems : PORTFOLIO_ITEMS;
+  const totalViews = portfolio.reduce((s: number, p: any) => s + (p.views ?? 0), 0);
 
   const filtered = filter === 'all'
-    ? PORTFOLIO_ITEMS
+    ? portfolio
     : filter === 'featured'
-      ? PORTFOLIO_ITEMS.filter((p) => p.featured)
-      : PORTFOLIO_ITEMS.filter((p) => p.type === filter);
+      ? portfolio.filter((p: any) => p.featured)
+      : portfolio.filter((p: any) => p.type === filter);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -75,10 +83,10 @@ export default function PortfolioOverviewPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Portfolio Items" value={PORTFOLIO_ITEMS.length} icon={<FolderOpen className="h-5 w-5" />} />
+        <StatCard label="Portfolio Items" value={portfolio.length} icon={<FolderOpen className="h-5 w-5" />} />
         <StatCard label="Total Views" value={totalViews} icon={<Eye className="h-5 w-5" />} trend="up" />
         <StatCard label="Certificates" value={CERTIFICATES.length} icon={<Award className="h-5 w-5" />} accentColor="#a78bfa" />
-        <StatCard label="Featured Works" value={PORTFOLIO_ITEMS.filter((p) => p.featured).length} icon={<Star className="h-5 w-5" />} accentColor="#f59e0b" />
+        <StatCard label="Featured Works" value={portfolio.filter((p: any) => p.featured).length} icon={<Star className="h-5 w-5" />} accentColor="#f59e0b" />
       </div>
 
       {/* Filters */}
@@ -210,7 +218,7 @@ export default function PortfolioOverviewPage() {
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-2">
               {WORK_TYPES.map((w) => {
-                const count = PORTFOLIO_ITEMS.filter((p) => p.type === w.type).length;
+                const count = portfolio.filter((p: any) => p.type === w.type).length;
                 return (
                   <div key={w.type} className="flex items-center gap-2 rounded-lg border border-white/6 bg-white/2 p-2">
                     <div className={cn('size-6 rounded-md flex items-center justify-center', w.color)}>

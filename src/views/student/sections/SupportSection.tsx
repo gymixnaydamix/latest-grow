@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type SupportTicket } from '@/store/student-data.store';
+import { type SupportTicket } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type SupportView = 'tickets' | 'new' | 'faq';
@@ -29,7 +30,7 @@ const FAQ_ITEMS = [
 ];
 
 export function SupportSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [view, setView] = useState<SupportView>('tickets');
 
   const openTickets = store.tickets.filter(t => t.status === 'open' || t.status === 'in_progress').length;
@@ -71,7 +72,7 @@ export function SupportSection() {
 
 /* ── Tickets List ── */
 function TicketsList() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const tickets = useMemo(() => {
     return [...store.tickets].sort((a: SupportTicket, b: SupportTicket) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [store.tickets]);
@@ -150,7 +151,7 @@ function TicketCard({ ticket }: { ticket: SupportTicket }) {
 
 /* ── New Ticket Form ── */
 function NewTicketForm({ onSubmitted }: { onSubmitted: () => void }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [subject, setSubject] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState<SupportTicket['category']>('general');

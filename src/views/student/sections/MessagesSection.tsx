@@ -11,13 +11,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type MessageThread } from '@/store/student-data.store';
+import { type MessageThread } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type MessagesView = 'inbox' | 'sent';
 
 export function MessagesSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [view, setView] = useState<MessagesView>('inbox');
   const [selectedThread, setSelectedThread] = useState<string | null>(null);
   const [search, setSearch] = useState('');
@@ -120,7 +121,7 @@ export function MessagesSection() {
 
 /* ── Thread Detail ── */
 function ThreadDetail({ thread, onBack }: { thread: MessageThread; onBack: () => void }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [message, setMessage] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
 

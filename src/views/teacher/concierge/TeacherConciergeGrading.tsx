@@ -2,8 +2,9 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { useState } from 'react';
 import { ConciergeSplitPreviewPanel, ConciergeTemplatePicker, ConciergePermissionBadge } from '@/components/concierge/shared';
-
 import { cn } from '@/lib/utils';
+import { useTeacherGradebook, useTeacherGradingQueue, useTeacherClasses, useSaveGrades, useTeacherClassPerformance } from '@/hooks/api/use-teacher';
+import { notifySuccess } from '@/lib/notify';
 
 /* ── Grade entry data ── */
 interface StudentGrade {
@@ -16,7 +17,7 @@ interface StudentGrade {
   total: number | null;
 }
 
-const gradeData: StudentGrade[] = [
+const FALLBACK_GRADES: StudentGrade[] = [
   { id: 'g1', name: 'Ahmed Hassan', quiz1: 85, quiz2: 90, midterm: 78, assignment: 92, total: 86 },
   { id: 'g2', name: 'Sara Mohammed', quiz1: 92, quiz2: 88, midterm: 95, assignment: 90, total: 91 },
   { id: 'g3', name: 'Omar Al-Farsi', quiz1: 65, quiz2: 70, midterm: 58, assignment: 72, total: 66 },
@@ -30,7 +31,7 @@ const gradeData: StudentGrade[] = [
 ];
 
 /* ── Pending reviews ── */
-const pendingReviews = [
+const FALLBACK_PENDING_REVIEWS = [
   { id: 'pr1', title: 'Unit 5 Quiz — Grade 5A', subject: 'Mathematics', submitted: 28, reviewed: 20, dueDate: 'Today' },
   { id: 'pr2', title: 'Lab Report #3 — Grade 4C', subject: 'Science', submitted: 26, reviewed: 0, dueDate: 'Tomorrow' },
   { id: 'pr3', title: 'Fractions Practice Set 2 — Grade 5B', subject: 'Mathematics', submitted: 30, reviewed: 30, dueDate: 'Jun 10' },
@@ -38,7 +39,7 @@ const pendingReviews = [
 ];
 
 /* ── Report cards ── */
-const reportCards = [
+const FALLBACK_REPORT_CARDS = [
   { id: 'rc1', className: 'Grade 5A', subject: 'Mathematics', students: 30, generated: 28, status: 'In Progress' },
   { id: 'rc2', className: 'Grade 5B', subject: 'Mathematics', students: 30, generated: 30, status: 'Complete' },
   { id: 'rc3', className: 'Grade 4C', subject: 'Science', students: 28, generated: 0, status: 'Not Started' },
@@ -46,7 +47,7 @@ const reportCards = [
 ];
 
 /* ── Grade book cumulative ── */
-const gradeBookSummary = [
+const FALLBACK_GRADEBOOK_SUMMARY = [
   { className: 'Grade 5A — Mathematics', avg: 82, highest: 97, lowest: 58, passRate: '93%' },
   { className: 'Grade 5B — Mathematics', avg: 85, highest: 98, lowest: 62, passRate: '97%' },
   { className: 'Grade 4C — Science', avg: 78, highest: 95, lowest: 52, passRate: '86%' },
@@ -54,7 +55,7 @@ const gradeBookSummary = [
 ];
 
 /* ── Rubric templates ── */
-const rubricTemplates = [
+const FALLBACK_RUBRIC_TEMPLATES = [
   { id: 'rt1', name: 'Mathematics Quiz Rubric', type: 'Quiz', lastUsed: 'Yesterday', fieldCount: 5 },
   { id: 'rt2', name: 'Lab Report Rubric', type: 'Lab', lastUsed: '3 days ago', fieldCount: 6 },
   { id: 'rt3', name: 'Presentation Rubric', type: 'Presentation', lastUsed: '1 week ago', fieldCount: 4 },
@@ -63,6 +64,19 @@ const rubricTemplates = [
 
 export function TeacherConciergeGrading() {
   const { activeSubNav } = useNavigationStore();
+  const { data: apiClasses } = useTeacherClasses();
+  const defaultClassId = (apiClasses as any)?.[0]?.id ?? null;
+  const { data: apiGradebook } = useTeacherGradebook(defaultClassId);
+  const { data: apiGradingQueue } = useTeacherGradingQueue();
+  const { data: apiPerformance } = useTeacherClassPerformance();
+  const saveGrades = useSaveGrades();
+
+  const gradeData = (apiGradebook as unknown as StudentGrade[]) ?? FALLBACK_GRADES;
+  const pendingReviews = (apiGradingQueue as any[]) ?? FALLBACK_PENDING_REVIEWS;
+  const reportCards = (apiGradebook as any)?.reportCards ?? FALLBACK_REPORT_CARDS;
+  const gradeBookSummary = (apiPerformance as any[]) ?? FALLBACK_GRADEBOOK_SUMMARY;
+  const rubricTemplates = (apiGradebook as any)?.rubricTemplates ?? FALLBACK_RUBRIC_TEMPLATES;
+
   const [grades] = useState(gradeData);
 
   /* ── Enter Grades (default) ── */
@@ -137,8 +151,23 @@ export function TeacherConciergeGrading() {
           ))}
         </div>
         <ConciergePermissionBadge granted label="Grade entry active" />
-        <button className="w-full rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-          Submit Grades
+        <button
+          className="w-full rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          disabled={saveGrades.isPending}
+          onClick={() => {
+            if (!defaultClassId) return;
+            saveGrades.mutate(
+              {
+                classId: defaultClassId,
+                grades: grades
+                  .filter((g) => g.total !== null)
+                  .map((g) => ({ studentId: g.id, assignmentId: 'unit5', score: g.total! })),
+              },
+              { onSuccess: () => notifySuccess('Grades submitted successfully') },
+            );
+          }}
+        >
+          {saveGrades.isPending ? 'Submitting…' : 'Submit Grades'}
         </button>
       </div>
     );
@@ -181,7 +210,7 @@ export function TeacherConciergeGrading() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Report Card Generation</h3>
         <div className="space-y-2">
-          {reportCards.map((r) => (
+          {reportCards.map((r: any) => (
             <div key={r.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-1">
                 <h5 className="text-xs font-medium text-foreground">{r.className} — {r.subject}</h5>

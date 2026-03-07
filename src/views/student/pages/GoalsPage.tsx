@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentWellness, useCreateWellnessGoal } from '@/hooks/api/use-student';
 
 type GoalStatus = 'active' | 'completed' | 'paused';
 type GoalCategory = 'health' | 'academic' | 'social' | 'mindfulness' | 'fitness' | 'habits';
@@ -56,10 +57,16 @@ export default function GoalsPage() {
   const [statusFilter, setStatusFilter] = useState<'all' | GoalStatus>('all');
   const [showNew, setShowNew] = useState(false);
 
-  const filtered = GOALS.filter((g) => statusFilter === 'all' || g.status === statusFilter);
-  const active = GOALS.filter((g) => g.status === 'active').length;
-  const completed = GOALS.filter((g) => g.status === 'completed').length;
-  const longestStreak = Math.max(...GOALS.map((g) => g.streak));
+  /* ── API data ── */
+  const { data: _apiWellness } = useStudentWellness();
+  const createGoalMut = useCreateWellnessGoal();
+  const wellnessGoals = ((_apiWellness as any)?.goals as any[]) ?? [];
+  const goalsData = wellnessGoals.length > 0 ? wellnessGoals : GOALS;
+
+  const filtered = goalsData.filter((g: any) => statusFilter === 'all' || g.status === statusFilter);
+  const active = goalsData.filter((g: any) => g.status === 'active').length;
+  const completed = goalsData.filter((g: any) => g.status === 'completed').length;
+  const longestStreak = goalsData.length > 0 ? Math.max(...goalsData.map((g: any) => g.streak ?? 0)) : 0;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -70,7 +77,7 @@ export default function GoalsPage() {
         <StatCard label="Active Goals" value={active} icon={<Target className="h-5 w-5" />} />
         <StatCard label="Completed" value={completed} icon={<Trophy className="h-5 w-5" />} trend="up" />
         <StatCard label="Best Streak" value={longestStreak} suffix=" days" icon={<Flame className="h-5 w-5" />} />
-        <StatCard label="Total Goals" value={GOALS.length} icon={<BarChart3 className="h-5 w-5" />} />
+        <StatCard label="Total Goals" value={goalsData.length} icon={<BarChart3 className="h-5 w-5" />} />
       </div>
 
       {/* Toolbar */}
@@ -113,7 +120,7 @@ export default function GoalsPage() {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowNew(false)} className="text-xs border-white/10 text-white/50">Cancel</Button>
-              <Button size="sm" className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 gap-1" onClick={() => notifySuccess('Goal', 'New wellness goal created')}><Target className="size-3" />Create</Button>
+              <Button size="sm" className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 gap-1" onClick={() => createGoalMut.mutate({} as any, { onSuccess: () => notifySuccess('Goal', 'New wellness goal created') })}><Target className="size-3" />Create</Button>
             </div>
           </CardContent>
         </Card>
@@ -126,9 +133,9 @@ export default function GoalsPage() {
             <CardContent className="py-10 text-center text-white/30 text-sm">No goals match your filter.</CardContent>
           </Card>
         )}
-        {filtered.map((goal) => {
-          const cat = CAT_CFG[goal.category];
-          const doneCount = goal.milestones.filter((m) => m.done).length;
+        {filtered.map((goal: any) => {
+          const cat = CAT_CFG[goal.category as GoalCategory];
+          const doneCount = goal.milestones?.filter((m: any) => m.done).length ?? 0;
           return (
             <Card key={goal.id} className="border-white/6 bg-white/3 backdrop-blur-xl hover:bg-white/5 transition-colors">
               <CardContent className="flex flex-col gap-3 p-4">
@@ -163,7 +170,7 @@ export default function GoalsPage() {
 
                 {/* Milestones */}
                 <div className="flex flex-wrap gap-2">
-                  {goal.milestones.map((m) => (
+                  {goal.milestones?.map((m: any) => (
                     <div key={m.label} className="flex items-center gap-1.5">
                       {m.done ? <CheckCircle2 className="size-3 text-emerald-400" /> : <Circle className="size-3 text-white/20" />}
                       <span className={cn('text-[10px]', m.done ? 'text-white/60 line-through' : 'text-white/35')}>{m.label}</span>

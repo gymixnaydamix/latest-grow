@@ -7,8 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
-import { StatCard } from '@/components/features/StatCard';
-
+import { StatCard } from '@/components/features/StatCard';import { usePayroll } from '@/hooks/api/use-finance';
 type PayStatus = 'paid' | 'pending' | 'processing';
 
 interface PayrollEntry {
@@ -30,7 +29,7 @@ const STATUS_CFG: Record<PayStatus, { Icon: typeof CheckCircle; cls: string; bg:
   processing: { Icon: AlertTriangle, cls: 'text-indigo-400', bg: 'bg-indigo-400/10' },
 };
 
-const MOCK_PAYROLL: PayrollEntry[] = [
+const FALLBACK_PAYROLL: PayrollEntry[] = [
   { id: '1', name: 'Dr. Amanda Smith', role: 'Teacher', department: 'Mathematics', baseSalary: 65000, bonus: 2000, deductions: 8500, netPay: 58500, status: 'paid', payDate: '2025-03-15' },
   { id: '2', name: 'James Wilson', role: 'Teacher', department: 'Science', baseSalary: 62000, bonus: 1500, deductions: 8000, netPay: 55500, status: 'paid', payDate: '2025-03-15' },
   { id: '3', name: 'Lisa Chen', role: 'Admin Staff', department: 'Front Office', baseSalary: 45000, bonus: 0, deductions: 5800, netPay: 39200, status: 'processing', payDate: '2025-03-15' },
@@ -45,6 +44,18 @@ export default function PayrollView() {
   const containerRef = useStaggerAnimate([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | PayStatus>('all');
+
+  const { data: apiPayroll } = usePayroll();
+
+  const MOCK_PAYROLL: PayrollEntry[] = (apiPayroll as any[])?.map((p: any) => ({
+    id: p.id, name: p.staffName ?? p.staffId ?? '', role: p.role ?? '',
+    department: p.department ?? '', baseSalary: Number(p.grossAmount ?? 0),
+    bonus: Number(p.bonus ?? 0),
+    deductions: Object.values(p.deductions ?? {}).reduce((s: number, v: any) => s + Number(v), 0) as number,
+    netPay: Number(p.netAmount ?? p.grossAmount ?? 0),
+    status: (p.status?.toLowerCase() ?? 'pending') as PayStatus,
+    payDate: p.period ?? p.createdAt ?? '',
+  })) ?? FALLBACK_PAYROLL;
 
   const filtered = MOCK_PAYROLL.filter((e) => {
     const s = statusFilter === 'all' || e.status === statusFilter;

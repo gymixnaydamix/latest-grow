@@ -12,13 +12,14 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type Announcement } from '@/store/student-data.store';
+import { type Announcement } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type AnncFilter = 'all' | 'unread' | 'academic' | 'events' | 'urgent' | 'saved';
 
 export function AnnouncementsSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [filter, setFilter] = useState<AnncFilter>('all');
   const [search, setSearch] = useState('');
 
@@ -100,7 +101,7 @@ export function AnnouncementsSection() {
 
 /* ── Announcement Card ── */
 function AnnouncementCard({ announcement: a }: { announcement: Announcement }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [expanded, setExpanded] = useState(false);
 
   const handleClick = () => {

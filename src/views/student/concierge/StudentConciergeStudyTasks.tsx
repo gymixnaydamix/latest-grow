@@ -3,6 +3,7 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeTaskCard } from '@/components/concierge/shared';
 import { cn } from '@/lib/utils';
 import { BookOpen, Calendar, Clock, Target } from 'lucide-react';
+import { useStudentAssignments, useStudentPlanner } from '@/hooks/api/use-student';
 
 interface StudentTask {
   id: string;
@@ -20,7 +21,7 @@ interface StudentTask {
   blockedReason?: string;
 }
 
-const taskData: StudentTask[] = [
+const FALLBACK_TASKS: StudentTask[] = [
   {
     id: 't1', title: 'Complete Exercise 7.3 — Triangles (Problems 1–15)', linkedEntity: 'Mathematics',
     dueDate: 'Today', priority: 'urgent', owner: 'Me', checklistTotal: 15, checklistDone: 8,
@@ -65,7 +66,7 @@ const taskData: StudentTask[] = [
 ];
 
 /* ── Study plan weekly schedule ── */
-const weeklyPlan = [
+const FALLBACK_WEEKLY_PLAN = [
   { day: 'Monday', slots: [
     { time: '4:00 PM', subject: 'Mathematics', task: 'Complete Ch. 7 exercises', duration: '1 hr' },
     { time: '5:00 PM', subject: 'Science', task: 'Lab notes & diagram', duration: '45 min' },
@@ -99,7 +100,7 @@ const weeklyPlan = [
 ];
 
 /* ── Revision items for upcoming tests ── */
-const revisionItems = [
+const FALLBACK_REVISION_ITEMS = [
   { id: 'r1', subject: 'Hindi', test: 'Unit Test — Premchand Stories', date: 'Mar 10', syllabus: 'Idgah, Namak ka Daroga, Panch Parmeshwar', progress: 40, topics: ['Character analysis', 'Themes & morals', 'Hindi grammar from chapters'] },
   { id: 'r2', subject: 'Mathematics', test: 'Weekly Test — Polynomials', date: 'Mar 12', syllabus: 'Ch 2: Polynomials — all exercises', progress: 25, topics: ['Factor theorem', 'Remainder theorem', 'Zeroes of polynomial'] },
   { id: 'r3', subject: 'Science', test: 'Lab Viva — Reflection of Light', date: 'Mar 14', syllabus: 'Laws of reflection, mirror types, ray diagrams', progress: 60, topics: ['Plane mirror laws', 'Concave vs convex', 'Image formation'] },
@@ -117,6 +118,13 @@ const subjectColors: Record<string, string> = {
 
 export function StudentConciergeStudyTasks() {
   const { activeSubNav } = useNavigationStore();
+
+  const { data: apiTasks } = useStudentAssignments();
+  const { data: apiPlanner } = useStudentPlanner();
+
+  const taskData = (apiTasks as any[]) ?? FALLBACK_TASKS;
+  const weeklyPlan = (apiPlanner as any[]) ?? FALLBACK_WEEKLY_PLAN;
+  const revisionItems = FALLBACK_REVISION_ITEMS;
 
   /* ── By Subject ── */
   if (activeSubNav === 'c_by_subject') {
@@ -162,7 +170,7 @@ export function StudentConciergeStudyTasks() {
             <div key={day.day} className="rounded-xl border border-white/20 bg-white/60 p-3 shadow-lg backdrop-blur-xl dark:bg-white/5">
               <h4 className="mb-2 text-xs font-semibold text-foreground">{day.day}</h4>
               <div className="space-y-1.5">
-                {day.slots.map((slot, i) => (
+                {day.slots.map((slot: any, i: number) => (
                   <div key={i} className="flex items-center gap-3 rounded-lg border border-border/20 bg-background/50 px-3 py-2 dark:border-white/5">
                     <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground min-w-[60px]">
                       <Clock className="h-2.5 w-2.5" /> {slot.time}

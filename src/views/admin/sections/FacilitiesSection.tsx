@@ -52,6 +52,7 @@ function RoomsView() {
   const createRoom = useCreateRoom(schoolId);
   const updateRoom = useUpdateRoom(schoolId);
   const deleteRoom = useDeleteRoom(schoolId);
+  const bookFacility = useBookFacility(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Room | null>(null);
@@ -146,7 +147,7 @@ function RoomsView() {
         tabs={tabs}
         actions={[
           { label: 'Edit', icon: <Edit className="size-3.5" />, onClick: () => { setEditing(detail); setFormOpen(true); setDetail(null); } },
-          { label: 'Book', icon: <Calendar className="size-3.5" />, onClick: () => notifySuccess('Booking', `Booking initiated for ${detail?.name}`) },
+          { label: 'Book', icon: <Calendar className="size-3.5" />, onClick: () => { bookFacility.mutate({ roomId: detail?.id, date: new Date().toISOString().slice(0, 10), startTime: '09:00', endTime: '10:00', purpose: 'General use' } as any, { onSuccess: () => notifySuccess('Booking', `Booking confirmed for ${detail?.name}`) }); } },
         ]} />
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}

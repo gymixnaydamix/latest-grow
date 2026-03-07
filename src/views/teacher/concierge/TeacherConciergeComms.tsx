@@ -3,9 +3,11 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeTemplatePicker } from '@/components/concierge/shared';
 import { Send, Megaphone, Calendar, Clock, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTeacherMessages, useTeacherAnnouncements, useTeacherMeetings, useScheduleMeeting } from '@/hooks/api/use-teacher';
+import { notifySuccess } from '@/lib/notify';
 
 /* ── Parent notes ── */
-const parentNotes = [
+const FALLBACK_PARENT_NOTES = [
   { id: 'pn1', parent: 'Mrs. Sara Al-Farsi', student: 'Omar Al-Farsi', subject: 'Homework completion has dropped this week', date: 'Today', status: 'Unread', priority: 'high' },
   { id: 'pn2', parent: 'Mr. Hasan Yousef', student: 'Khalid Yousef', subject: 'Son was sick — will be back Monday', date: 'Today', status: 'Read', priority: 'medium' },
   { id: 'pn3', parent: 'Mrs. Layla Bakr', student: 'Amira Bakr', subject: 'Request for extra study materials for math', date: 'Yesterday', status: 'Replied', priority: 'low' },
@@ -14,7 +16,7 @@ const parentNotes = [
 ];
 
 /* ── Announcements ── */
-const announcements = [
+const FALLBACK_ANNOUNCEMENTS = [
   { id: 'ca1', title: 'Unit 5 test rescheduled to Thursday', audience: 'Grade 5A parents', date: 'Today', status: 'Sent' },
   { id: 'ca2', title: 'Science fair project guidelines', audience: 'Grade 4C parents', date: 'Yesterday', status: 'Sent' },
   { id: 'ca3', title: 'Report card distribution next Friday', audience: 'All my classes', date: 'Jun 10', status: 'Scheduled' },
@@ -22,7 +24,7 @@ const announcements = [
 ];
 
 /* ── Direct messages ── */
-const messages = [
+const FALLBACK_MESSAGES = [
   { id: 'dm1', with: 'Mrs. Sara Al-Farsi', lastMessage: 'I will follow up with Omar tonight about the homework.', date: 'Today', unread: true },
   { id: 'dm2', with: 'Mr. Hasan Yousef', lastMessage: 'Thank you for letting me know. Wishing Khalid a quick recovery.', date: 'Today', unread: false },
   { id: 'dm3', with: 'Ms. Rania (Co-teacher)', lastMessage: 'Can you cover my 10:30 slot on Friday?', date: 'Yesterday', unread: true },
@@ -30,7 +32,7 @@ const messages = [
 ];
 
 /* ── Meeting requests ── */
-const meetingRequests = [
+const FALLBACK_MEETING_REQUESTS = [
   { id: 'mr1', parent: 'Mrs. Sara Al-Farsi', student: 'Omar Al-Farsi', topic: 'Behaviour and homework concerns', requested: 'Jun 12', proposed: 'Jun 14, 2:00 PM', status: 'Confirmed' },
   { id: 'mr2', parent: 'Mr. Ahmed Noor', student: 'Hassan Noor', topic: 'Declining grades in mathematics', requested: 'Jun 11', proposed: 'Jun 16, 3:00 PM', status: 'Pending' },
   { id: 'mr3', parent: 'Mrs. Fatima Saleh', student: 'Amina Saleh', topic: 'Gifted program recommendation', requested: 'Jun 9', proposed: 'Jun 13, 1:00 PM', status: 'Confirmed' },
@@ -38,7 +40,7 @@ const meetingRequests = [
 ];
 
 /* ── Sent log ── */
-const sentLog = [
+const FALLBACK_SENT_LOG = [
   { id: 'sl1', title: 'Unit 5 test rescheduled', channel: 'In-App + Email', queued: 30, sent: 30, delivered: 29, failed: 1, opened: 25 },
   { id: 'sl2', title: 'Science fair guidelines', channel: 'Email', queued: 28, sent: 28, delivered: 28, failed: 0, opened: 22 },
   { id: 'sl3', title: 'Report card distribution', channel: 'In-App', queued: 120, sent: 0, delivered: 0, failed: 0, opened: 0 },
@@ -46,7 +48,7 @@ const sentLog = [
 ];
 
 /* ── Templates ── */
-const commsTemplates = [
+const FALLBACK_COMMS_TEMPLATES = [
   { id: 'ct1', name: 'Homework Reminder', type: 'Parent Note', lastUsed: 'Yesterday', fieldCount: 3 },
   { id: 'ct2', name: 'Meeting Invitation', type: 'Meeting', lastUsed: '3 days ago', fieldCount: 5 },
   { id: 'ct3', name: 'Progress Update', type: 'Report', lastUsed: '1 week ago', fieldCount: 4 },
@@ -56,6 +58,17 @@ const commsTemplates = [
 
 export function TeacherConciergeComms() {
   const { activeSubNav } = useNavigationStore();
+  const { data: apiMessages } = useTeacherMessages();
+  const { data: apiAnnouncements } = useTeacherAnnouncements();
+  const { data: apiMeetings } = useTeacherMeetings();
+  const scheduleMeeting = useScheduleMeeting();
+
+  const parentNotes = (apiMessages as any)?.parentNotes ?? FALLBACK_PARENT_NOTES;
+  const announcements = (apiAnnouncements as any[]) ?? FALLBACK_ANNOUNCEMENTS;
+  const messages = (apiMessages as any)?.threads ?? FALLBACK_MESSAGES;
+  const meetingRequests = (apiMeetings as any[]) ?? FALLBACK_MEETING_REQUESTS;
+  const sentLog = (apiMessages as any)?.sentLog ?? FALLBACK_SENT_LOG;
+  const commsTemplates = (apiMessages as any)?.templates ?? FALLBACK_COMMS_TEMPLATES;
 
   /* ── Parent Notes (default) ── */
   if (!activeSubNav || activeSubNav === 'c_parent_notes') {
@@ -68,7 +81,7 @@ export function TeacherConciergeComms() {
           </button>
         </div>
         <div className="space-y-2">
-          {parentNotes.map((n) => (
+          {parentNotes.map((n: any) => (
             <div key={n.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-1">
                 <h5 className="text-xs font-medium text-foreground">{n.parent}</h5>
@@ -135,7 +148,7 @@ export function TeacherConciergeComms() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Messages</h3>
         <div className="space-y-2">
-          {messages.map((m) => (
+          {messages.map((m: any) => (
             <div key={m.id} className={cn(
               'rounded-xl border p-3 dark:border-white/5',
               m.unread ? 'border-primary/20 bg-primary/5' : 'border-border/30 bg-background/70',
@@ -182,13 +195,35 @@ export function TeacherConciergeComms() {
               </div>
               {m.status === 'Pending' && (
                 <div className="flex items-center gap-2 mt-2">
-                  <button className="rounded-lg bg-emerald-600 px-3 py-1 text-[10px] font-medium text-white hover:bg-emerald-700">Confirm</button>
+                  <button
+                    className="rounded-lg bg-emerald-600 px-3 py-1 text-[10px] font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+                    disabled={scheduleMeeting.isPending}
+                    onClick={() => {
+                      scheduleMeeting.mutate(
+                        { title: m.topic, type: 'parent-teacher', date: m.proposed?.split(',')[0] ?? '', startTime: m.proposed?.split(', ')[1] ?? '', endTime: '', location: 'School', attendees: m.parent, notes: m.topic },
+                        { onSuccess: () => notifySuccess('Meeting confirmed') },
+                      );
+                    }}
+                  >
+                    Confirm
+                  </button>
                   <button className="rounded-lg border border-border/50 px-3 py-1 text-[10px] font-medium text-foreground hover:bg-muted/60">Reschedule</button>
                 </div>
               )}
               {m.status === 'Awaiting teacher slot' && (
                 <div className="flex items-center gap-2 mt-2">
-                  <button className="rounded-lg bg-primary px-3 py-1 text-[10px] font-medium text-primary-foreground hover:bg-primary/90">Propose Time</button>
+                  <button
+                    className="rounded-lg bg-primary px-3 py-1 text-[10px] font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                    disabled={scheduleMeeting.isPending}
+                    onClick={() => {
+                      scheduleMeeting.mutate(
+                        { title: m.topic, type: 'parent-teacher', date: '', startTime: '', endTime: '', location: 'School', attendees: m.parent },
+                        { onSuccess: () => notifySuccess('Time proposed') },
+                      );
+                    }}
+                  >
+                    Propose Time
+                  </button>
                 </div>
               )}
             </div>
@@ -214,7 +249,7 @@ export function TeacherConciergeComms() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Sent Log</h3>
         <div className="space-y-2">
-          {sentLog.map((d) => (
+          {sentLog.map((d: any) => (
             <div key={d.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-2">
                 <h5 className="text-xs font-medium text-foreground">{d.title}</h5>

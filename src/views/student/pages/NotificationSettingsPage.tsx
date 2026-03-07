@@ -14,6 +14,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentNotifications, useMarkAllNotificationsRead } from '@/hooks/api/use-student';
 
 type ChannelStatus = 'enabled' | 'disabled';
 
@@ -69,9 +70,15 @@ export default function NotificationSettingsPage() {
   const [channels, setChannels] = useState(CHANNELS);
   const [categories, setCategories] = useState(CATEGORIES);
 
+  /* ── API data ── */
+  const { data: _apiNotifs } = useStudentNotifications();
+  const markAllReadMut = useMarkAllNotificationsRead();
+  const recentNotifs = (_apiNotifs as any[]) ?? [];
+  const notifsData = recentNotifs.length > 0 ? recentNotifs : RECENT_NOTIFS;
+
   const enabledChannels = channels.filter((c) => c.status === 'enabled').length;
   const enabledCategories = categories.filter((c) => c.enabled).length;
-  const unreadCount = RECENT_NOTIFS.filter((n) => !n.read).length;
+  const unreadCount = notifsData.filter((n: any) => !n.read).length;
 
   const toggleChannel = (id: string) => {
     setChannels((prev) => prev.map((c) =>
@@ -216,7 +223,7 @@ export default function NotificationSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {RECENT_NOTIFS.map((n, i) => (
+              {notifsData.map((n: any, i: number) => (
                 <div key={i} className={cn(
                   'flex items-start gap-2.5 rounded-lg border border-white/6 bg-white/2 p-2.5',
                   !n.read && 'border-indigo-500/15 bg-indigo-500/5',
@@ -240,7 +247,7 @@ export default function NotificationSettingsPage() {
           {/* Quick actions */}
           <Card data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="p-3 flex flex-col gap-2">
-              <Button size="sm" variant="outline" className="w-full text-[10px] h-7 border-white/10 text-white/40 gap-1 justify-start" onClick={() => notifySuccess('Notifications', 'All notifications marked as read')}>
+              <Button size="sm" variant="outline" className="w-full text-[10px] h-7 border-white/10 text-white/40 gap-1 justify-start" onClick={() => markAllReadMut.mutate(undefined as any, { onSuccess: () => notifySuccess('Notifications', 'All notifications marked as read') })}>
                 <CheckCircle2 className="size-3" />Mark all as read
               </Button>
               <Button size="sm" variant="outline" className="w-full text-[10px] h-7 border-white/10 text-white/40 gap-1 justify-start" onClick={() => notifySuccess('Muted', 'All notifications muted for 1 hour')}>

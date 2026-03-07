@@ -1,16 +1,19 @@
 /* Admin Concierge › Approvals — Split layout: queue + detail panel */
 import { useNavigationStore } from '@/store/navigation.store';
+import { useAuthStore } from '@/store/auth.store';
 import { useState } from 'react';
 import { ConciergeSplitPreviewPanel, ConciergePermissionBadge, ConciergeAuditNotice } from '@/components/concierge/shared';
 import { Clock, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useApprovalHistory, useApproveCorrection, useApproveLeave } from '@/hooks/api/use-school-ops';
+import { notifySuccess } from '@/lib/notify';
 
 interface Approval {
   id: string; type: string; requester: string; affectedRecord: string;
   status: string; priority: string; dueDate: string; summary: string;
 }
 
-const approvals: Approval[] = [
+const FALLBACK_APPROVALS: Approval[] = [
   { id: 'a1', type: 'Admission', requester: 'Ms. Fatima', affectedRecord: 'Student: Omar Khalid', status: 'Pending', priority: 'High', dueDate: 'Today', summary: 'New student admission for Grade 4A. Transfers from Al-Noor School with strong GPA.' },
   { id: 'a2', type: 'Discount', requester: 'Mr. Hasan', affectedRecord: 'Invoice #4021', status: 'Pending', priority: 'Medium', dueDate: 'Tomorrow', summary: '15% sibling discount request for the Ali family, 3 children enrolled.' },
   { id: 'a3', type: 'Refund', requester: 'Mrs. Layla', affectedRecord: 'Payment #8812', status: 'Pending', priority: 'High', dueDate: 'Today', summary: 'Partial refund for cancelled transport service — $200.' },
@@ -21,7 +24,13 @@ const approvals: Approval[] = [
 
 export function AdminConciergeApprovals() {
   const { activeSubNav } = useNavigationStore();
+  const { schoolId } = useAuthStore();
+  const { data: apiApprovals } = useApprovalHistory(schoolId);
+  const approvals = (apiApprovals as any[] as Approval[]) ?? FALLBACK_APPROVALS;
   const [selected, setSelected] = useState<Approval | null>(approvals[0] ?? null);
+
+  const approveCorrection = useApproveCorrection(schoolId);
+  const approveLeave = useApproveLeave(schoolId);
 
   const filtered = (() => {
     switch (activeSubNav) {
@@ -75,8 +84,30 @@ export function AdminConciergeApprovals() {
       <ConciergePermissionBadge granted label="Approval permission active" />
       <ConciergeAuditNotice message="This action will be recorded in the audit log" />
       <div className="flex items-center gap-2 pt-2">
-        <button className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700">Approve</button>
-        <button className="rounded-xl bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700">Reject</button>
+        <button
+          className="rounded-xl bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700"
+          onClick={() => {
+            if (selected.type === 'Attendance Correction') {
+              approveCorrection.mutate({ id: selected.id, status: 'Approved' }, { onSuccess: () => notifySuccess('Correction approved') });
+            } else if (selected.type === 'Leave Request') {
+              approveLeave.mutate({ id: selected.id, status: 'Approved' }, { onSuccess: () => notifySuccess('Leave approved') });
+            } else {
+              notifySuccess('Approved', `${selected.type} for ${selected.affectedRecord}`);
+            }
+          }}
+        >Approve</button>
+        <button
+          className="rounded-xl bg-red-600 px-4 py-2 text-xs font-medium text-white hover:bg-red-700"
+          onClick={() => {
+            if (selected.type === 'Attendance Correction') {
+              approveCorrection.mutate({ id: selected.id, status: 'Rejected' }, { onSuccess: () => notifySuccess('Correction rejected') });
+            } else if (selected.type === 'Leave Request') {
+              approveLeave.mutate({ id: selected.id, status: 'Rejected' }, { onSuccess: () => notifySuccess('Leave rejected') });
+            } else {
+              notifySuccess('Rejected', `${selected.type} for ${selected.affectedRecord}`);
+            }
+          }}
+        >Reject</button>
         <button className="rounded-xl border border-border/50 px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/60">Request Info</button>
         <button className="rounded-xl border border-border/50 px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/60">Delegate</button>
         <button className="rounded-xl border border-border/50 px-4 py-2 text-xs font-medium text-foreground hover:bg-muted/60">Escalate</button>

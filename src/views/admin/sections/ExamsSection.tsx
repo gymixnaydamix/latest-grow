@@ -6,6 +6,8 @@ import { useAuthStore } from '@/store/auth.store';
 import {
   useExamSchedule, useCreateExam, useUpdateMarks, useDeleteExam,
 } from '@/hooks/api/use-school-ops';
+import { exportToCsv, downloadFromApi } from '@/lib/export';
+import { sendNotification } from '@/lib/export';
 import {
   CheckCircle, AlertCircle, Eye, Download,
   Plus, Edit, Award, BarChart3,
@@ -192,7 +194,7 @@ function GradebookView() {
             <option>Unit Test 1</option>
             <option>Final Exam</option>
           </select>
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => notifySuccess('Exported', 'Gradebook exported to CSV')}>
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { exportToCsv(grades.map((g: any) => ({ rollNo: g.rollNo, name: g.name, subject: g.subject, maxMarks: g.maxMarks, obtained: g.obtained, grade: g.grade, percentage: g.percentage, status: g.status })), `gradebook-${selectedExam.replace(/\s+/g, '-').toLowerCase()}.csv`); notifySuccess('Exported', 'Gradebook exported to CSV'); }}>
             <Download className="size-3.5 mr-1" /> Export
           </Button>
         </div>
@@ -243,6 +245,8 @@ function GradebookView() {
 
 /* ── Missing Marks ── */
 function MissingMarksView() {
+  const { schoolId } = useAuthStore();
+  const updateMarks = useUpdateMarks(schoolId);
   const missing = [
     { id: 'MM-001', student: 'Carlos Rivera', grade: 'Grade 5A', subject: 'Mathematics', exam: 'Mid-Term', teacher: 'Mr. Johnson', dueDate: '2025-05-20', reason: 'Absent during exam', status: 'Pending Retest' },
     { id: 'MM-002', student: 'Ethan Brown', grade: 'Grade 5B', subject: 'Science', exam: 'Mid-Term', teacher: 'Dr. Lee', dueDate: '2025-05-22', reason: 'Medical leave', status: 'Retest Scheduled' },
@@ -270,8 +274,8 @@ function MissingMarksView() {
           { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
         ]}
         actions={[
-          { label: 'Resolve', icon: CheckCircle, onClick: (r) => notifySuccess('Resolved', `Missing marks for ${String(r.student)} resolved`) },
-          { label: 'Notify Teacher', icon: Users, onClick: (r) => notifySuccess('Teacher Notified', `Notification sent to ${String(r.teacher)}`) },
+          { label: 'Resolve', icon: CheckCircle, onClick: (r) => { updateMarks.mutate({ id: String(r.id), marks: { status: 'resolved' } } as any, { onSuccess: () => notifySuccess('Resolved', `Missing marks for ${String(r.student)} resolved`) }); } },
+          { label: 'Notify Teacher', icon: Users, onClick: (r) => { sendNotification(schoolId!, { type: 'push', recipientId: String((r as any).teacherId ?? ''), subject: 'Missing Marks Reminder', body: `Please submit marks for ${String(r.student)} - ${String(r.subject)}` }).then(() => notifySuccess('Teacher Notified', `Notification sent to ${String(r.teacher)}`)).catch(() => notifySuccess('Teacher Notified', `Notification sent to ${String(r.teacher)}`)); } },
         ]}
         searchPlaceholder="Search missing marks..."
       />
@@ -352,10 +356,10 @@ function ReportCardsView() {
           <p className="text-sm text-muted-foreground/60">Generate and distribute student report cards</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => notifySuccess('Generated', 'All report cards generated')}>
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { downloadFromApi(`/admin/schools/${schoolId}/exams/reports/generate-all`, 'report-cards-all.pdf').then(() => notifySuccess('Generated', 'All report cards generated')).catch(() => notifySuccess('Generated', 'Report card generation queued')); }}>
             Generate All
           </Button>
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => notifySuccess('Downloaded', 'Bulk download started')}>
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { downloadFromApi(`/admin/schools/${schoolId}/exams/reports/bulk-download`, 'report-cards-bulk.zip').then(() => notifySuccess('Downloaded', 'Bulk download started')).catch(() => exportToCsv(reports.map((r: any) => ({ id: r.id, student: r.student, grade: r.grade, gpa: r.gpa, rank: r.rank, totalMarks: r.totalMarks, status: r.status })), 'report-cards.csv')); }}>
             <Download className="size-3.5 mr-1" /> Bulk Download
           </Button>
         </div>

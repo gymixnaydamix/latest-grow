@@ -16,7 +16,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { useStudentStore } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { useAuthStore } from '@/store/auth.store';
 import { useNavigationStore } from '@/store/navigation.store';
 import { notifySuccess } from '@/lib/notify';
@@ -26,7 +26,7 @@ const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
 
 export function MyDaySection() {
   const user = useAuthStore(s => s.user);
-  const store = useStudentStore();
+  const store = useStudentData();
   const { navigate: nav } = useNavigationStore();
   const [expandedQuickActions, setExpandedQuickActions] = useState(false);
 

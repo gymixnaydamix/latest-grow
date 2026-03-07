@@ -12,14 +12,15 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type StudentInvoice } from '@/store/student-data.store';
+import { type StudentInvoice } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { notifySuccess } from '@/lib/notify';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type FeeView = 'overview' | 'invoices' | 'history';
 
 export function FeesSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [view, setView] = useState<FeeView>('overview');
 
   const stats = useMemo(() => {
@@ -87,7 +88,7 @@ export function FeesSection() {
 
 /* -- Overview -- */
 function OverviewView({ stats }: { stats: { totalDue: number; totalPaid: number; overdue: StudentInvoice[]; pending: StudentInvoice[]; total: number } }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const totalAmount = stats.totalDue + stats.totalPaid;
   const paidPct = totalAmount > 0 ? Math.round((stats.totalPaid / totalAmount) * 100) : 0;
 
@@ -148,7 +149,7 @@ function OverviewView({ stats }: { stats: { totalDue: number; totalPaid: number;
 
 /* -- Invoice list -- */
 function InvoiceList() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [filter, setFilter] = useState<string>('all');
   const [search, setSearch] = useState('');
 
@@ -217,7 +218,7 @@ function InvoiceList() {
 
 /* -- Payment History -- */
 function PaymentHistory() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const paid = useMemo(() => {
     return store.invoices.filter(i => i.status === 'paid').sort((a, b) => new Date(b.issuedAt).getTime() - new Date(a.issuedAt).getTime());
   }, [store.invoices]);

@@ -3,6 +3,7 @@ import { useState, useCallback, useMemo } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
+import { useUpdateBranding } from '@/hooks/api/use-school';
 import {
   useFeeConfig,
   useRoles,
@@ -544,9 +545,11 @@ function TemplatesSettingsView() {
 const defaultBrandColors = { primary: '#3B82F6', secondary: '#10B981', accent: '#F59E0B' };
 
 function BrandingView() {
+  const { schoolId } = useAuthStore();
+  const updateBranding = useUpdateBranding(schoolId!);
   const [colors, setColors] = useState(defaultBrandColors);
 
-  const handleSave = () => notifySuccess('Branding Saved', 'Brand colors and appearance updated');
+  const handleSave = () => updateBranding.mutate({ colors } as any, { onSuccess: () => notifySuccess('Branding Saved', 'Brand colors and appearance updated') });
 
   const colorFields: { label: string; key: keyof typeof defaultBrandColors; name: string }[] = [
     { label: 'Primary Color', key: 'primary', name: 'Blue' },

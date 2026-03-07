@@ -228,7 +228,7 @@ export interface PlannerBlock {
 // Mutation Payloads
 // ---------------------------------------------------------------------------
 
-interface UpdateProfilePayload {
+export interface UpdateProfilePayload {
   firstName?: string;
   lastName?: string;
   email?: string;
@@ -240,7 +240,7 @@ interface ChangePasswordPayload {
   newPassword: string;
 }
 
-interface SubmitAssignmentPayload {
+export interface SubmitAssignmentPayload {
   assignmentId: string;
   content: string;
 }
@@ -269,21 +269,21 @@ interface SubmitDeptRequestPayload {
   description: string;
 }
 
-interface PayInvoicePayload {
+export interface PayInvoicePayload {
   invoiceId: string;
   amount: number;
 }
 
-interface CreateCommunityPostPayload {
+export interface CreateCommunityPostPayload {
   content: string;
 }
 
-interface CreateMindMapPayload {
+export interface CreateMindMapPayload {
   title: string;
   color?: string;
 }
 
-interface GenerateCitationPayload {
+export interface GenerateCitationPayload {
   style: string;
   sourceType: string;
   title: string;
@@ -294,12 +294,12 @@ interface GenerateCitationPayload {
   journal?: string;
 }
 
-interface CreateFocusSessionPayload {
+export interface CreateFocusSessionPayload {
   duration: number;
   task: string;
 }
 
-interface AddPlannerBlockPayload {
+export interface AddPlannerBlockPayload {
   title: string;
   startTime: string;
   endTime: string;
@@ -307,19 +307,19 @@ interface AddPlannerBlockPayload {
   color?: string;
 }
 
-interface SendMessagePayload {
+export interface SendMessagePayload {
   threadId?: string;
   recipientId?: string;
   content: string;
 }
 
-interface CreateGoalPayload {
+export interface CreateGoalPayload {
   title: string;
   target: string;
   category: string;
 }
 
-interface CreateJournalEntryPayload {
+export interface CreateJournalEntryPayload {
   mood: string;
   content: string;
 }

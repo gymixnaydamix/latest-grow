@@ -8,6 +8,7 @@ import {
   useLeaveRequests,
   useApproveLeave,
   useComplianceTasks,
+  useUpdateComplianceTask,
 } from '@/hooks/api/use-school-ops';
 import { useEvents, useCreateEvent, useDeleteEvent } from '@/hooks/api/use-operations';
 import { useDashboardKPIs } from '@/hooks/api/use-school';
@@ -27,7 +28,7 @@ import {
 } from '@/components/features/school-admin';
 import type { FormField } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
-import { notifyInfo } from '@/lib/notify';
+import { notifySuccess } from '@/lib/notify';
 
 /* ── Local types ── */
 interface CalendarEvent {
@@ -559,17 +560,22 @@ function IssuesView() {
     status: t.status ?? 'open', reportedAt: t.createdAt ?? t.reportedAt ?? '',
     assignee: t.assignee ?? t.assignedTo ?? undefined,
   }));
+  const updateTask = useUpdateComplianceTask(schoolId);
   const [selectedIssue, setSelectedIssue] = useState<SchoolIssue | null>(null);
 
   const openIssues = issues.filter(i => i.status !== 'resolved');
 
   const handleResolve = (id: string) => {
-    notifyInfo('Resolved', `Issue ${id} marked as resolved`);
+    updateTask.mutate({ id, status: 'resolved' } as any, {
+      onSuccess: () => notifySuccess('Resolved', `Issue ${id} marked as resolved`),
+    });
     setSelectedIssue(null);
   };
 
   const handleAssign = (id: string) => {
-    notifyInfo('Assigned', `Issue ${id} assigned to you`);
+    updateTask.mutate({ id, assignee: 'current_user' } as any, {
+      onSuccess: () => notifySuccess('Assigned', `Issue ${id} assigned to you`),
+    });
   };
 
   return (

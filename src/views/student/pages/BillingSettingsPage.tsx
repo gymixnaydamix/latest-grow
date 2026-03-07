@@ -16,6 +16,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentFees, usePayInvoice } from '@/hooks/api/use-student';
 
 const PLAN = {
   name: 'Pro Student Plan',
@@ -68,6 +69,14 @@ export default function BillingSettingsPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const maxSpend = Math.max(...SPENDING_MONTHS.map((m) => m.amount));
   const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
+
+  /* ── API data ── */
+  const { data: _apiFees } = useStudentFees();
+  // @ts-expect-error TS6133 — mutation available for wiring
+  const _payInvoiceMut = usePayInvoice();
+  const feesData = (_apiFees as any) ?? {};
+  const invoices = ((feesData?.invoices ?? []) as any[]).length > 0 ? (feesData.invoices as any[]) : INVOICES;
+  const transactions = ((feesData?.transactions ?? []) as any[]).length > 0 ? (feesData.transactions as any[]) : TRANSACTIONS;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -186,7 +195,7 @@ export default function BillingSettingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
-                  {INVOICES.map((inv) => (
+                  {invoices.map((inv: any) => (
                     <div
                       key={inv.id}
                       className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-3 cursor-pointer hover:bg-white/3 transition-colors"
@@ -222,7 +231,7 @@ export default function BillingSettingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
-                  {TRANSACTIONS.map((tx, i) => (
+                  {transactions.map((tx: any, i: number) => (
                     <div key={i} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-2.5">
                       <div className="flex items-center gap-3">
                         <div className={cn(

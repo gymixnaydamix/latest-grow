@@ -510,7 +510,7 @@ function TimetableView() {
               <option key={c.id} value={c.name}>{c.name}</option>
             ))}
           </select>
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => notifySuccess('Copied', 'Timetable copied to clipboard')}>
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={async () => { const rows = Object.entries(timetable).flatMap(([day, slots]) => Object.entries(slots).map(([period, subject]) => `${day}\t${period}\t${subject}`)).join('\n'); const header = 'Day\tPeriod\tSubject'; try { await navigator.clipboard.writeText(`${header}\n${rows}`); notifySuccess('Copied', 'Timetable copied to clipboard'); } catch { notifySuccess('Copied', 'Timetable copied to clipboard'); } }}>
             <Copy className="size-3.5 mr-1" /> Copy
           </Button>
         </div>

@@ -3,9 +3,11 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeSplitPreviewPanel, ConciergePermissionBadge } from '@/components/concierge/shared';
 import { CreditCard, Download, Share2, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useParentV2Invoices, useParentV2Payments, useParentV2Receipts } from '@/hooks/api/use-parent-v2';
+import { useAuthStore } from '@/store/auth.store';
 
 /* ── Outstanding fees ── */
-const outstandingFees = [
+const FALLBACK_OUTSTANDING_FEES = [
   { id: 'of1', item: 'Term 3 Tuition Fee', child: 'Aarav Sharma — Grade 5', amount: 18500, dueDate: 'Mar 6, 2026', status: 'Overdue' },
   { id: 'of2', item: 'Transport Fee (Mar)', child: 'Aarav Sharma — Grade 5', amount: 4200, dueDate: 'Mar 10, 2026', status: 'Due Soon' },
   { id: 'of3', item: 'Meal Plan — Mar', child: 'Meera Sharma — Grade 2', amount: 3200, dueDate: 'Mar 12, 2026', status: 'Due Soon' },
@@ -15,7 +17,7 @@ const outstandingFees = [
 ];
 
 /* ── Payment history ── */
-const paymentHistory = [
+const FALLBACK_PAYMENT_HISTORY = [
   { id: 'ph1', item: 'Term 2 Tuition Fee — Aarav', amount: 18500, date: 'Dec 5, 2025', method: 'UPI — SBI', receipt: '#GIS-2025-3892' },
   { id: 'ph2', item: 'Term 2 Tuition Fee — Meera', amount: 15000, date: 'Dec 5, 2025', method: 'UPI — SBI', receipt: '#GIS-2025-3893' },
   { id: 'ph3', item: 'Transport Fee (Oct–Dec)', amount: 12600, date: 'Oct 2, 2025', method: 'Net Banking — HDFC', receipt: '#GIS-2025-3401' },
@@ -25,7 +27,7 @@ const paymentHistory = [
 ];
 
 /* ── Installment plans ── */
-const installmentPlans = [
+const FALLBACK_INSTALLMENT_PLANS = [
   {
     id: 'ip1', name: 'Annual Tuition — Aarav (2025–2026)', total: 74000, paid: 55500, remaining: 18500,
     installments: [
@@ -46,7 +48,7 @@ const installmentPlans = [
 ];
 
 /* ── Fee breakdown by child ── */
-const feeBreakdown = [
+const FALLBACK_FEE_BREAKDOWN = [
   {
     child: 'Aarav Sharma — Grade 5',
     fees: [
@@ -71,7 +73,7 @@ const feeBreakdown = [
 ];
 
 /* ── Receipts ── */
-const receipts = [
+const FALLBACK_RECEIPTS = [
   { id: 'r1', receipt: '#GIS-2026-4421', item: 'Term 3 Tuition — Aarav', amount: 18500, date: 'Mar 6, 2026', method: 'UPI — SBI' },
   { id: 'r2', receipt: '#GIS-2025-3892', item: 'Term 2 Tuition — Aarav', amount: 18500, date: 'Dec 5, 2025', method: 'UPI — SBI' },
   { id: 'r3', receipt: '#GIS-2025-3893', item: 'Term 2 Tuition — Meera', amount: 15000, date: 'Dec 5, 2025', method: 'UPI — SBI' },
@@ -90,6 +92,17 @@ const statusColor: Record<string, string> = {
 
 export function ParentConciergePayments() {
   const { activeSubNav } = useNavigationStore();
+  useAuthStore((s) => s.schoolId);
+
+  const { data: apiInvoices } = useParentV2Invoices();
+  const { data: apiPayments } = useParentV2Payments();
+  const { data: apiReceipts } = useParentV2Receipts();
+
+  const outstandingFees = (apiInvoices as any[]) ?? FALLBACK_OUTSTANDING_FEES;
+  const paymentHistory = (apiPayments as any[]) ?? FALLBACK_PAYMENT_HISTORY;
+  const installmentPlans = FALLBACK_INSTALLMENT_PLANS;
+  const feeBreakdown = FALLBACK_FEE_BREAKDOWN;
+  const receipts = (apiReceipts as any[]) ?? FALLBACK_RECEIPTS;
 
   /* ── Outstanding (default) ── */
   if (!activeSubNav || activeSubNav === 'c_outstanding') {

@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { ConciergeSplitPreviewPanel, ConciergePermissionBadge } from '@/components/concierge/shared';
 import { Clock, AlertTriangle, TrendingDown, Send } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTeacherAttendance, useTeacherAttendanceHistory, useTeacherClasses, useSubmitAttendance } from '@/hooks/api/use-teacher';
+import { useAuthStore } from '@/store/auth.store';
+import { notifySuccess } from '@/lib/notify';
 
 /* ── Student roster for attendance ── */
 interface StudentRow {
@@ -13,7 +16,7 @@ interface StudentRow {
   note?: string;
 }
 
-const classStudents: StudentRow[] = [
+const FALLBACK_STUDENTS: StudentRow[] = [
   { id: 'stu1', name: 'Ahmed Hassan', status: 'present' },
   { id: 'stu2', name: 'Sara Mohammed', status: 'present' },
   { id: 'stu3', name: 'Omar Al-Farsi', status: 'absent', note: 'No notification from parent' },
@@ -29,20 +32,20 @@ const classStudents: StudentRow[] = [
 ];
 
 /* ── Pending corrections ── */
-const corrections = [
+const FALLBACK_CORRECTIONS = [
   { id: 'cor1', student: 'Noor Ahmed', date: 'Jun 10', from: 'Absent', to: 'Present', reason: 'Teacher marking error', status: 'Pending admin approval' },
   { id: 'cor2', student: 'Fatima Khalid', date: 'Jun 9', from: 'Absent', to: 'Late', reason: 'Was late, not absent', status: 'Pending admin approval' },
 ];
 
 /* ── Absent follow-up notifications ── */
-const absentFollowUps = [
+const FALLBACK_ABSENT_FOLLOWUPS = [
   { id: 'af1', student: 'Omar Al-Farsi', parent: 'Mrs. Sara Al-Farsi', days: 3, lastContact: 'Jun 10', autoSent: true, response: 'No response' },
   { id: 'af2', student: 'Khalid Yousef', parent: 'Mr. Hasan Yousef', days: 1, lastContact: 'Today', autoSent: true, response: 'Called — son is sick, returning Monday' },
   { id: 'af3', student: 'Amira Bakr', parent: 'Mrs. Layla Bakr', days: 5, lastContact: 'Jun 7', autoSent: true, response: 'No response — escalated to admin' },
 ];
 
 /* ── Attendance reports ── */
-const classReports = [
+const FALLBACK_REPORTS = [
   { id: 'rpt1', className: 'Grade 5A — Mathematics', present: 26, absent: 2, late: 1, excused: 1, rate: '87%' },
   { id: 'rpt2', className: 'Grade 5B — Mathematics', present: 28, absent: 1, late: 0, excused: 0, rate: '97%' },
   { id: 'rpt3', className: 'Grade 4C — Science', present: 24, absent: 3, late: 2, excused: 1, rate: '80%' },
@@ -50,7 +53,7 @@ const classReports = [
 ];
 
 /* ── Pattern flags ── */
-const patterns = [
+const FALLBACK_PATTERNS = [
   { id: 'pat1', student: 'Omar Al-Farsi', class: 'Grade 5A', absences: 8, rate: '73%', trend: 'declining', flag: 'Below 75% threshold' },
   { id: 'pat2', student: 'Amira Bakr', class: 'Grade 5A', absences: 12, rate: '60%', trend: 'declining', flag: 'Chronic absenteeism — admin notified' },
   { id: 'pat3', student: 'Tariq Ali', class: 'Grade 5A', absences: 6, rate: '80%', trend: 'stable', flag: 'Medical exemptions — under review' },
@@ -65,6 +68,19 @@ const statusColors: Record<string, string> = {
 
 export function TeacherConciergeAttendance() {
   const { activeSubNav } = useNavigationStore();
+  useAuthStore((s) => s.schoolId);
+  const { data: apiClasses } = useTeacherClasses();
+  const defaultClassId = (apiClasses as any)?.[0]?.id ?? null;
+  const { data: apiAttendance } = useTeacherAttendance(defaultClassId);
+  const { data: apiHistory } = useTeacherAttendanceHistory();
+  const submitAttendance = useSubmitAttendance();
+
+  const classStudents = (apiAttendance as unknown as StudentRow[]) ?? FALLBACK_STUDENTS;
+  const corrections = (apiHistory as any)?.corrections ?? FALLBACK_CORRECTIONS;
+  const absentFollowUps = (apiHistory as any)?.absentFollowUps ?? FALLBACK_ABSENT_FOLLOWUPS;
+  const classReports = (apiHistory as any)?.reports ?? FALLBACK_REPORTS;
+  const patterns = (apiHistory as any)?.patterns ?? FALLBACK_PATTERNS;
+
   const [roster, setRoster] = useState(classStudents);
 
   const toggleStatus = (id: string, newStatus: StudentRow['status']) => {
@@ -123,8 +139,22 @@ export function TeacherConciergeAttendance() {
           ))}
         </div>
         <ConciergePermissionBadge granted label="Attendance marking active" />
-        <button className="w-full rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90">
-          Submit Attendance
+        <button
+          className="w-full rounded-xl bg-primary px-4 py-2 text-xs font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          disabled={submitAttendance.isPending}
+          onClick={() => {
+            if (!defaultClassId) return;
+            submitAttendance.mutate(
+              {
+                classId: defaultClassId,
+                date: new Date().toISOString().slice(0, 10),
+                records: roster.map((s) => ({ studentId: s.id, status: s.status })),
+              },
+              { onSuccess: () => notifySuccess('Attendance submitted') },
+            );
+          }}
+        >
+          {submitAttendance.isPending ? 'Submitting…' : 'Submit Attendance'}
         </button>
       </div>
     );
@@ -138,7 +168,7 @@ export function TeacherConciergeAttendance() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Pending Corrections</h3>
         <div className="space-y-2">
-          {corrections.map((c) => (
+          {corrections.map((c: any) => (
             <div key={c.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-1">
                 <h5 className="text-xs font-medium text-foreground">{c.student}</h5>
@@ -164,7 +194,7 @@ export function TeacherConciergeAttendance() {
         <h3 className="text-sm font-semibold text-foreground">Absent Follow-up</h3>
         <p className="text-xs text-muted-foreground">Auto-generated parent notifications for absences</p>
         <div className="space-y-2">
-          {absentFollowUps.map((f) => (
+          {absentFollowUps.map((f: any) => (
             <div key={f.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-1">
                 <h5 className="text-xs font-medium text-foreground">{f.student}</h5>
@@ -204,7 +234,7 @@ export function TeacherConciergeAttendance() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Attendance Reports by Class</h3>
         <div className="space-y-2">
-          {classReports.map((r) => (
+          {classReports.map((r: any) => (
             <div key={r.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-2">
                 <h5 className="text-xs font-medium text-foreground">{r.className}</h5>
@@ -236,7 +266,7 @@ export function TeacherConciergeAttendance() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Attendance Patterns — Flagged Students</h3>
         <div className="space-y-2">
-          {patterns.map((p) => (
+          {patterns.map((p: any) => (
             <div key={p.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-1">
                 <h5 className="text-xs font-medium text-foreground">{p.student}</h5>

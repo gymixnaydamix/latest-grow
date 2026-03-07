@@ -14,6 +14,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentMindMaps, useCreateMindMap } from '@/hooks/api/use-student';
 
 interface MapNode {
   id: string;
@@ -51,7 +52,12 @@ export default function MindMapperPage() {
   const [zoom, setZoom] = useState(100);
   const [showNewMap, setShowNewMap] = useState(false);
 
-  const filteredMaps = SAMPLE_MAPS.filter((m) => m.title.toLowerCase().includes(search.toLowerCase()));
+  /* ── API data ── */
+  const { data: _apiMindMaps } = useStudentMindMaps();
+  const createMindMapMut = useCreateMindMap();
+  const sampleMaps = (_apiMindMaps as any[]) ?? [];
+
+  const filteredMaps = (sampleMaps.length > 0 ? sampleMaps : SAMPLE_MAPS).filter((m: any) => m.title?.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -59,9 +65,9 @@ export default function MindMapperPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Total Maps" value={SAMPLE_MAPS.length} icon={<Network className="h-5 w-5" />} />
-        <StatCard label="Total Nodes" value={SAMPLE_MAPS.reduce((s, m) => s + m.nodes, 0)} icon={<GitBranch className="h-5 w-5" />} />
-        <StatCard label="Starred" value={SAMPLE_MAPS.filter((m) => m.starred).length} icon={<Star className="h-5 w-5" />} />
+        <StatCard label="Total Maps" value={(sampleMaps.length > 0 ? sampleMaps : SAMPLE_MAPS).length} icon={<Network className="h-5 w-5" />} />
+        <StatCard label="Total Nodes" value={(sampleMaps.length > 0 ? sampleMaps : SAMPLE_MAPS).reduce((s: number, m: any) => s + (m.nodes ?? 0), 0)} icon={<GitBranch className="h-5 w-5" />} />
+        <StatCard label="Starred" value={(sampleMaps.length > 0 ? sampleMaps : SAMPLE_MAPS).filter((m: any) => m.starred).length} icon={<Star className="h-5 w-5" />} />
         <StatCard label="AI Suggestions" value={12} icon={<Sparkles className="h-5 w-5" />} trend="up" trendLabel="+3 today" />
       </div>
 
@@ -89,7 +95,7 @@ export default function MindMapperPage() {
                 <div className="flex gap-1 flex-wrap mb-2">
                   {COLORS.map((c) => <div key={c} className={cn('size-4 rounded-full cursor-pointer ring-1 ring-white/10', c)} />)}
                 </div>
-                <Button size="sm" className="w-full text-xs bg-indigo-600 hover:bg-indigo-500 text-white" onClick={() => notifySuccess('Mind Map', 'New map created')}>Create Map</Button>
+                <Button size="sm" className="w-full text-xs bg-indigo-600 hover:bg-indigo-500 text-white" onClick={() => createMindMapMut.mutate({} as any, { onSuccess: () => notifySuccess('Mind Map', 'New map created') })}>Create Map</Button>
               </div>
             )}
             {filteredMaps.map((m) => (

@@ -6,7 +6,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useStaggerAnimate } from '@/hooks/use-animate';
-import { useStudentStore } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { notifySuccess } from '@/lib/notify';
 
 type WorkType = 'essay' | 'project' | 'artwork' | 'presentation' | 'code';
@@ -45,7 +45,7 @@ const MOCK: PortfolioItem[] = [
 export default function StudentPortfolioSection() {
   const containerRef = useStaggerAnimate([]);
   const [filter, setFilter] = useState<'all' | 'featured'>('all');
-  const store = useStudentStore();
+  const store = useStudentData();
 
   const items = filter === 'featured' ? MOCK.filter((m) => m.featured) : MOCK;
 

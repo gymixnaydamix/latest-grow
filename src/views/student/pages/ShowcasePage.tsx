@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentPortfolio } from '@/hooks/api/use-student';
 
 type WorkType = 'essay' | 'project' | 'artwork' | 'presentation' | 'code';
 
@@ -26,7 +27,8 @@ const WORK_COLORS: Record<WorkType, { text: string; bg: string }> = {
   code: { text: 'text-cyan-400', bg: 'bg-cyan-400/10' },
 };
 
-const PORTFOLIO: PortfolioItem[] = [
+// @ts-expect-error TS6133 — mock data kept for shape reference
+const _PORTFOLIO: PortfolioItem[] = [
   { id: '1', title: 'Climate Change Research Paper', type: 'essay', subject: 'Science', date: '2025-03-10', grade: 'A', tags: ['research', 'environment'], featured: true, description: 'In-depth analysis of climate change effects on coastal ecosystems.', views: 45 },
   { id: '2', title: 'Solar System 3D Model', type: 'project', subject: 'Physics', date: '2025-03-05', grade: 'A+', tags: ['3d', 'physics', 'space'], featured: true, description: 'Interactive 3D model of the solar system with orbital mechanics.', views: 128 },
   { id: '3', title: 'Self-Portrait in Oil', type: 'artwork', subject: 'Art', date: '2025-02-28', tags: ['painting', 'portrait'], featured: false, description: 'Oil painting self-portrait exploring impressionist technique.', views: 67 },
@@ -41,12 +43,16 @@ export default function ShowcasePage() {
   const containerRef = useStaggerAnimate([]);
   const [filter, setFilter] = useState<'all' | 'featured' | WorkType>('all');
 
-  const filtered = filter === 'all' ? PORTFOLIO
-    : filter === 'featured' ? PORTFOLIO.filter((p) => p.featured)
-    : PORTFOLIO.filter((p) => p.type === filter);
+  /* ── API data ── */
+  const { data: _apiPortfolio } = useStudentPortfolio();
+  const portfolio = (_apiPortfolio as any[]) ?? [];
 
-  const totalViews = PORTFOLIO.reduce((s, p) => s + p.views, 0);
-  const featuredCount = PORTFOLIO.filter((p) => p.featured).length;
+  const filtered = filter === 'all' ? portfolio
+    : filter === 'featured' ? portfolio.filter((p: any) => p.featured)
+    : portfolio.filter((p: any) => p.type === filter);
+
+  const totalViews = portfolio.reduce((s: number, p: any) => s + (p.views ?? 0), 0);
+  const featuredCount = portfolio.filter((p: any) => p.featured).length;
 
   return (
     <div ref={containerRef} className="space-y-6">
@@ -54,7 +60,7 @@ export default function ShowcasePage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-3" data-animate>
-        <StatCard label="Portfolio Works" value={PORTFOLIO.length} icon={<FolderOpen className="h-5 w-5" />} />
+        <StatCard label="Portfolio Works" value={portfolio.length} icon={<FolderOpen className="h-5 w-5" />} />
         <StatCard label="Total Views" value={totalViews} icon={<Eye className="h-5 w-5" />} trend="up" />
         <StatCard label="Featured" value={featuredCount} icon={<Star className="h-5 w-5" />} />
       </div>
@@ -72,9 +78,9 @@ export default function ShowcasePage() {
 
       {/* Portfolio grid */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-animate>
-        {filtered.map((item) => {
-          const Icon = WORK_ICONS[item.type];
-          const colors = WORK_COLORS[item.type];
+        {filtered.map((item: any) => {
+          const Icon = WORK_ICONS[item.type as WorkType];
+          const colors = WORK_COLORS[item.type as WorkType];
           return (
             <Card key={item.id} className="group hover:border-primary/30 transition-colors cursor-pointer overflow-hidden" onClick={() => notifySuccess('Portfolio', 'Opening work details…')}>
               {/* Thumbnail */}
@@ -95,7 +101,7 @@ export default function ShowcasePage() {
                 </div>
                 <p className="text-[11px] text-muted-foreground line-clamp-2">{item.description}</p>
                 <div className="flex flex-wrap gap-1">
-                  {item.tags.map((t) => (
+                  {item.tags?.map((t: any) => (
                     <Badge key={t} variant="outline" className="text-[9px] h-4"><Tag className="size-2 mr-0.5" />{t}</Badge>
                   ))}
                 </div>

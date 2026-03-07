@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentMoodHistory, useCreateJournalEntry } from '@/hooks/api/use-student';
 
 type Mood = 'great' | 'good' | 'okay' | 'low' | 'bad';
 
@@ -53,15 +54,21 @@ export default function JournalPage() {
   const [expanded, setExpanded] = useState<Set<string>>(new Set(['1']));
   const [newMood, setNewMood] = useState<Mood>('good');
 
+  /* ── API data ── */
+  const { data: _apiMoodHist } = useStudentMoodHistory();
+  const createJournalMut = useCreateJournalEntry();
+  const journalEntries = (_apiMoodHist as any[]) ?? [];
+  const entries = journalEntries.length > 0 ? journalEntries : ENTRIES;
+
   const toggle = (id: string) => setExpanded((p) => { const n = new Set(p); n.has(id) ? n.delete(id) : n.add(id); return n; });
 
-  const filtered = ENTRIES
-    .filter((e) => moodFilter === 'all' || e.mood === moodFilter)
-    .filter((e) => !search || e.title.toLowerCase().includes(search.toLowerCase()) || e.content.toLowerCase().includes(search.toLowerCase()));
+  const filtered = entries
+    .filter((e: any) => moodFilter === 'all' || e.mood === moodFilter)
+    .filter((e: any) => !search || e.title?.toLowerCase().includes(search.toLowerCase()) || e.content?.toLowerCase().includes(search.toLowerCase()));
 
   const streak = 6;
-  const totalEntries = ENTRIES.length;
-  const avgMood = +(ENTRIES.reduce((s, e) => s + (['great', 'good', 'okay', 'low', 'bad'].indexOf(e.mood) <= 1 ? 4 : ['great', 'good', 'okay', 'low', 'bad'].indexOf(e.mood) <= 2 ? 3 : 2), 0) / ENTRIES.length).toFixed(1);
+  const totalEntries = entries.length;
+  const avgMood = entries.length > 0 ? +(entries.reduce((s: number, e: any) => s + (['great', 'good', 'okay', 'low', 'bad'].indexOf(e.mood) <= 1 ? 4 : ['great', 'good', 'okay', 'low', 'bad'].indexOf(e.mood) <= 2 ? 3 : 2), 0) / entries.length).toFixed(1) : 0;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -131,7 +138,7 @@ export default function JournalPage() {
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowNew(false)} className="text-xs border-white/10 text-white/50">Cancel</Button>
-              <Button size="sm" onClick={() => notifySuccess('Journal', 'Entry saved successfully')} className="text-xs bg-violet-500/20 text-violet-300 border border-violet-400/20 gap-1"><BookOpen className="size-3" />Save</Button>
+              <Button size="sm" onClick={() => createJournalMut.mutate({} as any, { onSuccess: () => notifySuccess('Journal', 'Entry saved successfully') })} className="text-xs bg-violet-500/20 text-violet-300 border border-violet-400/20 gap-1"><BookOpen className="size-3" />Save</Button>
             </div>
           </CardContent>
         </Card>
@@ -144,8 +151,8 @@ export default function JournalPage() {
             <CardContent className="py-10 text-center text-white/30 text-sm">No journal entries match your filters.</CardContent>
           </Card>
         )}
-        {filtered.map((entry) => {
-          const cfg = MOOD_CFG[entry.mood];
+        {filtered.map((entry: any) => {
+          const cfg = MOOD_CFG[entry.mood as Mood];
           const isOpen = expanded.has(entry.id);
           return (
             <Card key={entry.id} className="border-white/6 bg-white/3 backdrop-blur-xl hover:bg-white/5 transition-colors">
@@ -174,14 +181,14 @@ export default function JournalPage() {
                       <div className="rounded-lg border border-white/6 bg-white/2 p-2.5">
                         <p className="text-[10px] text-white/40 font-medium mb-1.5">Gratitude:</p>
                         <div className="flex flex-wrap gap-1.5">
-                          {entry.gratitude.map((g) => (
+                          {entry.gratitude?.map((g: any) => (
                             <Badge key={g} className="border-0 text-[9px] bg-emerald-400/10 text-emerald-400">{g}</Badge>
                           ))}
                         </div>
                       </div>
                     )}
                     <div className="flex items-center gap-2">
-                      {entry.tags.map((t) => <Badge key={t} className="border-0 text-[9px] bg-white/5 text-white/30"><Tag className="size-2 mr-0.5" />{t}</Badge>)}
+                      {entry.tags?.map((t: any) => <Badge key={t} className="border-0 text-[9px] bg-white/5 text-white/30"><Tag className="size-2 mr-0.5" />{t}</Badge>)}
                     </div>
                   </div>
                 )}

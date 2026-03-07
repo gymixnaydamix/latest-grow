@@ -19,6 +19,8 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useAnnouncements, useCreateAnnouncement, useUpdateAnnouncement, useDeleteAnnouncement } from '@/hooks/api/use-announcements';
 import { useEvents, usePolicies, useGoals, useCreateEvent, useUpdateEvent, useDeleteEvent, useCreatePolicy, useUpdatePolicy, useCreateGoal, useUpdateGoal } from '@/hooks/api/use-operations';
+import { useSaveSchoolProfile } from '@/hooks/api/use-school-ops';
+import { useAIPolicyGenerator } from '@/hooks/api/use-ai';
 import { notifySuccess, notifyError } from '@/lib/notify';
 import type { Announcement, SchoolEvent, Policy, StrategicGoal } from '@root/types';
 import ComplianceSectionView from '@/views/school/ComplianceSection';
@@ -326,21 +328,26 @@ function SchoolCalendarView() {
  *  SCHOOL BRANDING — Controlled form with save
  * ══════════════════════════════════════════════════════════════════ */
 function SchoolBrandingView() {
+  const schoolId = useAuthStore((s) => s.schoolId) ?? '';
+  const saveMut = useSaveSchoolProfile(schoolId || null);
   const [schoolName, setSchoolName] = useState('Lincoln High School');
   const [motto, setMotto] = useState('Excellence in Education');
   const [website, setWebsite] = useState('www.lincolnhigh.edu');
   const [phone, setPhone] = useState('(555) 123-4567');
   const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
 
   function markDirty<T>(setter: (v: T) => void) {
     return (v: T) => { setter(v); setDirty(true); };
   }
 
   function handleSave() {
-    setSaving(true);
-    // Simulate save — would call a real branding mutation once one exists
-    setTimeout(() => { setSaving(false); setDirty(false); notifySuccess('Branding saved'); }, 600);
+    saveMut.mutate(
+      { name: schoolName.trim(), motto: motto.trim(), website: website.trim(), phone: phone.trim() },
+      {
+        onSuccess: () => { setDirty(false); notifySuccess('Branding saved'); },
+        onError: () => notifyError('Failed to save branding'),
+      },
+    );
   }
 
   return (
@@ -348,8 +355,8 @@ function SchoolBrandingView() {
       <div className="flex items-center justify-between" data-animate>
         <h2 className="text-lg font-semibold">School Branding</h2>
         {dirty && (
-          <Button size="sm" onClick={handleSave} disabled={saving}>
-            <Save className="mr-1 size-3" /> {saving ? 'Saving…' : 'Save Changes'}
+          <Button size="sm" onClick={handleSave} disabled={saveMut.isPending}>
+            <Save className="mr-1 size-3" /> {saveMut.isPending ? 'Saving…' : 'Save Changes'}
           </Button>
         )}
       </div>
@@ -435,12 +442,21 @@ function PolicyGeneratorView() {
     );
   }
 
+  const aiPolicyMut = useAIPolicyGenerator();
+
   function handleAiGenerate() {
-    // Stub: would call AI service
-    setShowCreate(true);
-    setPolTitle('AI-Generated Policy');
-    setPolBody('This policy covers the key requirements for student data handling, access controls, and compliance with FERPA regulations…');
-    notifySuccess('AI draft generated — review and save');
+    aiPolicyMut.mutate(
+      { topic: 'student data handling', context: `School ${schoolId}` },
+      {
+        onSuccess: (data) => {
+          setShowCreate(true);
+          setPolTitle('AI-Generated Policy');
+          setPolBody(data?.text ?? 'This policy covers the key requirements for student data handling, access controls, and compliance with applicable regulations…');
+          notifySuccess('AI draft generated — review and save');
+        },
+        onError: () => notifyError('AI generation failed — try again'),
+      },
+    );
   }
 
   return (
@@ -448,8 +464,8 @@ function PolicyGeneratorView() {
       <div className="flex items-center justify-between" data-animate>
         <h2 className="text-lg font-semibold">Policy Generator</h2>
         <div className="flex gap-2">
-          <Button size="sm" variant="outline" onClick={handleAiGenerate}>
-            <Sparkles className="mr-1 size-3" /> AI Generate
+          <Button size="sm" variant="outline" onClick={handleAiGenerate} disabled={aiPolicyMut.isPending}>
+            <Sparkles className="mr-1 size-3" /> {aiPolicyMut.isPending ? 'Generating…' : 'AI Generate'}
           </Button>
           <Button size="sm" onClick={() => setShowCreate((v) => !v)}>
             {showCreate ? <><X className="mr-1 size-3" /> Cancel</> : <><Plus className="mr-1 size-3" /> New Policy</>}

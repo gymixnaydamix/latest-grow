@@ -13,6 +13,7 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentFocusSessions, useCreateFocusSession } from '@/hooks/api/use-student';
 
 type TimerMode = 'focus' | 'short_break' | 'long_break';
 
@@ -49,6 +50,11 @@ export default function FocusTimerPage() {
   const [sessionsToday, setSessionsToday] = useState(4);
   const intervalRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
 
+  /* ── API data ── */
+  const { data: _apiFocus } = useStudentFocusSessions();
+  const createFocusMut = useCreateFocusSession();
+  const focusSessions = (_apiFocus as any[]) ?? [];
+
   const switchMode = useCallback((m: TimerMode) => {
     setMode(m);
     const secs = MODE_CFG[m].defaultMins * 60;
@@ -70,8 +76,9 @@ export default function FocusTimerPage() {
   const mins = Math.floor(remaining / 60);
   const secs = remaining % 60;
   const pct = duration > 0 ? ((duration - remaining) / duration) * 100 : 0;
-  const totalSessions = HISTORY.reduce((s, h) => s + h.sessions, 0);
-  const totalHours = +(HISTORY.reduce((s, h) => s + h.totalMinutes, 0) / 60).toFixed(1);
+  const focusHistory = focusSessions.length > 0 ? focusSessions : HISTORY;
+  const totalSessions = focusHistory.reduce((s: number, h: any) => s + (h.sessions ?? 0), 0);
+  const totalHours = +(focusHistory.reduce((s: number, h: any) => s + (h.totalMinutes ?? 0), 0) / 60).toFixed(1);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -174,7 +181,7 @@ export default function FocusTimerPage() {
                 </div>
               </div>
             ))}
-            <Button size="sm" variant="outline" className="text-xs border-white/8 text-white/40 gap-1 w-full mt-1" onClick={() => notifySuccess('Task', 'New task added to focus session')}>
+            <Button size="sm" variant="outline" className="text-xs border-white/8 text-white/40 gap-1 w-full mt-1" onClick={() => createFocusMut.mutate({} as any, { onSuccess: () => notifySuccess('Task', 'New task added to focus session') })}>
               <Plus className="size-3" />Add Task
             </Button>
           </CardContent>
@@ -186,7 +193,7 @@ export default function FocusTimerPage() {
         <CardHeader><CardTitle className="text-white/90 text-sm">Recent Focus Sessions</CardTitle></CardHeader>
         <CardContent>
           <div className="flex items-end gap-3 h-28">
-            {HISTORY.map((h) => (
+            {focusHistory.map((h: any) => (
               <div key={h.date} className="flex-1 flex flex-col items-center gap-1">
                 <div
                   className="w-full rounded-t-md bg-gradient-to-t from-indigo-500/30 to-indigo-500/60"

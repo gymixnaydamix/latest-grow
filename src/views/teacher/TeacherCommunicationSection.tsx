@@ -7,8 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { useStaggerAnimate } from '@/hooks/use-animate';
-
+import { useStaggerAnimate } from '@/hooks/use-animate';import { useTeacherMessages, useTeacherAnnouncements, useCreateTeacherAnnouncement } from '@/hooks/api/use-teacher';
+import { notifySuccess } from '@/lib/notify';
 interface MessageItem {
   id: string;
   from: string;
@@ -21,7 +21,7 @@ interface MessageItem {
   hasAttachment: boolean;
 }
 
-const MESSAGES: MessageItem[] = [
+const FALLBACK_MESSAGES: MessageItem[] = [
   { id: '1', from: 'Sarah Wilson', role: 'Parent', subject: 'Question about homework policy', preview: 'Hi, I wanted to ask about the new homework policy for 3rd grade…', date: '2025-03-15', unread: true, starred: false, hasAttachment: false },
   { id: '2', from: 'Principal Adams', role: 'Admin', subject: 'Staff meeting agenda — March 20', preview: 'Please review the attached agenda before our meeting on Thursday…', date: '2025-03-14', unread: true, starred: true, hasAttachment: true },
   { id: '3', from: 'Emma Chen', role: 'Student', subject: 'Missing assignment explanation', preview: 'I apologize for the late submission of my science project…', date: '2025-03-14', unread: false, starred: false, hasAttachment: false },
@@ -30,7 +30,7 @@ const MESSAGES: MessageItem[] = [
   { id: '6', from: 'John Patel', role: 'Parent', subject: 'Re: Student progress report', preview: 'Thank you for the detailed progress report. We were wondering…', date: '2025-03-11', unread: false, starred: false, hasAttachment: false },
 ];
 
-const ANNOUNCEMENTS = [
+const FALLBACK_ANNOUNCEMENTS = [
   { id: 'a1', title: 'Spring Break Schedule', audience: 'All Students', date: '2025-03-14', priority: 'high' as const },
   { id: 'a2', title: 'Field Trip Permission Forms Due', audience: 'Math 101', date: '2025-03-13', priority: 'medium' as const },
   { id: 'a3', title: 'Class Photo Day Reminder', audience: 'All Classes', date: '2025-03-10', priority: 'low' as const },
@@ -46,6 +46,13 @@ export default function TeacherCommunicationSection() {
   const containerRef = useStaggerAnimate([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedMsg, setSelectedMsg] = useState<string | null>(null);
+
+  const { data: apiMessages } = useTeacherMessages();
+  const { data: apiAnnouncements } = useTeacherAnnouncements();
+  const createAnnouncement = useCreateTeacherAnnouncement();
+
+  const MESSAGES: MessageItem[] = (apiMessages as any[]) ?? FALLBACK_MESSAGES;
+  const ANNOUNCEMENTS = (apiAnnouncements as any[]) ?? FALLBACK_ANNOUNCEMENTS;
 
   const unreadCount = MESSAGES.filter((m) => m.unread).length;
   const filteredMsgs = MESSAGES.filter(
@@ -160,7 +167,7 @@ export default function TeacherCommunicationSection() {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="text-white/90 text-sm flex items-center gap-2"><Bell className="size-4 text-amber-400" />My Announcements</CardTitle>
-                <Button size="sm" className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-400/20 gap-1"><Bell className="size-3" />New Announcement</Button>
+                <Button size="sm" className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-400/20 gap-1" onClick={() => createAnnouncement.mutate({ title: 'New Announcement', body: '', priority: 'LOW', audiences: [] }, { onSuccess: () => notifySuccess('Announcement created') })}><Bell className="size-3" />New Announcement</Button>
               </div>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
@@ -170,7 +177,7 @@ export default function TeacherCommunicationSection() {
                     <p className="text-xs font-medium text-white/70">{a.title}</p>
                     <p className="text-[10px] text-white/30">{a.audience} • {new Date(a.date).toLocaleDateString()}</p>
                   </div>
-                  <Badge className={cn('border-0 text-[9px] capitalize', PRIORITY_COLORS[a.priority])}>{a.priority}</Badge>
+                  <Badge className={cn('border-0 text-[9px] capitalize', PRIORITY_COLORS[a.priority as keyof typeof PRIORITY_COLORS] ?? PRIORITY_COLORS.low)}>{a.priority}</Badge>
                   <Button variant="ghost" size="icon" className="size-6 text-white/30"><MoreVertical className="size-3" /></Button>
                 </div>
               ))}

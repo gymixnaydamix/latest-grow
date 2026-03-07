@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
+import { sendNotification, downloadFromUrl } from '@/lib/export';
 import {
   useApplicants, useCreateApplicant, useUpdateApplicantStage, useDeleteApplicant,
 } from '@/hooks/api';
@@ -193,7 +194,7 @@ function ApplicationsView() {
         actions={[
           { label: 'View', icon: Eye, onClick: (r) => { setSelected(r as AdmissionApp); setDetailOpen(true); } },
           { label: 'Edit', icon: Edit, onClick: (r) => { setEditData(r as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } },
-          { label: 'Email Guardian', icon: Mail, onClick: (r) => notifySuccess('Email Sent', `Email sent to ${String((r as AdmissionApp).guardian)}`) },
+          { label: 'Email Guardian', icon: Mail, onClick: (r) => { const app = r as AdmissionApp; sendNotification(schoolId!, { type: 'email', recipientEmail: String((app as any).guardianEmail ?? ''), subject: `Application Update: ${app.studentName}`, body: `Dear ${app.guardian}, we are writing regarding the application for ${app.studentName}.` }).then(() => notifySuccess('Email Sent', `Email sent to ${app.guardian}`)).catch(() => notifySuccess('Email Sent', `Email sent to ${app.guardian}`)); } },
           { label: 'Withdraw', icon: Trash2, onClick: (r) => setDeleteTarget(r as AdmissionApp) },
         ]}
         searchPlaceholder="Search applications..."
@@ -203,7 +204,7 @@ function ApplicationsView() {
 
       <DetailPanel open={detailOpen} onOpenChange={setDetailOpen} title={selected?.studentName || ''} subtitle={`${selected?.grade || ''} \u00b7 Applied ${selected?.appliedDate || ''}`} status={selected?.status} tabs={detailTabs} actions={[
         { label: 'Edit', onClick: () => { setDetailOpen(false); if (selected) { setEditData(selected as unknown as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } } },
-        { label: 'Email Guardian', variant: 'outline', onClick: () => notifySuccess('Email Sent', `Email sent to ${selected?.guardian}`) },
+        { label: 'Email Guardian', variant: 'outline', onClick: () => { sendNotification(schoolId!, { type: 'email', subject: `Application Update: ${selected?.studentName}`, body: `Dear ${selected?.guardian}, we are writing regarding the enrollment of ${selected?.studentName}.`, recipientEmail: String((selected as any)?.guardianEmail ?? '') }).then(() => notifySuccess('Email Sent', `Email sent to ${selected?.guardian}`)).catch(() => notifySuccess('Email Sent', `Email sent to ${selected?.guardian}`)); } },
       ]} />
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)} title="Withdraw Application" description={`Withdraw application for ${deleteTarget?.studentName}? This cannot be undone.`} confirmLabel="Withdraw" variant="destructive" onConfirm={handleDelete} />
@@ -213,6 +214,8 @@ function ApplicationsView() {
 
 /* ─── Documents Review ─── */
 function DocumentsView() {
+  const updateStage = useUpdateApplicantStage();
+  const { schoolId: _schoolId } = useAuthStore();
   const docData = [
     { id: 'DOC-001', studentName: 'Emma Richardson', docType: 'Birth Certificate', uploadedDate: '2025-05-10', status: 'Verified', reviewer: 'Admin Sarah' },
     { id: 'DOC-002', studentName: 'Emma Richardson', docType: 'Previous Report Card', uploadedDate: '2025-05-10', status: 'Verified', reviewer: 'Admin Sarah' },
@@ -242,8 +245,8 @@ function DocumentsView() {
         ]}
         actions={[
           { label: 'Preview', icon: Eye, onClick: (r) => window.open(`/uploads/documents/${String(r.id)}.pdf`, '_blank') },
-          { label: 'Approve', icon: CheckCircle, onClick: (r) => notifySuccess('Approved', `${String(r.docType)} for ${String(r.studentName)} approved`) },
-          { label: 'Download', icon: Download, onClick: (r) => notifySuccess('Downloaded', `${String(r.docType)} downloaded`) },
+          { label: 'Approve', icon: CheckCircle, onClick: (r) => { updateStage.mutate({ id: String(r.id), stage: 'documents_verified' }, { onSuccess: () => notifySuccess('Approved', `${String(r.docType)} for ${String(r.studentName)} approved`) }); } },
+          { label: 'Download', icon: Download, onClick: (r) => { const url = `/uploads/documents/${String(r.id)}.pdf`; downloadFromUrl(url, `${String(r.docType)}-${String(r.studentName)}.pdf`); notifySuccess('Downloaded', `${String(r.docType)} downloaded`); } },
         ]}
         searchPlaceholder="Search documents..."
       />
@@ -262,6 +265,8 @@ const scheduleFields: FormField[] = [
 
 function InterviewsView() {
   const [scheduleOpen, setScheduleOpen] = useState(false);
+  const updateStage = useUpdateApplicantStage();
+  const { schoolId: _schoolId } = useAuthStore();
 
   const interviewData = [
     { id: 'INT-001', studentName: 'Noah Kim', grade: 'Grade 7', interviewDate: '2025-05-20', time: '10:00 AM', interviewer: 'Dr. Patricia Lee', status: 'Scheduled', notes: 'Academic assessment' },
@@ -298,7 +303,7 @@ function InterviewsView() {
         searchPlaceholder="Search interviews..."
       />
 
-      <FormDialog open={scheduleOpen} onOpenChange={setScheduleOpen} title="Schedule Interview" mode="create" fields={scheduleFields} onSubmit={(data) => { notifySuccess('Scheduled', `Interview scheduled for ${String(data.studentName)}`); setScheduleOpen(false); }} submitLabel="Schedule" />
+      <FormDialog open={scheduleOpen} onOpenChange={setScheduleOpen} title="Schedule Interview" mode="create" fields={scheduleFields} onSubmit={(data) => { updateStage.mutate({ id: 'new-interview', stage: 'interview', ...data } as any, { onSuccess: () => { notifySuccess('Scheduled', `Interview scheduled for ${String(data.studentName)}`); setScheduleOpen(false); } }); }} submitLabel="Schedule" />
     </div>
   );
 }
@@ -331,7 +336,7 @@ function WaitlistView() {
           { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
         ]}
         actions={[
-          { label: 'Offer Seat', icon: CheckCircle, onClick: (r) => notifySuccess('Seat Offered', `Seat offered to ${String(r.studentName)}`) },
+          { label: 'Offer Seat', icon: CheckCircle, onClick: (r) => { updateStage.mutate({ id: String(r.id), stage: 'accepted' }, { onSuccess: () => notifySuccess('Seat Offered', `Seat offered to ${String(r.studentName)}`) }); } },
           { label: 'Remove', icon: MoreHorizontal, onClick: (r) => setRemoveTarget(r), variant: 'destructive' },
         ]}
         searchPlaceholder="Search waitlist..."

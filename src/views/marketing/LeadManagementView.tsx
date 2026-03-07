@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
+import { useCrmDeals, useCreateCrmDeal } from '@/hooks/api/use-crm';
+import { notifySuccess } from '@/lib/notify';
 
 type LeadStage = 'new' | 'contacted' | 'qualified' | 'proposal' | 'enrolled' | 'lost';
 
@@ -36,7 +38,7 @@ const STAGE_CFG: Record<LeadStage, { cls: string; bg: string; label: string }> =
 
 const PIPELINE_ORDER: LeadStage[] = ['new', 'contacted', 'qualified', 'proposal', 'enrolled'];
 
-const MOCK_LEADS: Lead[] = [
+const FALLBACK_LEADS: Lead[] = [
   { id: '1', name: 'Sarah Johnson', email: 'sarah@family.com', phone: '+1 555-0101', source: 'Website', stage: 'qualified', interest: 'Elementary K-5', score: 85, assignedTo: 'Alex M.', createdAt: '2025-03-01', lastContact: '2025-03-14', value: 12000 },
   { id: '2', name: 'Michael Chen', email: 'mchen@gmail.com', phone: '+1 555-0102', source: 'Referral', stage: 'proposal', interest: 'Middle School', score: 92, assignedTo: 'Beth K.', createdAt: '2025-02-15', lastContact: '2025-03-13', value: 15000 },
   { id: '3', name: 'Lisa Williams', email: 'lwilliams@mail.com', phone: '+1 555-0103', source: 'Social Media', stage: 'new', interest: 'Pre-K', score: 45, assignedTo: 'Alex M.', createdAt: '2025-03-14', lastContact: '2025-03-14', value: 8000 },
@@ -54,12 +56,23 @@ export default function LeadManagementView() {
   const [search, setSearch] = useState('');
   const [view, setView] = useState<'pipeline' | 'list'>('pipeline');
 
+  const { data: apiLeads } = useCrmDeals();
+  const createDeal = useCreateCrmDeal();
+
+  const MOCK_LEADS: Lead[] = (apiLeads as any[])?.map((d: any) => ({
+    id: d.id, name: d.name ?? d.title ?? '', email: d.email ?? '', phone: d.phone ?? '',
+    source: d.source ?? '', stage: (d.stage?.toLowerCase() ?? 'new') as LeadStage,
+    interest: d.interest ?? d.description ?? '', score: d.score ?? d.value ?? 0,
+    assignedTo: d.assignedTo ?? '', createdAt: d.createdAt ?? '', lastContact: d.lastContact ?? d.updatedAt ?? '',
+    value: d.value ?? 0,
+  })) ?? FALLBACK_LEADS;
+
   const filtered = MOCK_LEADS.filter(
     (l) => l.name.toLowerCase().includes(search.toLowerCase()) || l.interest.toLowerCase().includes(search.toLowerCase()),
   );
 
   const pipelineTotal = MOCK_LEADS.filter((l) => l.stage !== 'lost').reduce((s, l) => s + l.value, 0);
-  const conversionRate = Math.round((MOCK_LEADS.filter((l) => l.stage === 'enrolled').length / MOCK_LEADS.length) * 100);
+  const conversionRate = MOCK_LEADS.length > 0 ? Math.round((MOCK_LEADS.filter((l) => l.stage === 'enrolled').length / MOCK_LEADS.length) * 100) : 0;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -74,7 +87,7 @@ export default function LeadManagementView() {
               <button key={v} onClick={() => setView(v)} className={cn('px-3 py-1 capitalize', view === v ? 'bg-white/10 text-white/70' : 'text-white/30')}>{v}</button>
             ))}
           </div>
-          <Button className="gap-1.5 bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 border border-violet-400/20 text-xs h-8">
+          <Button className="gap-1.5 bg-violet-500/20 text-violet-300 hover:bg-violet-500/30 border border-violet-400/20 text-xs h-8" onClick={() => createDeal.mutate({}, { onSuccess: () => notifySuccess('Lead created', 'New lead added to pipeline') })}>
             <Plus className="size-3" />Add Lead
           </Button>
         </div>

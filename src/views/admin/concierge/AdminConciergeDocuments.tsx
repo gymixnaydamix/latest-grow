@@ -1,10 +1,12 @@
 /* Admin Concierge › Documents — Generate, Templates, Requests, Sent/Published */
 import { useNavigationStore } from '@/store/navigation.store';
+import { useAuthStore } from '@/store/auth.store';
 import { ConciergeSplitPreviewPanel, ConciergeTemplatePicker } from '@/components/concierge/shared';
 import { FileText, Download, Eye, Clock, RefreshCw } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useTemplates, useCommLogs } from '@/hooks/api/use-school-ops';
 
-const templates = [
+const FALLBACK_TEMPLATES = [
   { id: 'dt1', name: 'Enrollment Certificate', type: 'Certificate', language: 'English', lastUsed: '2 days ago', fieldCount: 6 },
   { id: 'dt2', name: 'Fee Statement', type: 'Financial', language: 'English', lastUsed: '1 day ago', fieldCount: 8 },
   { id: 'dt3', name: 'Transfer Letter', type: 'Letter', language: 'English', lastUsed: '5 days ago', fieldCount: 5 },
@@ -13,13 +15,13 @@ const templates = [
   { id: 'dt6', name: 'Grade Report Card', type: 'Report', language: 'English', lastUsed: 'Today', fieldCount: 10 },
 ];
 
-const requests = [
+const FALLBACK_REQUESTS = [
   { id: 'dr1', student: 'Ahmed Hassan', type: 'Enrollment Certificate', requestedBy: 'Parent', date: 'Jun 12', status: 'Pending' },
   { id: 'dr2', student: 'Noor Ahmed', type: 'Transfer Letter', requestedBy: 'Parent', date: 'Jun 11', status: 'Pending' },
   { id: 'dr3', student: 'Yasmin Said', type: 'Fee Statement', requestedBy: 'Finance', date: 'Jun 10', status: 'In Progress' },
 ];
 
-const sentDocs = [
+const FALLBACK_SENT_DOCS = [
   { id: 'ds1', name: 'Enrollment Certificate — Omar Khalid', type: 'Certificate', date: 'Jun 11', status: 'Published' },
   { id: 'ds2', name: 'Fee Statement — Grade 6 Parents', type: 'Financial', date: 'Jun 10', status: 'Sent' },
   { id: 'ds3', name: 'Attendance Report — Grade 5A', type: 'Report', date: 'Jun 9', status: 'Published' },
@@ -27,6 +29,12 @@ const sentDocs = [
 
 export function AdminConciergeDocuments() {
   const { activeSubNav } = useNavigationStore();
+  const { schoolId } = useAuthStore();
+  const { data: apiTemplates } = useTemplates(schoolId);
+  const { data: apiCommLogs } = useCommLogs(schoolId);
+  const templates = (apiTemplates as any[]) ?? FALLBACK_TEMPLATES;
+  const requests = (apiCommLogs as any[])?.filter((l: any) => l.status === 'Pending' || l.status === 'In Progress') ?? FALLBACK_REQUESTS;
+  const sentDocs = (apiCommLogs as any[])?.filter((l: any) => l.status === 'Published' || l.status === 'Sent') ?? FALLBACK_SENT_DOCS;
 
   if (activeSubNav === 'c_templates') {
     return (

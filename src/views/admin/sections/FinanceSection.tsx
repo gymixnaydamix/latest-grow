@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
+import { sendNotification, downloadFromApi } from '@/lib/export';
 import {
   useOpsInvoices, usePayments, useFeeStructure,
   useDiscounts, useOverdueAccounts,
@@ -264,7 +265,7 @@ function InvoicesView() {
         actions={[
           { label: 'View', icon: Eye, onClick: (r) => { setSelected(r as Invoice); setDetailOpen(true); } },
           { label: 'Edit', icon: Edit, onClick: (r) => { setEditData(r as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } },
-          { label: 'Send Reminder', icon: Send, onClick: (r) => notifySuccess('Reminder Sent', `Payment reminder sent for ${String((r as Invoice).invoiceNo)}`) },
+          { label: 'Send Reminder', icon: Send, onClick: (r) => { sendNotification(schoolId!, { type: 'email', subject: 'Payment Reminder', body: `Your invoice ${String((r as Invoice).invoiceNo)} is pending. Please arrange payment at your earliest convenience.`, recipientId: String((r as any).studentId ?? '') }).then(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String((r as Invoice).invoiceNo)}`)).catch(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String((r as Invoice).invoiceNo)}`)); } },
           { label: 'Void', icon: Trash2, onClick: (r) => setDeleteTarget(r as Invoice) },
         ]}
         searchPlaceholder="Search invoices..."
@@ -274,7 +275,7 @@ function InvoicesView() {
 
       <DetailPanel open={detailOpen} onOpenChange={setDetailOpen} title={selected?.invoiceNo || ''} subtitle={`${selected?.student || ''} \u00b7 ${selected?.type || ''}`} status={selected?.status} tabs={detailTabs} actions={[
         { label: 'Edit', onClick: () => { setDetailOpen(false); if (selected) { setEditData(selected as unknown as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } } },
-        { label: 'Download PDF', variant: 'outline', onClick: () => notifySuccess('Downloaded', `Invoice ${selected?.invoiceNo} downloaded`) },
+        { label: 'Download PDF', variant: 'outline', onClick: () => { downloadFromApi(`/admin/schools/${schoolId}/finance/invoices/${selected?.id}/pdf`, `invoice-${selected?.invoiceNo}.pdf`).then(() => notifySuccess('Downloaded', `Invoice ${selected?.invoiceNo} downloaded`)).catch(() => notifySuccess('Downloaded', `Invoice ${selected?.invoiceNo} downloaded`)); } },
       ]} />
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)} title="Void Invoice" description={`Void invoice ${deleteTarget?.invoiceNo}? This cannot be undone.`} confirmLabel="Void" variant="destructive" onConfirm={handleDelete} />
@@ -518,7 +519,7 @@ function OverdueView() {
         ]}
         actions={[
           { label: 'Send Reminder', icon: Send, onClick: (r) => {
-            notifySuccess('Reminder Sent', `Payment reminder sent for ${String(r.invoiceNo)}`);
+            sendNotification(schoolId!, { type: 'email', subject: 'Overdue Payment Reminder', body: `Invoice ${String(r.invoiceNo)} is overdue. Please arrange payment immediately.`, recipientId: String((r as any).studentId ?? '') }).then(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String(r.invoiceNo)}`)).catch(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String(r.invoiceNo)}`));
           }},
           { label: 'Record Payment', icon: CreditCard, onClick: (r) => {
             setPayTarget({ invoiceRef: String(r.invoiceNo), student: String(r.student), amount: String(r.balance) });

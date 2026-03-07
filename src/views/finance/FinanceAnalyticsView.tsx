@@ -7,8 +7,10 @@ import { StatCard } from '@/components/features/StatCard';
 import { NeonBarChart } from '@/components/features/charts/BarChart';
 import { GlowLineChart } from '@/components/features/charts/LineChart';
 import { GlowPieChart } from '@/components/features/charts/PieChart';
+import { useFinancialReportSummary, useInvoices } from '@/hooks/api/use-finance';
+import { useAuthStore } from '@/store/auth.store';
 
-const MONTHLY_REVENUE = [
+const FALLBACK_MONTHLY_REVENUE = [
   { name: 'Jul', revenue: 95000, expenses: 72000 },
   { name: 'Aug', revenue: 125000, expenses: 85000 },
   { name: 'Sep', revenue: 118000, expenses: 78000 },
@@ -20,7 +22,7 @@ const MONTHLY_REVENUE = [
   { name: 'Mar', revenue: 155000, expenses: 92000 },
 ];
 
-const COLLECTION_TREND = [
+const FALLBACK_COLLECTION_TREND = [
   { name: 'Sep', rate: 82 },
   { name: 'Oct', rate: 84 },
   { name: 'Nov', rate: 86 },
@@ -30,7 +32,7 @@ const COLLECTION_TREND = [
   { name: 'Mar', rate: 93 },
 ];
 
-const EXPENSE_BREAKDOWN = [
+const FALLBACK_EXPENSE_BREAKDOWN = [
   { name: 'Salaries', value: 45, color: '#818cf8' },
   { name: 'Facilities', value: 20, color: '#34d399' },
   { name: 'Technology', value: 12, color: '#fbbf24' },
@@ -39,7 +41,7 @@ const EXPENSE_BREAKDOWN = [
   { name: 'Other', value: 8, color: '#a78bfa' },
 ];
 
-const OVERDUE_ACCOUNTS = [
+const FALLBACK_OVERDUE_ACCOUNTS = [
   { account: 'Johnson Family', amount: '$2,450', days: 45, risk: 'high' },
   { account: 'Martinez Corp', amount: '$8,200', days: 32, risk: 'high' },
   { account: 'Chen Academy', amount: '$1,800', days: 21, risk: 'medium' },
@@ -49,6 +51,17 @@ const OVERDUE_ACCOUNTS = [
 
 export default function FinanceAnalyticsView() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
+  const { schoolId } = useAuthStore();
+  const { data: apiReport } = useFinancialReportSummary(schoolId);
+  const { data: apiInvoices } = useInvoices(schoolId);
+
+  const MONTHLY_REVENUE = (apiReport as any)?.monthlyRevenue ?? FALLBACK_MONTHLY_REVENUE;
+  const COLLECTION_TREND = (apiReport as any)?.collectionTrend ?? FALLBACK_COLLECTION_TREND;
+  const EXPENSE_BREAKDOWN = (apiReport as any)?.expenseBreakdown ?? FALLBACK_EXPENSE_BREAKDOWN;
+  const OVERDUE_ACCOUNTS = (apiInvoices as any[])?.filter((inv: any) => inv.status === 'OVERDUE').slice(0, 5).map((inv: any) => ({
+    account: inv.parentId ?? 'Unknown', amount: `$${Number(inv.totalAmount ?? 0).toLocaleString()}`,
+    days: Math.ceil((Date.now() - new Date(inv.dueDate).getTime()) / 86400000), risk: 'high' as const,
+  })) ?? FALLBACK_OVERDUE_ACCOUNTS;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -71,7 +84,7 @@ export default function FinanceAnalyticsView() {
           trendLabel="+12.3% YoY"
           icon={<DollarSign className="size-5" />}
           accentColor="#34d399"
-          sparklineData={MONTHLY_REVENUE.map(m => m.revenue / 1000)}
+          sparklineData={MONTHLY_REVENUE.map((m: any) => m.revenue / 1000)}
         />
         <StatCard
           label="Total Expenses"
@@ -82,7 +95,7 @@ export default function FinanceAnalyticsView() {
           trendLabel="+5.8% YoY"
           icon={<CreditCard className="size-5" />}
           accentColor="#fbbf24"
-          sparklineData={MONTHLY_REVENUE.map(m => m.expenses / 1000)}
+          sparklineData={MONTHLY_REVENUE.map((m: any) => m.expenses / 1000)}
         />
         <StatCard
           label="Collection Rate"
@@ -92,7 +105,7 @@ export default function FinanceAnalyticsView() {
           trendLabel="+4.2% this quarter"
           icon={<Receipt className="size-5" />}
           accentColor="#818cf8"
-          sparklineData={COLLECTION_TREND.map(c => c.rate)}
+          sparklineData={COLLECTION_TREND.map((c: any) => c.rate)}
         />
         <StatCard
           label="Overdue Invoices"
@@ -110,7 +123,7 @@ export default function FinanceAnalyticsView() {
           <NeonBarChart
             title="Revenue vs Expenses"
             subtitle="Monthly comparison — current fiscal year"
-            data={MONTHLY_REVENUE.map(m => ({ name: m.name, primary: m.revenue / 1000, secondary: m.expenses / 1000 }))}
+            data={MONTHLY_REVENUE.map((m: any) => ({ name: m.name, primary: m.revenue / 1000, secondary: m.expenses / 1000 }))}
             dataKey="primary"
             secondaryDataKey="secondary"
             xAxisKey="name"

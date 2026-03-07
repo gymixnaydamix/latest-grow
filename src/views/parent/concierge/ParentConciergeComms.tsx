@@ -2,9 +2,11 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { Send, Calendar, Star, AlertTriangle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useParentV2MessageThreads, useParentV2Announcements, useParentV2Events, useParentV2Feedback } from '@/hooks/api/use-parent-v2';
+import { useAuthStore } from '@/store/auth.store';
 
 /* ── Teacher messages ── */
-const teacherMessages = [
+const FALLBACK_TEACHER_MESSAGES = [
   { id: 'tm1', teacher: 'Mrs. Priya Gupta', child: 'Aarav Sharma — Grade 5', subject: 'Aarav\'s excellent performance in the science project', date: 'Today', status: 'Unread', preview: 'I wanted to let you know that Aarav did a wonderful job on his solar system model. He was one of the top 3 presenters in class.' },
   { id: 'tm2', teacher: 'Ms. Anita Desai', child: 'Meera Sharma — Grade 2', subject: 'Meera\'s reading progress this week', date: 'Today', status: 'Unread', preview: 'Meera has completed Level 4 of the reading program. She is now ready for more challenging books.' },
   { id: 'tm3', teacher: 'Mrs. Priya Gupta', child: 'Aarav Sharma — Grade 5', subject: 'Homework not submitted — Mathematics', date: 'Yesterday', status: 'Read', preview: 'Aarav did not submit his fractions worksheet due yesterday. Could you please ensure it is completed tonight?' },
@@ -13,7 +15,7 @@ const teacherMessages = [
 ];
 
 /* ── School notices ── */
-const schoolNotices = [
+const FALLBACK_SCHOOL_NOTICES = [
   { id: 'sn1', title: 'Annual Day Celebration — Schedule & Guidelines', from: 'Principal\'s Office', date: 'Today', priority: 'high', read: false, summary: 'Annual Day will be held on March 25, 2026 at the City Auditorium. Parents are invited. Dress code and timing details enclosed.' },
   { id: 'sn2', title: 'Term 3 Examination Schedule Released', from: 'Academic Office', date: 'Yesterday', priority: 'high', read: false, summary: 'Final exams for all grades will begin March 28. Detailed subject-wise schedule available on the parent portal.' },
   { id: 'sn3', title: 'Summer Camp Registrations Open', from: 'Co-curricular Department', date: 'Mar 3', priority: 'medium', read: true, summary: 'Summer camp runs from May 15 to June 15. Activities include robotics, art, swimming, and cricket. Early bird discount until March 20.' },
@@ -22,7 +24,7 @@ const schoolNotices = [
 ];
 
 /* ── Event updates ── */
-const eventUpdates = [
+const FALLBACK_EVENT_UPDATES = [
   { id: 'eu1', event: 'Annual Day Celebration', date: 'Mar 25, 2026', venue: 'City Auditorium', time: '4:00 PM', child: 'Aarav (Dance) & Meera (Choir)', status: 'Confirmed' },
   { id: 'eu2', event: 'Science Museum Field Trip', date: 'Mar 14, 2026', venue: 'National Science Centre, Delhi', time: '9:00 AM', child: 'Aarav Sharma — Grade 5', status: 'Consent Pending' },
   { id: 'eu3', event: 'Parent-Teacher Meeting', date: 'Mar 8, 2026', venue: 'Meeting Room A', time: '2:30 PM', child: 'Aarav Sharma — Grade 5', status: 'Confirmed' },
@@ -31,21 +33,21 @@ const eventUpdates = [
 ];
 
 /* ── Feedback ── */
-const feedbackItems = [
+const FALLBACK_FEEDBACK_ITEMS = [
   { id: 'fb1', topic: 'School Bus Safety — Route #14', category: 'Transport', submitted: 'Feb 25, 2026', status: 'Under Review', response: '' },
   { id: 'fb2', topic: 'Canteen food quality has improved', category: 'Facilities', submitted: 'Feb 10, 2026', status: 'Acknowledged', response: 'Thank you for your positive feedback. We will continue to maintain quality standards.' },
   { id: 'fb3', topic: 'Request for more parent volunteering opportunities', category: 'Community', submitted: 'Jan 15, 2026', status: 'Resolved', response: 'We have added a volunteer sign-up section to the parent portal. Thank you for your suggestion.' },
 ];
 
 /* ── Emergency alerts ── */
-const emergencyAlerts = [
+const FALLBACK_EMERGENCY_ALERTS = [
   { id: 'ea1', title: 'Heavy Rain Advisory — Early Dismissal', date: 'Today, 12:30 PM', severity: 'high', message: 'Due to IMD weather warning for heavy rainfall, school will dismiss at 1:00 PM. School buses will depart at 1:15 PM. Please arrange early pickup if using private transport.', acknowledged: false },
   { id: 'ea2', title: 'Water Supply Disruption — Carry Water Bottles', date: 'Mar 4, 2026', severity: 'medium', message: 'Due to maintenance work, water supply may be limited on March 5. Please ensure children carry sufficient drinking water.', acknowledged: true },
   { id: 'ea3', title: 'COVID-19 Case Advisory — Grade 5 Section B', date: 'Feb 20, 2026', severity: 'high', message: 'A student in Grade 5B has tested positive. Grade 5 parents please monitor for symptoms. No school closure at this time.', acknowledged: true },
 ];
 
 /* ── Sent messages ── */
-const sentMessages = [
+const FALLBACK_SENT_MESSAGES = [
   { id: 'sm1', to: 'Mrs. Priya Gupta', subject: 'Aarav will be late tomorrow', date: 'Today', status: 'Delivered' },
   { id: 'sm2', to: 'Ms. Anita Desai', subject: 'Meera\'s allergy medication update', date: 'Yesterday', status: 'Read' },
   { id: 'sm3', to: 'Transport Desk', subject: 'Bus Route #14 — stop timing concern', date: 'Mar 3', status: 'Read' },
@@ -61,6 +63,19 @@ const priorityColor: Record<string, string> = {
 
 export function ParentConciergeComms() {
   const { activeSubNav } = useNavigationStore();
+  useAuthStore((s) => s.schoolId);
+
+  const { data: apiMessages } = useParentV2MessageThreads();
+  const { data: apiAnnouncements } = useParentV2Announcements();
+  const { data: apiEvents } = useParentV2Events();
+  const { data: apiFeedback } = useParentV2Feedback();
+
+  const teacherMessages = (apiMessages as any[]) ?? FALLBACK_TEACHER_MESSAGES;
+  const schoolNotices = (apiAnnouncements as any[]) ?? FALLBACK_SCHOOL_NOTICES;
+  const eventUpdates = (apiEvents as any[]) ?? FALLBACK_EVENT_UPDATES;
+  const feedbackItems = (apiFeedback as any[]) ?? FALLBACK_FEEDBACK_ITEMS;
+  const emergencyAlerts = FALLBACK_EMERGENCY_ALERTS;
+  const sentMessages = FALLBACK_SENT_MESSAGES;
 
   /* ── Teacher Messages (default) ── */
   if (!activeSubNav || activeSubNav === 'c_teacher_messages') {

@@ -5,8 +5,9 @@ import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useStaggerAnimate } from '@/hooks/use-animate';
-
+import { useStaggerAnimate } from '@/hooks/use-animate';import { useEvents, useCreateEvent } from '@/hooks/api/use-operations';
+import { useAuthStore } from '@/store/auth.store';
+import { notifySuccess } from '@/lib/notify';
 type EventCategory = 'class' | 'meeting' | 'deadline' | 'event' | 'personal';
 
 interface CalendarEvent {
@@ -29,7 +30,7 @@ const CATEGORY_COLORS: Record<EventCategory, { dot: string; bg: string; text: st
 
 const SHORT_DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
-const MOCK_EVENTS: CalendarEvent[] = [
+const FALLBACK_EVENTS: CalendarEvent[] = [
   { id: '1', title: 'Math 101', date: '2025-03-17', time: '09:00', category: 'class', location: 'Room 201' },
   { id: '2', title: 'Staff Meeting', date: '2025-03-17', time: '14:00', category: 'meeting', location: 'Conference Room' },
   { id: '3', title: 'Essay Due', date: '2025-03-18', time: '23:59', category: 'deadline' },
@@ -42,6 +43,9 @@ const MOCK_EVENTS: CalendarEvent[] = [
 
 export default function CalendarPage() {
   const containerRef = useStaggerAnimate();
+  const { schoolId } = useAuthStore();
+  const { data: apiEvents } = useEvents(schoolId);
+  const createEvent = useCreateEvent(schoolId ?? '');
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
   const [month, setMonth] = useState(today.getMonth());
@@ -60,14 +64,21 @@ export default function CalendarPage() {
   }, [year, month]);
 
   const eventsMap = useMemo(() => {
+    const rawEvents: CalendarEvent[] = (apiEvents as any[])?.map((e: any) => ({
+      id: e.id, title: e.title ?? '', date: (e.startDate ?? e.date ?? '').slice(0, 10),
+      time: (e.startDate ?? '').slice(11, 16) || '09:00',
+      category: (e.type?.toLowerCase() ?? 'event') as EventCategory,
+      location: e.location ?? '', description: e.description ?? '',
+    })) ?? FALLBACK_EVENTS;
+
     const m = new Map<string, CalendarEvent[]>();
-    MOCK_EVENTS.forEach((ev) => {
+    rawEvents.forEach((ev) => {
       const arr = m.get(ev.date) ?? [];
       arr.push(ev);
       m.set(ev.date, arr);
     });
     return m;
-  }, []);
+  }, [apiEvents]);
 
   const pad = (n: number) => n.toString().padStart(2, '0');
   const dateStr = (day: number) => `${year}-${pad(month + 1)}-${pad(day)}`;
@@ -90,7 +101,7 @@ export default function CalendarPage() {
           )}
           <Button size="icon" variant="ghost" onClick={prev} className="size-7 text-white/40"><ChevronLeft className="size-4" /></Button>
           <Button size="icon" variant="ghost" onClick={next} className="size-7 text-white/40"><ChevronRight className="size-4" /></Button>
-          <Button className="gap-1.5 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-400/20 text-xs h-8">
+          <Button className="gap-1.5 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-400/20 text-xs h-8" onClick={() => createEvent.mutate({ title: 'New Event', description: '', startDate: new Date().toISOString(), endDate: new Date().toISOString(), type: 'event' }, { onSuccess: () => notifySuccess('Event created') })}>
             <Plus className="size-3" />New Event
           </Button>
         </div>

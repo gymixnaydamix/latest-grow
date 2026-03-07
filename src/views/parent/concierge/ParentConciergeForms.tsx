@@ -3,9 +3,11 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeSplitPreviewPanel } from '@/components/concierge/shared';
 import { FileText, CalendarOff, ShieldCheck, Stethoscope, Clock, CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useParentV2Documents, useParentV2Approvals } from '@/hooks/api/use-parent-v2';
+import { useAuthStore } from '@/store/auth.store';
 
 /* ── Pending forms ── */
-const pendingForms = [
+const FALLBACK_PENDING_FORMS = [
   { id: 'pf1', name: 'Annual Health Declaration', child: 'Aarav Sharma — Grade 5', dueDate: 'Mar 10, 2026', status: 'Not Started', category: 'Medical' },
   { id: 'pf2', name: 'Emergency Contact Update', child: 'Meera Sharma — Grade 2', dueDate: 'Mar 12, 2026', status: 'In Progress', category: 'Administrative' },
   { id: 'pf3', name: 'Co-curricular Activity Consent', child: 'Aarav Sharma — Grade 5', dueDate: 'Mar 8, 2026', status: 'Not Started', category: 'Academic' },
@@ -14,7 +16,7 @@ const pendingForms = [
 ];
 
 /* ── Leave requests ── */
-const leaveRequests = [
+const FALLBACK_LEAVE_REQUESTS = [
   { id: 'lr1', child: 'Meera Sharma — Grade 2', from: 'Mar 10, 2026', to: 'Mar 12, 2026', days: 3, reason: 'Family function — cousin\'s wedding in Jaipur', status: 'Draft', teacher: 'Ms. Anita Desai' },
   { id: 'lr2', child: 'Aarav Sharma — Grade 5', from: 'Mar 20, 2026', to: 'Mar 20, 2026', days: 1, reason: 'Doctor appointment — orthodontist follow-up', status: 'Approved', teacher: 'Mrs. Priya Gupta' },
   { id: 'lr3', child: 'Aarav Sharma — Grade 5', from: 'Feb 14, 2026', to: 'Feb 14, 2026', days: 1, reason: 'Fever and cold', status: 'Approved', teacher: 'Mrs. Priya Gupta' },
@@ -22,7 +24,7 @@ const leaveRequests = [
 ];
 
 /* ── Permission slips ── */
-const permissionSlips = [
+const FALLBACK_PERMISSION_SLIPS = [
   { id: 'ps1', event: 'Science Museum Field Trip', child: 'Aarav Sharma — Grade 5', date: 'Mar 14, 2026', venue: 'National Science Centre, Delhi', status: 'Pending Signature', fee: 350 },
   { id: 'ps2', event: 'Annual Day Rehearsal (Off-campus)', child: 'Meera Sharma — Grade 2', date: 'Mar 18, 2026', venue: 'City Auditorium', status: 'Pending Signature', fee: 0 },
   { id: 'ps3', event: 'Inter-School Cricket Tournament', child: 'Aarav Sharma — Grade 5', date: 'Mar 22, 2026', venue: 'DPS Sports Complex', status: 'Signed', fee: 200 },
@@ -30,7 +32,7 @@ const permissionSlips = [
 ];
 
 /* ── Medical forms ── */
-const medicalForms = [
+const FALLBACK_MEDICAL_FORMS = [
   { id: 'mf1', name: 'Annual Health Checkup Report', child: 'Aarav Sharma — Grade 5', dueDate: 'Mar 15, 2026', status: 'Pending Upload', notes: 'Upload latest medical report from school health camp' },
   { id: 'mf2', name: 'Allergy Information Update', child: 'Meera Sharma — Grade 2', dueDate: 'Mar 10, 2026', status: 'Submitted', notes: 'Peanut allergy — EpiPen in school medical room' },
   { id: 'mf3', name: 'Fitness Certificate for Sports', child: 'Aarav Sharma — Grade 5', dueDate: 'Mar 20, 2026', status: 'Pending Upload', notes: 'Required for inter-school cricket tournament participation' },
@@ -38,7 +40,7 @@ const medicalForms = [
 ];
 
 /* ── Re-enrollment ── */
-const reEnrollment = [
+const FALLBACK_RE_ENROLLMENT = [
   {
     id: 're1', child: 'Aarav Sharma', currentGrade: 'Grade 5', nextGrade: 'Grade 6', year: '2026–2027',
     status: 'In Progress', progress: 3, total: 6,
@@ -68,7 +70,7 @@ const reEnrollment = [
 ];
 
 /* ── Submitted forms ── */
-const submittedForms = [
+const FALLBACK_SUBMITTED_FORMS = [
   { id: 'sf1', name: 'Emergency Contact Update', child: 'Aarav Sharma — Grade 5', submitted: 'Feb 20, 2026', status: 'Accepted', reviewedBy: 'Admin Office' },
   { id: 'sf2', name: 'Transport Opt-in Form', child: 'Meera Sharma — Grade 2', submitted: 'Jan 5, 2026', status: 'Accepted', reviewedBy: 'Transport Desk' },
   { id: 'sf3', name: 'Allergy Information Form', child: 'Meera Sharma — Grade 2', submitted: 'Jan 10, 2026', status: 'Accepted', reviewedBy: 'School Nurse' },
@@ -91,6 +93,16 @@ const formStatusColor: Record<string, string> = {
 
 export function ParentConciergeForms() {
   const { activeSubNav } = useNavigationStore();
+  useAuthStore((s) => s.schoolId);
+
+  const { data: apiDocuments } = useParentV2Documents();
+  const { data: apiApprovals } = useParentV2Approvals();
+  const pendingForms = (apiDocuments as any[]) ?? FALLBACK_PENDING_FORMS;
+  const leaveRequests = FALLBACK_LEAVE_REQUESTS;
+  const permissionSlips = (apiApprovals as any[]) ?? FALLBACK_PERMISSION_SLIPS;
+  const medicalForms = FALLBACK_MEDICAL_FORMS;
+  const reEnrollment = FALLBACK_RE_ENROLLMENT;
+  const submittedForms = FALLBACK_SUBMITTED_FORMS;
 
   /* ── Pending Forms (default) ── */
   if (!activeSubNav || activeSubNav === 'c_pending_forms') {

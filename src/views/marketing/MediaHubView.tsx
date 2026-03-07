@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { FileUploader } from '@/components/features/FileUploader';
+import { useAuthStore } from '@/store/auth.store';
+import { useLibraryItems } from '@/hooks/api/use-library';
 
 type MediaType = 'image' | 'video' | 'document' | 'social';
 
@@ -33,7 +35,7 @@ const TYPE_CFG: Record<MediaType, { Icon: typeof Image; cls: string; bg: string 
   social: { Icon: Share2, cls: 'text-violet-400', bg: 'bg-violet-400/10' },
 };
 
-const MOCK_ASSETS: MediaAsset[] = [
+const FALLBACK_ASSETS: MediaAsset[] = [
   { id: '1', title: 'Spring Open House Banner', type: 'image', campaign: 'Spring Enrollment', date: '2025-03-14', dimensions: '1920×1080', size: '2.4 MB', views: 1250, likes: 89, status: 'published' },
   { id: '2', title: 'Campus Tour Video', type: 'video', campaign: 'Virtual Tours', date: '2025-03-10', duration: '4:32', size: '156 MB', views: 3400, likes: 245, status: 'published' },
   { id: '3', title: 'Enrollment Brochure 2025', type: 'document', campaign: 'Spring Enrollment', date: '2025-03-12', size: '8.7 MB', views: 890, likes: 0, status: 'published' },
@@ -48,9 +50,17 @@ const STATUS_CLR = { published: 'bg-emerald-400/10 text-emerald-400', draft: 'bg
 
 export default function MediaHubView() {
   const containerRef = useStaggerAnimate([]);
+  const { schoolId } = useAuthStore();
   const uploadDoc = useUploadDocument();
+  const { data: apiItems } = useLibraryItems(schoolId);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | MediaType>('all');
+
+  const MOCK_ASSETS: MediaAsset[] = (apiItems as any[])?.map((item: any) => ({
+    id: item.id, title: item.title ?? '', type: (item.category ?? 'document') as MediaType,
+    campaign: item.description ?? 'General', date: item.createdAt ?? '', dimensions: '',
+    size: '', views: 0, likes: 0, status: 'published' as const,
+  })) ?? FALLBACK_ASSETS;
 
   const filtered = MOCK_ASSETS.filter((a) => {
     const t = typeFilter === 'all' || a.type === typeFilter;

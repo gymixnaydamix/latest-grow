@@ -3,9 +3,10 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeSplitPreviewPanel } from '@/components/concierge/shared';
 import { cn } from '@/lib/utils';
 import { Calendar, Clock, TrendingUp, TrendingDown, Minus, Download, FileText } from 'lucide-react';
+import { useStudentExams, useStudentGradesOverview } from '@/hooks/api/use-student';
 
 /* ── Upcoming exams ── */
-const upcomingExams = [
+const FALLBACK_UPCOMING_EXAMS = [
   { id: 'ue1', subject: 'Hindi', type: 'Unit Test', date: 'Mar 10, 2026', time: '10:00 AM – 11:00 AM', syllabus: 'Premchand — Idgah, Namak ka Daroga; Grammar Units 3–4', seatNumber: 'B-14', room: 'Hall A' },
   { id: 'ue2', subject: 'Mathematics', type: 'Weekly Test', date: 'Mar 12, 2026', time: '08:30 AM – 09:30 AM', syllabus: 'Ch 2: Polynomials — All exercises', seatNumber: 'B-14', room: 'Room 9B' },
   { id: 'ue3', subject: 'Science', type: 'Lab Viva', date: 'Mar 14, 2026', time: '11:00 AM – 12:00 PM', syllabus: 'Reflection of Light — Laws, mirror types, ray diagrams', seatNumber: 'Lab-07', room: 'Physics Lab' },
@@ -14,7 +15,7 @@ const upcomingExams = [
 ];
 
 /* ── Full exam schedule ── */
-const examSchedule = [
+const FALLBACK_EXAM_SCHEDULE = [
   { date: 'Mar 10 (Mon)', subject: 'Hindi', time: '10:00 – 11:00', type: 'Unit Test', marks: 25 },
   { date: 'Mar 12 (Wed)', subject: 'Mathematics', time: '08:30 – 09:30', type: 'Weekly Test', marks: 20 },
   { date: 'Mar 14 (Fri)', subject: 'Science', time: '11:00 – 12:00', type: 'Lab Viva', marks: 15 },
@@ -27,7 +28,7 @@ const examSchedule = [
 ];
 
 /* ── Results ── */
-const examResults = [
+const FALLBACK_EXAM_RESULTS = [
   { id: 'er1', subject: 'Mathematics', exam: 'Unit Test 3 — Triangles', marks: 38, total: 40, grade: 'A+', classAvg: 32, rank: 3 },
   { id: 'er2', subject: 'Science', exam: 'Unit Test 3 — Sound', marks: 35, total: 40, grade: 'A+', classAvg: 30, rank: 5 },
   { id: 'er3', subject: 'English', exam: 'Unit Test 3 — Literature', marks: 32, total: 40, grade: 'A', classAvg: 28, rank: 7 },
@@ -37,7 +38,7 @@ const examResults = [
 ];
 
 /* ── Report card ── */
-const reportCardTerms = [
+const FALLBACK_REPORT_CARD_TERMS = [
   {
     term: 'Term 1',
     subjects: [
@@ -71,7 +72,7 @@ const reportCardTerms = [
 /* ── Analysis data ── */
 type Trend = 'improving' | 'declining' | 'stable';
 interface SubjectAnalysisItem { subject: string; scores: number[]; trend: Trend; strength: string; improvement: string; }
-const subjectAnalysis: SubjectAnalysisItem[] = [
+const FALLBACK_SUBJECT_ANALYSIS: SubjectAnalysisItem[] = [
   { subject: 'Mathematics', scores: [78, 82, 85, 95], trend: 'improving', strength: 'Problem solving', improvement: 'Word problems' },
   { subject: 'Science', scores: [75, 80, 82, 87], trend: 'improving', strength: 'Lab work & experiments', improvement: 'Theory memorization' },
   { subject: 'English', scores: [72, 74, 78, 80], trend: 'improving', strength: 'Comprehension', improvement: 'Creative writing' },
@@ -81,7 +82,7 @@ const subjectAnalysis: SubjectAnalysisItem[] = [
 ];
 
 /* ── Study resources per exam ── */
-const studyResources = [
+const FALLBACK_STUDY_RESOURCES = [
   { id: 'sr1', exam: 'Hindi Unit Test', resources: [
     { name: 'Premchand Stories — Summary Notes', type: 'PDF', size: '340 KB' },
     { name: 'Hindi Grammar Quick Reference', type: 'PDF', size: '210 KB' },
@@ -116,6 +117,16 @@ const subjectColors: Record<string, string> = {
 
 export function StudentConciergeExams() {
   const { activeSubNav } = useNavigationStore();
+
+  const { data: apiExams } = useStudentExams();
+  const { data: apiGrades } = useStudentGradesOverview();
+
+  const upcomingExams = (apiExams as any[]) ?? FALLBACK_UPCOMING_EXAMS;
+  const examSchedule = FALLBACK_EXAM_SCHEDULE;
+  const examResults = (apiGrades as any[]) ?? FALLBACK_EXAM_RESULTS;
+  const reportCardTerms = FALLBACK_REPORT_CARD_TERMS;
+  const subjectAnalysis = FALLBACK_SUBJECT_ANALYSIS;
+  const studyResources = FALLBACK_STUDY_RESOURCES;
 
   /* ── Upcoming (default) ── */
   if (!activeSubNav || activeSubNav === 'c_upcoming') {

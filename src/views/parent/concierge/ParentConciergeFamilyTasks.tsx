@@ -1,6 +1,8 @@
 /* Parent Concierge › Family Tasks — All Tasks, Due Today, Per Child, Approvals Needed, Scheduled, Completed */
 import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeTaskCard } from '@/components/concierge/shared';
+import { useParentV2Home, useParentV2Approvals } from '@/hooks/api/use-parent-v2';
+import { useAuthStore } from '@/store/auth.store';
 
 interface ParentTask {
   id: string;
@@ -17,7 +19,7 @@ interface ParentTask {
   blockedReason?: string;
 }
 
-const taskData: ParentTask[] = [
+const FALLBACK_TASKS: ParentTask[] = [
   {
     id: 'pt1', title: 'Pay Term 3 tuition fee', linkedEntity: 'Finance',
     dueDate: 'Today', priority: 'urgent', owner: 'Me', checklistTotal: 3, checklistDone: 1,
@@ -63,6 +65,12 @@ const taskData: ParentTask[] = [
 
 export function ParentConciergeFamilyTasks() {
   const { activeSubNav } = useNavigationStore();
+  useAuthStore((s) => s.schoolId);
+
+  const { data: apiHome } = useParentV2Home();
+  const { data: _apiApprovals } = useParentV2Approvals();
+
+  const taskData = (apiHome as unknown as any[]) ?? FALLBACK_TASKS;
 
   const filtered = (() => {
     switch (activeSubNav) {

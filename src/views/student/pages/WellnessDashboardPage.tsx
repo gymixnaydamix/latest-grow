@@ -14,6 +14,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentWellness, useStudentMoodHistory, useLogMood } from '@/hooks/api/use-student';
 
 type Mood = 'great' | 'good' | 'okay' | 'low' | 'bad';
 
@@ -65,7 +66,16 @@ export default function WellnessDashboardPage() {
   const containerRef = useStaggerAnimate([]);
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
 
-  const wellnessScore = Math.round(METRICS.reduce((s, m) => s + (m.value / m.max), 0) / METRICS.length * 100);
+  /* ── API data ── */
+  const { data: _apiWellness } = useStudentWellness();
+  const { data: _apiMoodHist } = useStudentMoodHistory();
+  const logMoodMut = useLogMood();
+  const metricsData = ((_apiWellness as any)?.metrics as any[]) ?? [];
+  const metrics = metricsData.length > 0 ? metricsData : METRICS;
+  const moodLogData = (_apiMoodHist as any[]) ?? [];
+  const moodLog = moodLogData.length > 0 ? moodLogData : MOOD_LOG;
+
+  const wellnessScore = Math.round(metrics.reduce((s: number, m: any) => s + ((m.value ?? 0) / (m.max ?? 1)), 0) / (metrics.length || 1) * 100);
   const streakDays = 7;
 
   return (
@@ -104,7 +114,7 @@ export default function WellnessDashboardPage() {
           {selectedMood && (
             <div className="flex gap-2">
               <input placeholder="Add a note (optional)…" className="flex-1 rounded-lg border border-white/8 bg-white/4 px-3 py-1.5 text-xs text-white/80 placeholder:text-white/25 outline-none" />
-              <Button size="sm" className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-400/20" onClick={() => notifySuccess('Mood', 'Mood logged successfully')}>Log Mood</Button>
+              <Button size="sm" className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-400/20" onClick={() => logMoodMut.mutate({ mood: selectedMood } as any, { onSuccess: () => notifySuccess('Mood', 'Mood logged successfully') })}>Log Mood</Button>
             </div>
           )}
         </CardContent>
@@ -112,8 +122,8 @@ export default function WellnessDashboardPage() {
 
       {/* Metrics grid */}
       <div data-animate className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
-        {METRICS.map((m) => {
-          const pct = Math.round((m.value / m.max) * 100);
+        {metrics.map((m: any) => {
+          const pct = Math.round(((m.value ?? 0) / (m.max ?? 1)) * 100);
           return (
             <Card key={m.label} className="border-white/6 bg-white/3 backdrop-blur-xl">
               <CardContent className="flex flex-col items-center gap-2 p-3">
@@ -133,8 +143,8 @@ export default function WellnessDashboardPage() {
         <Card data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
           <CardHeader><CardTitle className="text-white/90 text-sm">Mood History</CardTitle></CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {MOOD_LOG.map((entry) => {
-              const cfg = MOOD_CFG[entry.mood];
+            {moodLog.map((entry: any) => {
+              const cfg = MOOD_CFG[entry.mood as Mood];
               return (
                 <div key={entry.date} className="flex items-center gap-3 rounded-lg border border-white/6 bg-white/2 p-2.5">
                   <cfg.Icon className={cn('size-4 shrink-0', cfg.cls)} />

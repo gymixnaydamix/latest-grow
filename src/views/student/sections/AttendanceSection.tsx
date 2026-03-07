@@ -12,7 +12,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type AttendanceRecord } from '@/store/student-data.store';
+import { type AttendanceRecord } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type AttendanceView = 'timeline' | 'by_subject' | 'calendar' | 'summary';
@@ -25,7 +26,7 @@ const STATUS_CONFIG: Record<string, { icon: typeof CheckCircle2; color: string; 
 };
 
 export function AttendanceSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [view, setView] = useState<AttendanceView>('timeline');
 
   // Overall stats
@@ -102,7 +103,7 @@ export function AttendanceSection() {
 
 /* ── Timeline ── */
 function TimelineView() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const grouped = useMemo(() => {
     const sorted = [...store.attendance].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     const groups: Record<string, AttendanceRecord[]> = {};
@@ -161,7 +162,7 @@ function TimelineView() {
 
 /* ── By Subject ── */
 function BySubjectView() {
-  const store = useStudentStore();
+  const store = useStudentData();
 
   const subjectAttendance = useMemo(() => {
     return store.subjects.map(s => {
@@ -201,7 +202,7 @@ function BySubjectView() {
 
 /* ── Calendar View ── */
 function CalendarView() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [month, setMonth] = useState(() => new Date());
 
   const daysInMonth = useMemo(() => {

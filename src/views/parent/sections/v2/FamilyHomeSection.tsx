@@ -20,7 +20,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { useParentV2Home } from '@/hooks/api/use-parent-v2';
+import { useParentV2Home, useCreateParentV2CheckoutSession, useDecideParentV2Approval, useMarkParentV2AnnouncementRead, useRsvpParentV2Event } from '@/hooks/api/use-parent-v2';
+import { useNavigationStore } from '@/store/navigation.store';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import {
   childDisplayName,
   filterByChild,
@@ -60,6 +62,11 @@ import type {
 
 export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
   const { data: homeData } = useParentV2Home({ scope, childId });
+  const { navigate } = useNavigationStore();
+  const checkoutMut = useCreateParentV2CheckoutSession();
+  const approvalMut = useDecideParentV2Approval();
+  useMarkParentV2AnnouncementRead();
+  const rsvpMut = useRsvpParentV2Event();
 
   const children: ParentChildDemo[] = (homeData?.children as ParentChildDemo[] | undefined) ?? filterChildren(parentChildrenDemo, childId, scope);
   const actionRequired: ParentActionItemDemo[] = (homeData?.actionRequired as ParentActionItemDemo[] | undefined) ?? filterByChild(parentActionItemsDemo, childId, scope);
@@ -128,11 +135,20 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
         {quickActions.map((action) => {
           const Icon = action.icon;
+          const quickActionHandlers: Record<string, () => void> = {
+            'pay-invoice': () => navigate('parent', 'finance'),
+            'approve-form': () => navigate('parent', 'approvals'),
+            'message-teacher': () => navigate('parent', 'messages'),
+            'read-announcement': () => navigate('parent', 'announcements'),
+            'absence': () => navigate('parent', 'attendance'),
+            'calendar': () => navigate('parent', 'calendar'),
+          };
           return (
             <button
               key={action.id}
               type="button"
               className="group relative flex flex-col items-center gap-1.5 rounded-xl border border-border/60 bg-card/70 p-3 text-center transition-all hover:border-primary/40 hover:bg-primary/5"
+              onClick={quickActionHandlers[action.id]}
             >
               <Icon className="size-5 text-muted-foreground transition-colors group-hover:text-primary" />
               <span className="text-xs font-medium">{action.label}</span>
@@ -305,8 +321,8 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
                   </div>
                 )}
                 <div className="mt-3 flex gap-2">
-                  <Button size="sm" variant="outline" className="h-7 text-xs">View profile</Button>
-                  <Button size="sm" variant="outline" className="h-7 text-xs">Message teacher</Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate('parent', 'children', child.id)}>View profile</Button>
+                  <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => navigate('parent', 'messages')}>Message teacher</Button>
                 </div>
               </div>
             );
@@ -483,7 +499,12 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
                       <p className="text-[11px] text-muted-foreground">of {formatCurrency(invoice.totalAmount, invoice.currency)}</p>
                     </div>
                     <StatusBadge status={invoice.status} tone={invoice.status === 'OVERDUE' ? 'bad' : 'warn'} />
-                    <Button size="sm" variant="default">Pay</Button>
+                    <Button size="sm" variant="default" disabled={checkoutMut.isPending} onClick={() => {
+                      checkoutMut.mutate(invoice.id, {
+                        onSuccess: () => notifySuccess('Checkout session created', 'Redirecting to payment…'),
+                        onError: () => notifyError('Payment failed', 'Could not initiate payment. Please try again.'),
+                      });
+                    }}>{checkoutMut.isPending ? 'Processing…' : 'Pay'}</Button>
                   </div>
                 </div>
               );
@@ -514,8 +535,13 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
                   </p>
                 </div>
                 <div className="flex gap-2">
-                  <Button size="sm" variant="default">Approve</Button>
-                  <Button size="sm" variant="outline">Review</Button>
+                  <Button size="sm" variant="default" disabled={approvalMut.isPending} onClick={() => {
+                    approvalMut.mutate({ approvalRequestId: form.id, decision: 'APPROVED' }, {
+                      onSuccess: () => notifySuccess('Approved', `${form.title} has been approved`),
+                      onError: () => notifyError('Approval failed'),
+                    });
+                  }}>{approvalMut.isPending ? 'Approving…' : 'Approve'}</Button>
+                  <Button size="sm" variant="outline" onClick={() => navigate('parent', 'approvals')}>Review</Button>
                 </div>
               </div>
             ))}
@@ -542,7 +568,12 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
               </div>
               <div className="flex items-center gap-2">
                 <StatusBadge status={event.rsvpStatus} tone={event.rsvpStatus === 'GOING' ? 'good' : 'warn'} />
-                {event.rsvpStatus === 'PENDING' && <Button size="sm" variant="outline">RSVP</Button>}
+                {event.rsvpStatus === 'PENDING' && <Button size="sm" variant="outline" disabled={rsvpMut.isPending} onClick={() => {
+                  rsvpMut.mutate({ eventId: event.id, status: 'GOING' }, {
+                    onSuccess: () => notifySuccess('RSVP confirmed', `You're attending ${event.title}`),
+                    onError: () => notifyError('RSVP failed'),
+                  });
+                }}>{rsvpMut.isPending ? 'Sending…' : 'RSVP'}</Button>}
               </div>
             </div>
           ))}

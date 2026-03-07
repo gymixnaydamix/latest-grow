@@ -17,6 +17,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentMessages } from '@/hooks/api/use-student';
 
 interface StarredMsg {
   id: string;
@@ -29,7 +30,8 @@ interface StarredMsg {
   color: string;
 }
 
-const STARRED: StarredMsg[] = [
+// @ts-expect-error TS6133 — mock data kept for shape reference
+const _STARRED: StarredMsg[] = [
   { id: '1', from: 'Mrs. Rodriguez', initials: 'MR', subject: 'Algebra II — Test Review Session', preview: 'Don\'t forget: review session Thursday at 3 PM in Room 204. Bring your formula sheet.', date: 'May 14', category: 'Teacher', color: 'bg-indigo-500/20 text-indigo-400' },
   { id: '2', from: 'School Office', initials: 'SO', subject: 'Updated Schedule for Next Week', preview: 'Due to the assembly on Tuesday, the class schedule will shift by one period.', date: 'May 13', category: 'Admin', color: 'bg-amber-500/20 text-amber-400' },
   { id: '3', from: 'Dr. Chen', initials: 'DC', subject: 'AP Chemistry Lab Report Feedback', preview: 'Great work on the titration lab! A few corrections needed on the error analysis section.', date: 'May 12', category: 'Teacher', color: 'bg-emerald-500/20 text-emerald-400' },
@@ -43,9 +45,13 @@ export default function StarredPage() {
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
-  const selected = STARRED.find((s) => s.id === selectedId);
-  const filtered = STARRED.filter(
-    (s) => !search || s.from.toLowerCase().includes(search.toLowerCase()) || s.subject.toLowerCase().includes(search.toLowerCase()),
+  /* ── API data ── */
+  const { data: _apiMessages } = useStudentMessages();
+  const starred = ((_apiMessages as any[]) ?? []).filter((m: any) => m.starred);
+
+  const selected = starred.find((s: any) => s.id === selectedId);
+  const filtered = starred.filter(
+    (s: any) => !search || s.from?.toLowerCase().includes(search.toLowerCase()) || s.subject?.toLowerCase().includes(search.toLowerCase()),
   );
 
   return (
@@ -54,9 +60,9 @@ export default function StarredPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Starred Messages" value={STARRED.length} icon={<Star className="h-5 w-5" />} accentColor="text-yellow-400" />
-        <StatCard label="From Teachers" value={STARRED.filter((s) => s.category === 'Teacher').length} icon={<BookOpen className="h-5 w-5" />} />
-        <StatCard label="From Admin" value={STARRED.filter((s) => s.category === 'Admin').length} icon={<Users className="h-5 w-5" />} />
+        <StatCard label="Starred Messages" value={starred.length} icon={<Star className="h-5 w-5" />} accentColor="text-yellow-400" />
+        <StatCard label="From Teachers" value={starred.filter((s: any) => s.category === 'Teacher').length} icon={<BookOpen className="h-5 w-5" />} />
+        <StatCard label="From Admin" value={starred.filter((s: any) => s.category === 'Admin').length} icon={<Users className="h-5 w-5" />} />
         <StatCard label="This Week" value={3} icon={<Clock className="h-5 w-5" />} />
       </div>
 

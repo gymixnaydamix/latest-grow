@@ -7,8 +7,11 @@ import { StatCard } from '@/components/features/StatCard';
 import { NeonBarChart } from '@/components/features/charts/BarChart';
 import { GlowLineChart } from '@/components/features/charts/LineChart';
 import { GlowPieChart } from '@/components/features/charts/PieChart';
+import { useAnalyticsOverview } from '@/hooks/api/use-analytics';
+import { useAuthStore } from '@/store/auth.store';
+import { useCampaigns } from '@/hooks/api';
 
-const CAMPAIGN_PERFORMANCE = [
+const FALLBACK_CAMPAIGN_PERFORMANCE = [
   { name: 'Jan', impressions: 45000, clicks: 3200, conversions: 128 },
   { name: 'Feb', impressions: 52000, clicks: 3800, conversions: 156 },
   { name: 'Mar', impressions: 48000, clicks: 3500, conversions: 142 },
@@ -17,7 +20,7 @@ const CAMPAIGN_PERFORMANCE = [
   { name: 'Jun', impressions: 72000, clicks: 5400, conversions: 218 },
 ];
 
-const LEAD_SOURCE = [
+const FALLBACK_LEAD_SOURCE = [
   { name: 'Google Ads', value: 32, color: '#818cf8' },
   { name: 'Facebook', value: 24, color: '#34d399' },
   { name: 'Referral', value: 18, color: '#fbbf24' },
@@ -25,7 +28,7 @@ const LEAD_SOURCE = [
   { name: 'Organic', value: 12, color: '#60a5fa' },
 ];
 
-const CONVERSION_FUNNEL = [
+const FALLBACK_CONVERSION_FUNNEL = [
   { name: 'Visitors', value: 12400 },
   { name: 'Leads', value: 1860 },
   { name: 'Qualified', value: 744 },
@@ -33,7 +36,7 @@ const CONVERSION_FUNNEL = [
   { name: 'Enrolled', value: 186 },
 ];
 
-const ROI_TREND = [
+const FALLBACK_ROI_TREND = [
   { name: 'Sep', roi: 2.4 },
   { name: 'Oct', roi: 2.8 },
   { name: 'Nov', roi: 3.1 },
@@ -43,7 +46,7 @@ const ROI_TREND = [
   { name: 'Mar', roi: 4.2 },
 ];
 
-const TOP_CAMPAIGNS = [
+const FALLBACK_TOP_CAMPAIGNS = [
   { name: 'Spring Open Day', channel: 'Google Ads', leads: 86, cost: '$1,200', roi: '4.8x' },
   { name: 'Early Bird Discount', channel: 'Email', leads: 62, cost: '$340', roi: '6.2x' },
   { name: 'Social Media Blitz', channel: 'Facebook', leads: 54, cost: '$890', roi: '3.1x' },
@@ -53,6 +56,17 @@ const TOP_CAMPAIGNS = [
 
 export default function MarketingAnalyticsView() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
+  const { schoolId } = useAuthStore();
+  const { data: apiAnalytics } = useAnalyticsOverview();
+  const { data: apiCampaigns } = useCampaigns(schoolId);
+
+  const CAMPAIGN_PERFORMANCE = (apiAnalytics as any)?.campaignPerformance ?? FALLBACK_CAMPAIGN_PERFORMANCE;
+  const LEAD_SOURCE = (apiAnalytics as any)?.leadSources ?? FALLBACK_LEAD_SOURCE;
+  const CONVERSION_FUNNEL = (apiAnalytics as any)?.conversionFunnel ?? FALLBACK_CONVERSION_FUNNEL;
+  const ROI_TREND = (apiAnalytics as any)?.roiTrend ?? FALLBACK_ROI_TREND;
+  const TOP_CAMPAIGNS = (apiCampaigns as any[])?.slice(0, 5).map((c: any) => ({
+    name: c.name, channel: c.channel ?? 'Unknown', leads: c.leads ?? 0, cost: c.budget ? `$${c.budget}` : '$0', roi: c.roi ?? '—',
+  })) ?? FALLBACK_TOP_CAMPAIGNS;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -73,7 +87,7 @@ export default function MarketingAnalyticsView() {
           trendLabel="+24% MoM"
           icon={<Globe className="size-5" />}
           accentColor="#818cf8"
-          sparklineData={CAMPAIGN_PERFORMANCE.map(c => c.impressions / 1000)}
+          sparklineData={CAMPAIGN_PERFORMANCE.map((c: any) => c.impressions / 1000)}
         />
         <StatCard
           label="Lead Conversion"
@@ -84,7 +98,7 @@ export default function MarketingAnalyticsView() {
           trendLabel="+0.8% this quarter"
           icon={<Target className="size-5" />}
           accentColor="#34d399"
-          sparklineData={CAMPAIGN_PERFORMANCE.map(c => (c.conversions / c.clicks) * 100)}
+          sparklineData={CAMPAIGN_PERFORMANCE.map((c: any) => (c.conversions / c.clicks) * 100)}
         />
         <StatCard
           label="Cost per Lead"
@@ -105,7 +119,7 @@ export default function MarketingAnalyticsView() {
           trendLabel="+0.4x this month"
           icon={<TrendingUp className="size-5" />}
           accentColor="#f472b6"
-          sparklineData={ROI_TREND.map(r => r.roi)}
+          sparklineData={ROI_TREND.map((r: any) => r.roi)}
         />
       </div>
 
@@ -115,7 +129,7 @@ export default function MarketingAnalyticsView() {
           <NeonBarChart
             title="Campaign Performance"
             subtitle="Clicks and conversions by month"
-            data={CAMPAIGN_PERFORMANCE.map(c => ({ name: c.name, primary: c.clicks, secondary: c.conversions * 10 }))}
+            data={CAMPAIGN_PERFORMANCE.map((c: any) => ({ name: c.name, primary: c.clicks, secondary: c.conversions * 10 }))}
             dataKey="primary"
             secondaryDataKey="secondary"
             xAxisKey="name"
@@ -157,8 +171,8 @@ export default function MarketingAnalyticsView() {
         </CardHeader>
         <CardContent>
           <div className="flex items-end justify-between gap-2">
-            {CONVERSION_FUNNEL.map((stage) => {
-              const maxVal = CONVERSION_FUNNEL[0].value;
+            {CONVERSION_FUNNEL.map((stage: any) => {
+              const maxVal = CONVERSION_FUNNEL[0]?.value ?? 1;
               const pct = (stage.value / maxVal) * 100;
               return (
                 <div key={stage.name} className="flex flex-col items-center gap-2 flex-1">

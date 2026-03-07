@@ -10,6 +10,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentLearningPaths } from '@/hooks/api/use-student';
 
 type ModuleStatus = 'completed' | 'in-progress' | 'locked';
 
@@ -62,12 +63,17 @@ const PATHS: LearningPath[] = [
 export default function MyJourneyPage() {
   const containerRef = useStaggerAnimate([]);
   const [activePath, setActivePath] = useState(PATHS[0].id);
-  const path = PATHS.find((p) => p.id === activePath)!;
+
+  /* ── API data ── */
+  const { data: _apiPaths } = useStudentLearningPaths();
+  const journeyPaths = (_apiPaths as any[]) ?? [];
+
+  const path = (journeyPaths.length > 0 ? journeyPaths : PATHS).find((p: any) => p.id === activePath)!;
   const pct = Math.round((path.earnedXP / path.totalXP) * 100);
 
-  const totalXP = PATHS.reduce((s, p) => s + p.earnedXP, 0);
-  const totalModules = PATHS.reduce((s, p) => s + p.modules.length, 0);
-  const completedModules = PATHS.reduce((s, p) => s + p.modules.filter((m) => m.status === 'completed').length, 0);
+  const totalXP = (journeyPaths.length > 0 ? journeyPaths : PATHS).reduce((s: number, p: any) => s + (p.earnedXP ?? 0), 0);
+  const totalModules = (journeyPaths.length > 0 ? journeyPaths : PATHS).reduce((s: number, p: any) => s + (p.modules?.length ?? 0), 0);
+  const completedModules = (journeyPaths.length > 0 ? journeyPaths : PATHS).reduce((s: number, p: any) => s + (p.modules?.filter((m: any) => m.status === 'completed')?.length ?? 0), 0);
 
   return (
     <div ref={containerRef} className="space-y-6">
@@ -77,12 +83,12 @@ export default function MyJourneyPage() {
       <div className="grid gap-4 sm:grid-cols-3" data-animate>
         <StatCard label="Total XP Earned" value={totalXP} icon={<Trophy className="h-5 w-5" />} trend="up" />
         <StatCard label="Modules Completed" value={completedModules} suffix={`/${totalModules}`} icon={<CheckCircle2 className="h-5 w-5" />} />
-        <StatCard label="Active Paths" value={PATHS.length} icon={<Route className="h-5 w-5" />} />
+        <StatCard label="Active Paths" value={(journeyPaths.length > 0 ? journeyPaths : PATHS).length} icon={<Route className="h-5 w-5" />} />
       </div>
 
       {/* Path selector */}
       <div data-animate className="flex gap-3 overflow-x-auto pb-1">
-        {PATHS.map((p) => {
+        {(journeyPaths.length > 0 ? journeyPaths : PATHS).map((p: any) => {
           const pp = Math.round((p.earnedXP / p.totalXP) * 100);
           return (
             <Card
@@ -125,7 +131,7 @@ export default function MyJourneyPage() {
             <div className="flex items-center gap-4 mt-1 text-[10px] text-muted-foreground">
               <span className="flex items-center gap-1"><Trophy className="size-3 text-amber-500" />{path.earnedXP} / {path.totalXP} XP</span>
               <span className="flex items-center gap-1"><BookOpen className="size-3" />{path.modules.length} modules</span>
-              <span className="flex items-center gap-1"><Star className="size-3 text-emerald-500" />{path.modules.filter(m => m.status === 'completed').length} done</span>
+              <span className="flex items-center gap-1"><Star className="size-3 text-emerald-500" />{path.modules?.filter((m: any) => m.status === 'completed').length ?? 0} done</span>
             </div>
           </div>
         </CardContent>
@@ -133,8 +139,8 @@ export default function MyJourneyPage() {
 
       {/* Module timeline */}
       <div data-animate className="flex flex-col gap-3">
-        {path.modules.map((mod, idx) => {
-          const s = STATUS_CFG[mod.status];
+        {path.modules?.map((mod: any, idx: number) => {
+          const s = STATUS_CFG[mod.status as keyof typeof STATUS_CFG];
           return (
             <div key={mod.id} className="flex gap-4">
               <div className="flex flex-col items-center">

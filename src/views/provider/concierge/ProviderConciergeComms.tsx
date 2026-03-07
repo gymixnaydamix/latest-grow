@@ -3,14 +3,21 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeTemplatePicker } from '@/components/concierge/shared';
 import { Megaphone, Bell, Eye, Users, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  useProviderComms,
+  useProviderNotifications,
+  useSendProviderAnnouncement,
+  useCreateProviderAnnouncement,
+} from '@/hooks/api/use-provider-console';
+import { notifySuccess } from '@/lib/notify';
 
-const broadcasts = [
+const FALLBACK_BROADCASTS = [
   { id: 'pb1', title: 'Platform maintenance window — March 8', audience: 'All tenants (8)', date: 'Mar 5', status: 'Scheduled', opened: 0 },
   { id: 'pb2', title: 'New billing portal available', audience: 'All tenants (8)', date: 'Mar 3', status: 'Sent', opened: 6 },
   { id: 'pb3', title: 'Q4 performance report published', audience: 'Enterprise tenants (3)', date: 'Feb 28', status: 'Sent', opened: 3 },
 ];
 
-const tenantNotices = [
+const FALLBACK_TENANT_NOTICES = [
   { id: 'pn1', tenant: 'Bright Minds K-12', subject: 'Account suspension warning — 7 day grace period', date: 'Mar 5', status: 'Delivered', urgent: true },
   { id: 'pn2', tenant: 'Horizon Learning Center', subject: 'Invoice overdue — billing retry scheduled', date: 'Mar 4', status: 'Read', urgent: true },
   { id: 'pn3', tenant: 'Sunrise Montessori', subject: 'Support ticket escalation response', date: 'Mar 4', status: 'Read', urgent: false },
@@ -18,19 +25,19 @@ const tenantNotices = [
   { id: 'pn5', tenant: 'Little Stars Preschool', subject: 'Trial extension approved — 14 additional days', date: 'Mar 2', status: 'Read', urgent: false },
 ];
 
-const releaseNotes = [
+const FALLBACK_RELEASE_NOTES = [
   { id: 'rn1', version: 'v2.14.0', title: 'Billing retry improvements & UI polish', date: 'Mar 1', tenants: 'All tenants', highlights: '3 bug fixes, 2 enhancements' },
   { id: 'rn2', version: 'v2.13.2', title: 'Attendance module hotfix', date: 'Feb 22', tenants: 'All tenants', highlights: '1 critical fix' },
   { id: 'rn3', version: 'v2.13.0', title: 'Parent portal widgets & transport tracking', date: 'Feb 15', tenants: 'All tenants', highlights: '8 features, 5 fixes' },
 ];
 
-const incidentUpdates = [
+const FALLBACK_INCIDENT_UPDATES = [
   { id: 'iu1', incident: 'INC-047', title: 'API rate-limit breach — resolved', severity: 'Critical', date: 'Mar 5', status: 'Resolved', affectedTenants: ['Horizon Learning Center'] },
   { id: 'iu2', incident: 'INC-046', title: 'Payment gateway intermittent failures', severity: 'High', date: 'Mar 3', status: 'Monitoring', affectedTenants: ['Greenfield Academy', 'Al-Noor International'] },
   { id: 'iu3', incident: 'INC-045', title: 'Staging environment outage', severity: 'Medium', date: 'Feb 28', status: 'Closed', affectedTenants: [] },
 ];
 
-const commsTemplates = [
+const FALLBACK_COMMS_TEMPLATES = [
   { id: 'ct1', name: 'Maintenance Window Notice', type: 'Platform', lastUsed: 'Yesterday', fieldCount: 5 },
   { id: 'ct2', name: 'Billing Reminder', type: 'Finance', lastUsed: '3 days ago', fieldCount: 4 },
   { id: 'ct3', name: 'Release Notes', type: 'Development', lastUsed: '1 week ago', fieldCount: 6 },
@@ -39,7 +46,7 @@ const commsTemplates = [
   { id: 'ct6', name: 'Suspension Warning', type: 'Compliance', lastUsed: '1 week ago', fieldCount: 3 },
 ];
 
-const deliveryLog = [
+const FALLBACK_DELIVERY_LOG = [
   { id: 'dl1', title: 'Platform maintenance window', channel: 'Email + In-App', queued: 8, sent: 8, delivered: 8, failed: 0, opened: 6 },
   { id: 'dl2', title: 'Billing portal announcement', channel: 'Email', queued: 8, sent: 8, delivered: 7, failed: 1, opened: 6 },
   { id: 'dl3', title: 'Account suspension warning', channel: 'Email + SMS', queued: 1, sent: 1, delivered: 1, failed: 0, opened: 1 },
@@ -50,12 +57,31 @@ const deliveryLog = [
 export function ProviderConciergeComms() {
   const { activeSubNav } = useNavigationStore();
 
+  /* ── API hooks ── */
+  const { data: commsData } = useProviderComms();
+  const { data: notifData } = useProviderNotifications();
+  const sendAnnouncement = useSendProviderAnnouncement(); void sendAnnouncement;
+  const createAnnouncement = useCreateProviderAnnouncement();
+
+  const broadcasts = (commsData?.announcements as any[]) ?? FALLBACK_BROADCASTS;
+  const tenantNotices = (notifData?.notifications as any[]) ?? FALLBACK_TENANT_NOTICES;
+  const releaseNotes = (commsData as any)?.releaseNotes ?? FALLBACK_RELEASE_NOTES;
+  const incidentUpdates = (commsData as any)?.incidentUpdates ?? FALLBACK_INCIDENT_UPDATES;
+  const commsTemplates = (commsData?.templates as any[]) ?? FALLBACK_COMMS_TEMPLATES;
+  const deliveryLog = (notifData?.deliveries as any[]) ?? FALLBACK_DELIVERY_LOG;
+
   if (activeSubNav === 'c_tenant_notices') {
     return (
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="text-sm font-semibold text-foreground">Tenant Notices</h3>
-          <button className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+          <button
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+            onClick={() => createAnnouncement.mutate(
+              { title: 'New notice', body: '', audience: 'Tenant', reason: 'Created via concierge' },
+              { onSuccess: () => notifySuccess('Notice created', 'New tenant notice drafted') },
+            )}
+          >
             <Bell className="h-3.5 w-3.5" /> New Notice
           </button>
         </div>
@@ -86,7 +112,7 @@ export function ProviderConciergeComms() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Release Notes</h3>
         <div className="space-y-2">
-          {releaseNotes.map((r) => (
+          {releaseNotes.map((r: any) => (
             <div key={r.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
@@ -111,7 +137,7 @@ export function ProviderConciergeComms() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Incident Updates</h3>
         <div className="space-y-2">
-          {incidentUpdates.map((i) => (
+          {incidentUpdates.map((i: any) => (
             <div key={i.id} className="rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <div className="flex items-center justify-between mb-1">
                 <div className="flex items-center gap-2">
@@ -179,7 +205,13 @@ export function ProviderConciergeComms() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">Broadcasts</h3>
-        <button className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+        <button
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          onClick={() => createAnnouncement.mutate(
+            { title: 'New broadcast', body: '', audience: 'All tenants', reason: 'Created via concierge' },
+            { onSuccess: () => notifySuccess('Broadcast created', 'New broadcast drafted') },
+          )}
+        >
           <Megaphone className="h-3.5 w-3.5" /> New Broadcast
         </button>
       </div>

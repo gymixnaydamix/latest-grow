@@ -8,7 +8,7 @@ import {
   useCreateRoute, useUpdateRoute, useDeleteRoute,
   useCreateVehicle, useUpdateVehicle, useDeleteVehicle,
   useReportIncident, useUpdateIncident, useResolveIncident, useDeleteIncident,
-  useUpdateRouteAssignment,
+  useUpdateRouteAssignment, useOpsCreateMaintenanceRequest,
 } from '@/hooks/api/use-school-ops';
 import {
   Bus, Plus, Eye, Edit, AlertTriangle, Wrench, Trash2,
@@ -188,6 +188,7 @@ function VehiclesView() {
   const createVehicle = useCreateVehicle(schoolId);
   const updateVehicle = useUpdateVehicle(schoolId);
   const deleteVehicle = useDeleteVehicle(schoolId);
+  const createMaintReq = useOpsCreateMaintenanceRequest(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Vehicle | null>(null);
@@ -288,7 +289,7 @@ function VehiclesView() {
         tabs={tabs}
         actions={[
           { label: 'Edit', icon: <Edit className="size-3.5" />, onClick: () => { setEditing(detail); setFormOpen(true); setDetail(null); } },
-          { label: 'Schedule Service', icon: <Wrench className="size-3.5" />, onClick: () => notifySuccess('Service Scheduled', `Maintenance scheduled for ${detail?.regNumber}`) },
+          { label: 'Schedule Service', icon: <Wrench className="size-3.5" />, onClick: () => { createMaintReq.mutate({ vehicleId: detail?.id, type: 'scheduled', description: `Scheduled maintenance for ${detail?.regNumber}`, priority: 'medium' } as any, { onSuccess: () => notifySuccess('Service Scheduled', `Maintenance scheduled for ${detail?.regNumber}`) }); } },
         ]} />
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}

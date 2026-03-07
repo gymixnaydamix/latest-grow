@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { ConciergeSplitPreviewPanel, ConciergePermissionBadge, ConciergeAuditNotice } from '@/components/concierge/shared';
 import { Clock, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useProviderModuleData, useUpdateProviderSupportTicketStatus } from '@/hooks/api/use-provider-console';
+import { notifySuccess } from '@/lib/notify';
 
 interface Ticket {
   id: string;
@@ -20,7 +22,7 @@ interface Ticket {
   affectedUsers?: number;
 }
 
-const tickets: Ticket[] = [
+const FALLBACK_TICKETS: Ticket[] = [
   {
     id: 'OPS-1001', title: 'Enrollment module data inconsistency', tenant: 'Sunrise Montessori',
     category: 'Escalation', severity: 'Critical', sla: '2h remaining', slaBreached: false,
@@ -92,6 +94,12 @@ const statusColor: Record<string, string> = {
 
 export function ProviderConciergeOps() {
   const { activeSubNav } = useNavigationStore();
+
+  /* ── API hooks ── */
+  const { data: moduleData } = useProviderModuleData();
+  const updateTicketStatus = useUpdateProviderSupportTicketStatus();
+
+  const tickets = (moduleData?.tickets as any as Ticket[]) ?? FALLBACK_TICKETS;
   const [selected, setSelected] = useState<Ticket | null>(tickets[0] ?? null);
 
   const filtered = (() => {
@@ -188,9 +196,27 @@ export function ProviderConciergeOps() {
       <ConciergeAuditNotice message="All operations actions are recorded in the audit trail" />
 
       <div className="flex flex-wrap items-center gap-2 pt-2">
-        <button className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">Assign</button>
-        <button className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">Resolve</button>
-        <button className="rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700">Escalate</button>
+        <button
+          className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          onClick={() => updateTicketStatus.mutate(
+            { ticketId: selected.id, status: 'In Progress', reason: 'Assigned via concierge' },
+            { onSuccess: () => notifySuccess('Ticket assigned', `${selected.id} is now In Progress`) },
+          )}
+        >Assign</button>
+        <button
+          className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+          onClick={() => updateTicketStatus.mutate(
+            { ticketId: selected.id, status: 'Resolved', reason: 'Resolved via concierge' },
+            { onSuccess: () => notifySuccess('Ticket resolved', `${selected.id} has been resolved`) },
+          )}
+        >Resolve</button>
+        <button
+          className="rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
+          onClick={() => updateTicketStatus.mutate(
+            { ticketId: selected.id, status: 'Escalated', reason: 'Escalated via concierge' },
+            { onSuccess: () => notifySuccess('Ticket escalated', `${selected.id} has been escalated`) },
+          )}
+        >Escalate</button>
         <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Add Note</button>
         <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Notify Tenant</button>
         <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">View Timeline</button>

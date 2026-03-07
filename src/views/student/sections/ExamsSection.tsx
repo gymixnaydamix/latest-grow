@@ -11,13 +11,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type Exam } from '@/store/student-data.store';
+import { type Exam } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type ExamView = 'upcoming' | 'completed' | 'timetable';
 
 export function ExamsSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [view, setView] = useState<ExamView>('upcoming');
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -94,7 +95,7 @@ export function ExamsSection() {
 
 /* -- Exam Card -- */
 function ExamCard({ exam, onClick }: { exam: Exam; onClick: () => void }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const subj = store.getSubject(exam.subjectId);
   const days = daysUntil(exam.date);
   const pct = exam.score !== undefined && exam.maxScore ? Math.round((exam.score / exam.maxScore) * 100) : null;
@@ -141,7 +142,7 @@ function ExamCard({ exam, onClick }: { exam: Exam; onClick: () => void }) {
 
 /* -- Exam Detail -- */
 function ExamDetail({ exam, onBack }: { exam: Exam; onBack: () => void }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const subj = store.getSubject(exam.subjectId);
   const teacher = subj ? store.getTeacher(subj.teacherId) : null;
   const days = daysUntil(exam.date);
@@ -241,7 +242,7 @@ function ExamDetail({ exam, onBack }: { exam: Exam; onBack: () => void }) {
 
 /* -- Exam Timetable -- */
 function ExamTimetable({ exams, onSelect }: { exams: Exam[]; onSelect: (id: string) => void }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const sorted = useMemo(() => [...exams].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()), [exams]);
 
   if (sorted.length === 0) return <EmptyState title="No exams scheduled" description="Exam timetable will appear here." />;

@@ -13,14 +13,17 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentLearningPaths } from '@/hooks/api/use-student';
 
-const PATHS = [
+// @ts-expect-error TS6133 — mock data kept for shape reference
+const _PATHS = [
   { id: 'stem', name: 'STEM Explorer', color: 'bg-cyan-500/20 text-cyan-400', icon: Globe, modules: 12, completed: 8, xp: 2400 },
   { id: 'humanities', name: 'Humanities Scholar', color: 'bg-amber-500/20 text-amber-400', icon: Layers, modules: 10, completed: 6, xp: 1800 },
   { id: 'leadership', name: 'Leadership Track', color: 'bg-violet-500/20 text-violet-400', icon: Compass, modules: 8, completed: 3, xp: 900 },
 ];
 
-const MODULES = [
+// @ts-expect-error TS6133 — mock data kept for shape reference
+const _MODULES = [
   { title: 'Algebra Foundations', status: 'completed', xp: 300 },
   { title: 'Geometry & Proofs', status: 'completed', xp: 350 },
   { title: 'Trigonometry Basics', status: 'completed', xp: 320 },
@@ -59,8 +62,14 @@ const SKILLS = [
 export default function LearningPathOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const [activePath, setActivePath] = useState('stem');
-  const currentPath = PATHS.find((p) => p.id === activePath) ?? PATHS[0];
-  const totalXP = PATHS.reduce((s, p) => s + p.xp, 0);
+
+  /* ── API data ── */
+  const { data: _apiPaths } = useStudentLearningPaths();
+  const paths = (_apiPaths as any[]) ?? [];
+  const modules = (paths.find((p: any) => p.id === activePath)?.modules as any[]) ?? [];
+
+  const currentPath = paths.find((p: any) => p.id === activePath) ?? paths[0];
+  const totalXP = paths.reduce((s: number, p: any) => s + (p.xp ?? 0), 0);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -76,7 +85,7 @@ export default function LearningPathOverviewPage() {
 
       {/* Path selector */}
       <div className="grid gap-3 sm:grid-cols-3" data-animate>
-        {PATHS.map((path) => (
+        {paths.map((path: any) => (
           <Card
             key={path.id}
             onClick={() => setActivePath(path.id)}
@@ -119,7 +128,7 @@ export default function LearningPathOverviewPage() {
                 </CardHeader>
                 <CardContent className="flex flex-col gap-0.5 relative pl-6">
                   <div className="absolute left-[19px] top-0 bottom-0 w-px bg-gradient-to-b from-cyan-500/40 via-white/6 to-white/3" />
-                  {MODULES.map((m, i) => {
+                  {modules.map((m: any, i: number) => {
                     const done = m.status === 'completed';
                     const active = m.status === 'in_progress';
                     const locked = m.status === 'locked';
@@ -234,7 +243,7 @@ export default function LearningPathOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {PATHS.map((p) => (
+              {paths.map((p: any) => (
                 <div key={p.id} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-2">
                   <div className="flex items-center gap-2">
                     <div className={cn('size-6 rounded-md flex items-center justify-center', p.color)}>

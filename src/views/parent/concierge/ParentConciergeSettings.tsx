@@ -2,9 +2,11 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { User, CreditCard, Shield, Globe } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useParentV2Children, useParentV2Profile, useUpdateParentV2Profile } from '@/hooks/api/use-parent-v2';
+import { useAuthStore } from '@/store/auth.store';
 
 /* ── Child profiles ── */
-const childProfiles = [
+const FALLBACK_CHILD_PROFILES = [
   {
     id: 'cp1', name: 'Aarav Sharma', grade: 'Grade 5', section: 'Section A', rollNo: 'GIS-2025-0514',
     classTeacher: 'Mrs. Priya Gupta', house: 'Blue House', dob: 'Aug 15, 2015',
@@ -20,7 +22,7 @@ const childProfiles = [
 ];
 
 /* ── Payment methods ── */
-const paymentMethods = [
+const FALLBACK_PAYMENT_METHODS = [
   { id: 'pm1', type: 'UPI', detail: 'sharma.rajesh@sbi', isPrimary: true, added: 'Jan 5, 2025' },
   { id: 'pm2', type: 'Net Banking', detail: 'HDFC Bank — ****6789', isPrimary: false, added: 'Apr 1, 2025' },
   { id: 'pm3', type: 'Credit Card', detail: 'ICICI Visa — ****4321', isPrimary: false, added: 'Sep 15, 2025' },
@@ -28,7 +30,7 @@ const paymentMethods = [
 ];
 
 /* ── Languages ── */
-const languages = [
+const FALLBACK_LANGUAGES = [
   { code: 'en', name: 'English', active: true },
   { code: 'hi', name: 'हिन्दी (Hindi)', active: false },
   { code: 'mr', name: 'मराठी (Marathi)', active: false },
@@ -39,6 +41,15 @@ const languages = [
 
 export function ParentConciergeSettings() {
   const { activeSubNav } = useNavigationStore();
+  useAuthStore((s) => s.schoolId);
+
+  const { data: apiChildren } = useParentV2Children();
+  const { data: _apiProfile } = useParentV2Profile();
+  useUpdateParentV2Profile();
+
+  const childProfiles = (apiChildren as any[]) ?? FALLBACK_CHILD_PROFILES;
+  const paymentMethods = FALLBACK_PAYMENT_METHODS;
+  const languages = FALLBACK_LANGUAGES;
 
   /* ── Preferences (default) ── */
   if (!activeSubNav || activeSubNav === 'c_preferences') {
@@ -138,7 +149,7 @@ export function ParentConciergeSettings() {
               <div>
                 <span className="text-[10px] font-medium text-muted-foreground">Activities:</span>
                 <div className="flex flex-wrap gap-1.5 mt-1">
-                  {c.activities.map((a) => (
+                  {c.activities.map((a: any) => (
                     <span key={a} className="rounded-lg border border-border/20 bg-muted/30 px-2 py-0.5 text-[10px] text-muted-foreground">{a}</span>
                   ))}
                 </div>

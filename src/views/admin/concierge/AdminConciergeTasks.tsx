@@ -1,8 +1,10 @@
 /* Admin Concierge › Tasks — My Tasks, Due Today, Scheduled, Waiting, Completed */
 import { useNavigationStore } from '@/store/navigation.store';
+import { useAuthStore } from '@/store/auth.store';
 import { ConciergeTaskCard } from '@/components/concierge/shared';
+import { useComplianceTasks } from '@/hooks/api/use-school-ops';
 
-const taskData = [
+const FALLBACK_TASKS = [
   { id: 't1', title: 'Review admission for Sara Ali', linkedEntity: 'Admissions', dueDate: 'Today', priority: 'high' as const, owner: 'Admin', checklistTotal: 4, checklistDone: 2 },
   { id: 't2', title: 'Follow up overdue fees — Grade 7', linkedEntity: 'Finance', dueDate: 'Today', priority: 'urgent' as const, owner: 'Admin', checklistTotal: 3, checklistDone: 0 },
   { id: 't3', title: 'Generate end-of-term certificates', linkedEntity: 'Documents', dueDate: 'Jun 15', priority: 'medium' as const, owner: 'Admin', checklistTotal: 5, checklistDone: 5 },
@@ -13,6 +15,9 @@ const taskData = [
 
 export function AdminConciergeTasks() {
   const { activeSubNav } = useNavigationStore();
+  const { schoolId } = useAuthStore();
+  const { data: apiTasks } = useComplianceTasks(schoolId);
+  const taskData = (apiTasks as any[]) ?? FALLBACK_TASKS;
 
   const filtered = (() => {
     switch (activeSubNav) {

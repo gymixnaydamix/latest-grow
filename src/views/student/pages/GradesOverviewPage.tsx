@@ -15,6 +15,7 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentGradesOverview, useStudentAssignments } from '@/hooks/api/use-student';
 
 interface CourseGrade {
   course: string;
@@ -27,7 +28,8 @@ interface CourseGrade {
   color: string;
 }
 
-const COURSE_GRADES: CourseGrade[] = [
+// @ts-expect-error TS6133 — mock data kept for shape reference
+const _COURSE_GRADES: CourseGrade[] = [
   { course: 'Computer Science', instructor: 'Mr. Kim', grade: 'A+', percentage: 97, trend: 'up', assignments: 15, completed: 14, color: 'bg-cyan-500/20 text-cyan-400' },
   { course: 'English Literature', instructor: 'Mr. Thompson', grade: 'A', percentage: 93, trend: 'neutral', assignments: 12, completed: 11, color: 'bg-violet-500/20 text-violet-400' },
   { course: 'Algebra II', instructor: 'Mrs. Rodriguez', grade: 'A-', percentage: 91, trend: 'up', assignments: 18, completed: 16, color: 'bg-indigo-500/20 text-indigo-400' },
@@ -36,7 +38,8 @@ const COURSE_GRADES: CourseGrade[] = [
   { course: 'World History', instructor: 'Ms. Patel', grade: 'B', percentage: 83, trend: 'up', assignments: 14, completed: 12, color: 'bg-amber-500/20 text-amber-400' },
 ];
 
-const UPCOMING_ASSIGNMENTS = [
+// @ts-expect-error TS6133 — mock data kept for shape reference
+const _UPCOMING_ASSIGNMENTS = [
   { title: 'Chemistry Lab Report #6', course: 'AP Chemistry', due: 'Mar 6', type: 'Lab Report', points: 50 },
   { title: 'Essay: Themes in Hamlet', course: 'English Literature', due: 'Mar 7', type: 'Essay', points: 100 },
   { title: 'Algebra Problem Set #10', course: 'Algebra II', due: 'Mar 8', type: 'Homework', points: 30 },
@@ -64,9 +67,15 @@ export default function GradesOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const [tab, setTab] = useState<'grades' | 'upcoming' | 'recent'>('grades');
 
+  /* ── API data ── */
+  const { data: _apiGrades } = useStudentGradesOverview();
+  const { data: _apiAssignments } = useStudentAssignments();
+  const courseGrades = (_apiGrades as any[]) ?? [];
+  const upcomingAssignments = (_apiAssignments as any[]) ?? [];
+
   const gpa = 3.72;
-  const totalAssignments = COURSE_GRADES.reduce((s, c) => s + c.assignments, 0);
-  const completedAssignments = COURSE_GRADES.reduce((s, c) => s + c.completed, 0);
+  const totalAssignments = courseGrades.reduce((s: number, c: any) => s + (c.assignments ?? 0), 0);
+  const completedAssignments = courseGrades.reduce((s: number, c: any) => s + (c.completed ?? 0), 0);
   const maxGpa = Math.max(...SEMESTER_TREND.map((t) => t.gpa));
 
   return (
@@ -99,7 +108,7 @@ export default function GradesOverviewPage() {
           {tab === 'grades' && (
             /* Course-by-course grades */
             <div className="flex flex-col gap-3">
-              {COURSE_GRADES.map((cg) => (
+              {courseGrades.map((cg: any) => (
                 <Card key={cg.course} data-animate className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/12 transition-all cursor-pointer group" onClick={() => notifySuccess('Grade', 'Opening grade details…')}>
                   <CardContent className="p-4">
                     <div className="flex items-center gap-3">
@@ -128,7 +137,7 @@ export default function GradesOverviewPage() {
 
           {tab === 'upcoming' && (
             <div className="flex flex-col gap-2">
-              {UPCOMING_ASSIGNMENTS.map((a, i) => (
+              {upcomingAssignments.map((a: any, i: number) => (
                 <Card key={i} data-animate className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/12 transition-all">
                   <CardContent className="p-3 flex items-center gap-3">
                     <div className={cn('size-9 rounded-lg flex items-center justify-center shrink-0',

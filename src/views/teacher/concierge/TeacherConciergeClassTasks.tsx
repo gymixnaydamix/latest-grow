@@ -1,6 +1,7 @@
 /* Teacher Concierge › Class Tasks — My Tasks, Due Today, Lesson Plans, Resources, Substitutions, Completed */
 import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeTaskCard } from '@/components/concierge/shared';
+import { useTeacherActionItems } from '@/hooks/api/use-teacher';
 
 interface TeacherTask {
   id: string;
@@ -16,7 +17,7 @@ interface TeacherTask {
   blockedReason?: string;
 }
 
-const taskData: TeacherTask[] = [
+const FALLBACK_TASKS: TeacherTask[] = [
   {
     id: 't1', title: 'Prepare Grade 5A fractions lesson plan', linkedEntity: 'Mathematics',
     dueDate: 'Today', priority: 'high', owner: 'Me', checklistTotal: 5, checklistDone: 3,
@@ -61,6 +62,8 @@ const taskData: TeacherTask[] = [
 
 export function TeacherConciergeClassTasks() {
   const { activeSubNav } = useNavigationStore();
+  const { data: apiTasks } = useTeacherActionItems();
+  const taskData = (apiTasks as unknown as TeacherTask[]) ?? FALLBACK_TASKS;
 
   const filtered = (() => {
     switch (activeSubNav) {

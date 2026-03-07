@@ -7,6 +7,13 @@ import {
   Clock, Play, Eye, RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  useProviderReleases,
+  useProviderModuleData,
+  useCreateProviderRelease,
+  useUpdateProviderFeatureFlag,
+} from '@/hooks/api/use-provider-console';
+import { notifySuccess } from '@/lib/notify';
 
 /* ── Data types ── */
 type DevItemCategory = 'Roadmap' | 'Release' | 'Feature Flag' | 'Environment' | 'QA' | 'Dev Task';
@@ -24,7 +31,7 @@ interface DevItem {
 }
 
 /* ── Seed data ── */
-const devItems: DevItem[] = [
+const FALLBACK_DEV_ITEMS: DevItem[] = [
   {
     id: 'DEV-201', title: 'Multi-tenant SSO federation', category: 'Roadmap',
     status: 'In Progress', priority: 'High', assignee: 'Auth Team',
@@ -141,6 +148,22 @@ const priorityColor: Record<string, string> = {
 
 export function ProviderConciergeDev() {
   const { activeSubNav } = useNavigationStore();
+
+  /* ── API hooks ── */
+  const { data: releasesData } = useProviderReleases();
+  const { data: moduleData } = useProviderModuleData();
+  const createRelease = useCreateProviderRelease();
+  const updateFlag = useUpdateProviderFeatureFlag();
+
+  const devItems = ([
+    ...((releasesData as any)?.releases ?? []),
+    ...((moduleData as any)?.featureFlags ?? []),
+  ] as any as DevItem[]).length
+    ? ([
+        ...((releasesData as any)?.releases ?? []),
+        ...((moduleData as any)?.featureFlags ?? []),
+      ] as any as DevItem[])
+    : FALLBACK_DEV_ITEMS;
   const [selected, setSelected] = useState<DevItem | null>(devItems[0] ?? null);
 
   const filtered = (() => {
@@ -226,17 +249,35 @@ export function ProviderConciergeDev() {
       <div className="flex flex-wrap items-center gap-2 pt-2">
         {selected.category === 'Release' && (
           <>
-            <button className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
+            <button
+              className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+              onClick={() => createRelease.mutate(
+                { version: selected.title, environment: 'production', changes: 0, rolloutPercent: 100, reason: 'Promoted via concierge' },
+                { onSuccess: () => notifySuccess('Release promoted', `${selected.title} promoted to production`) },
+              )}
+            >
               <span className="inline-flex items-center gap-1"><Rocket className="h-3 w-3" />Promote</span>
             </button>
-            <button className="rounded-xl bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700">
+            <button
+              className="rounded-xl bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700"
+              onClick={() => createRelease.mutate(
+                { version: selected.meta?.rollbackPlan ?? selected.title, environment: 'production', changes: 0, rolloutPercent: 100, reason: 'Rollback via concierge' },
+                { onSuccess: () => notifySuccess('Rollback initiated', `Rolling back to ${selected.meta?.rollbackPlan ?? 'previous version'}`) },
+              )}
+            >
               <span className="inline-flex items-center gap-1"><RefreshCw className="h-3 w-3" />Rollback</span>
             </button>
           </>
         )}
         {selected.category === 'Feature Flag' && (
           <>
-            <button className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+            <button
+              className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              onClick={() => updateFlag.mutate(
+                { flagId: selected.id, enabled: !selected.status.includes('Enabled'), reason: 'Toggled via concierge' },
+                { onSuccess: () => notifySuccess('Flag toggled', `${selected.title} has been toggled`) },
+              )}
+            >
               <span className="inline-flex items-center gap-1"><ToggleRight className="h-3 w-3" />Toggle</span>
             </button>
             <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Configure Rollout</button>

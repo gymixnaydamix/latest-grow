@@ -6,8 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useStaggerAnimate } from '@/hooks/use-animate';
-import { GradeIndicator } from '@/components/features/GradeIndicator';
-
+import { GradeIndicator } from '@/components/features/GradeIndicator';import { useStudentGrades } from '@/hooks/api/use-academic';
+import { useAuthStore } from '@/store/auth.store';
 interface GradeEntry {
   id: string;
   subject: string;
@@ -19,7 +19,7 @@ interface GradeEntry {
   weight: number;
 }
 
-const MOCK_GRADES: GradeEntry[] = [
+const FALLBACK_GRADES: GradeEntry[] = [
   { id: '1', subject: 'Mathematics', assignment: 'Midterm Exam', score: 92, maxScore: 100, date: '2025-03-15', type: 'exam', weight: 30 },
   { id: '2', subject: 'Mathematics', assignment: 'Homework Ch.5', score: 18, maxScore: 20, date: '2025-03-10', type: 'homework', weight: 5 },
   { id: '3', subject: 'English', assignment: 'Essay: Modern Literature', score: 85, maxScore: 100, date: '2025-03-12', type: 'project', weight: 20 },
@@ -40,11 +40,20 @@ const TYPE_COLORS: Record<string, string> = {
 export default function GradesPage() {
   const containerRef = useStaggerAnimate();
   const [filterSubject, setFilterSubject] = useState<string>('all');
+  const { user } = useAuthStore();
+  const { data: apiGrades } = useStudentGrades(user?.id ?? null);
+
+  const MOCK_GRADES: GradeEntry[] = (apiGrades as any[])?.map((g: any) => ({
+    id: g.id, subject: g.courseName ?? g.subject ?? '', assignment: g.assignmentTitle ?? g.assignment ?? '',
+    score: Number(g.score ?? 0), maxScore: Number(g.maxScore ?? 100),
+    date: g.gradedAt ?? g.date ?? '', type: (g.type ?? 'homework') as GradeEntry['type'],
+    weight: Number(g.weight ?? 10),
+  })) ?? FALLBACK_GRADES;
 
   const subjects = [...new Set(MOCK_GRADES.map((g) => g.subject))];
   const filtered = filterSubject === 'all' ? MOCK_GRADES : MOCK_GRADES.filter((g) => g.subject === filterSubject);
 
-  const avg = Math.round(MOCK_GRADES.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / MOCK_GRADES.length);
+  const avg = Math.round(MOCK_GRADES.reduce((s, g) => s + (g.score / g.maxScore) * 100, 0) / (MOCK_GRADES.length || 1));
 
   // GPA by subject
   const subjectAvgs = subjects.map((subj) => {

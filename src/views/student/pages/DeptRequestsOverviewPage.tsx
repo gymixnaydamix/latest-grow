@@ -16,6 +16,7 @@ import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentDeptRequests, useSubmitDeptRequest } from '@/hooks/api/use-student';
 
 const STATUS_CONFIG = {
   pending: { label: 'Pending', icon: Clock, color: 'text-amber-400', bg: 'bg-amber-500/15' },
@@ -32,7 +33,8 @@ const DEPARTMENTS = [
   { id: 'inquiries', name: 'General Inquiries', icon: HelpCircle, color: 'bg-amber-500/20 text-amber-400', requests: 2 },
 ];
 
-const REQUESTS = [
+// @ts-expect-error TS6133 — mock data kept for shape reference
+const _REQUESTS = [
   { id: 'REQ-001', title: 'Tuition fee installment plan', dept: 'Finance', status: 'approved' as Status, date: '2 d ago', priority: 'High', response: 'Installment plan approved. Payment schedule has been updated.' },
   { id: 'REQ-002', title: 'Transcript request for scholarship', dept: 'Finance', status: 'pending' as Status, date: '1 d ago', priority: 'Medium', response: null },
   { id: 'REQ-003', title: 'Internship placement support', dept: 'Human Resources', status: 'in_review' as Status, date: '3 d ago', priority: 'High', response: null },
@@ -52,14 +54,20 @@ export default function DeptRequestsOverviewPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  /* ── API data ── */
+  const { data: _apiDeptReqs } = useStudentDeptRequests();
+  // @ts-expect-error TS6133 — mutation available for form wiring
+  const _submitDeptRequestMut = useSubmitDeptRequest();
+  const requests = (_apiDeptReqs as any[]) ?? [];
+
   const counts = {
-    pending: REQUESTS.filter((r) => r.status === 'pending').length,
-    approved: REQUESTS.filter((r) => r.status === 'approved').length,
-    rejected: REQUESTS.filter((r) => r.status === 'rejected').length,
-    in_review: REQUESTS.filter((r) => r.status === 'in_review').length,
+    pending: requests.filter((r: any) => r.status === 'pending').length,
+    approved: requests.filter((r: any) => r.status === 'approved').length,
+    rejected: requests.filter((r: any) => r.status === 'rejected').length,
+    in_review: requests.filter((r: any) => r.status === 'in_review').length,
   };
 
-  const filtered = REQUESTS.filter((r) => {
+  const filtered = requests.filter((r: any) => {
     const matchStatus = statusFilter === 'all' || r.status === statusFilter;
     const matchSearch = !searchQuery || r.title.toLowerCase().includes(searchQuery.toLowerCase()) || r.dept.toLowerCase().includes(searchQuery.toLowerCase());
     return matchStatus && matchSearch;
@@ -71,7 +79,7 @@ export default function DeptRequestsOverviewPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Total Requests" value={REQUESTS.length} icon={<FileText className="h-5 w-5" />} />
+        <StatCard label="Total Requests" value={requests.length} icon={<FileText className="h-5 w-5" />} />
         <StatCard label="Pending" value={counts.pending} icon={<Clock className="h-5 w-5" />} accentColor="#f59e0b" />
         <StatCard label="Approved" value={counts.approved} icon={<CheckCircle2 className="h-5 w-5" />} accentColor="#10b981" />
         <StatCard label="In Review" value={counts.in_review} icon={<AlertCircle className="h-5 w-5" />} accentColor="#3b82f6" />
@@ -140,8 +148,8 @@ export default function DeptRequestsOverviewPage() {
               {filtered.length === 0 && (
                 <p className="text-xs text-white/25 text-center py-6">No requests match your filters</p>
               )}
-              {filtered.map((req) => {
-                const cfg = STATUS_CONFIG[req.status];
+              {filtered.map((req: any) => {
+                const cfg = STATUS_CONFIG[req.status as keyof typeof STATUS_CONFIG];
                 const isExpanded = expanded === req.id;
                 return (
                   <div key={req.id} className="rounded-lg border border-white/6 bg-white/2 overflow-hidden">
@@ -202,7 +210,7 @@ export default function DeptRequestsOverviewPage() {
                   <cfg.icon className={cn('size-3.5 shrink-0', cfg.color)} />
                   <span className="text-[9px] text-white/40 w-14">{cfg.label}</span>
                   <div className="flex-1">
-                    <Progress value={(counts[key] / REQUESTS.length) * 100} className="h-1.5 bg-white/5" />
+                    <Progress value={(counts[key] / (requests.length || 1)) * 100} className="h-1.5 bg-white/5" />
                   </div>
                   <span className="text-[10px] text-white/50 w-4 text-right">{counts[key]}</span>
                 </div>

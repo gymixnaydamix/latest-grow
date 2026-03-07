@@ -2,7 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Heart, Brain, Moon, Activity, Smile, Frown, Meh, Sun, Droplets, Footprints, Wind, Timer } from 'lucide-react';
-import { useStudentStore } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { notifySuccess } from '@/lib/notify';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -69,7 +69,7 @@ export default function StudentWellnessDashboard() {
   const containerRef = useStaggerAnimate([]);
   const [selectedMood, setSelectedMood] = useState<Mood | null>(null);
   const [moodNote, setMoodNote] = useState('');
-  const store = useStudentStore();
+  const store = useStudentData();
   const { activeSubNav } = useNavigationStore();
   const navigate = useNavigate();
 

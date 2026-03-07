@@ -11,7 +11,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { useStudentStore } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 const DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
@@ -20,7 +20,7 @@ const DAYS_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 type ViewMode = 'daily' | 'weekly' | 'monthly';
 
 export function TimetableSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [view, setView] = useState<ViewMode>('weekly');
   const [selectedDay, setSelectedDay] = useState((new Date().getDay() + 6) % 7); // Mon=0
   const [weekOffset, setWeekOffset] = useState(0);

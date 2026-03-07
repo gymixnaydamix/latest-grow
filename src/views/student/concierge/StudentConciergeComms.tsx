@@ -2,9 +2,10 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { cn } from '@/lib/utils';
 import { Send, Pin, Users, Megaphone, Clock, BookOpen } from 'lucide-react';
+import { useStudentMessages, useStudentAnnouncements, useStudentCommunity } from '@/hooks/api/use-student';
 
 /* ── Teacher messages ── */
-const teacherMessages = [
+const FALLBACK_TEACHER_MESSAGES = [
   { id: 'tm1', teacher: 'Mr. Raghav Iyer', subject: 'Mathematics', lastMessage: 'Good work on the triangles assignment, Aarav. Try the bonus questions too.', date: 'Today', unread: true },
   { id: 'tm2', teacher: 'Mrs. Priya Sharma', subject: 'English', lastMessage: 'Your essay draft has been reviewed. Please check the feedback and revise.', date: 'Today', unread: true },
   { id: 'tm3', teacher: 'Dr. Anand Kumar', subject: 'Science', lastMessage: 'Reminder: Bring your lab manual for tomorrow\'s viva. Review ray diagrams.', date: 'Yesterday', unread: false },
@@ -14,7 +15,7 @@ const teacherMessages = [
 ];
 
 /* ── Class notices ── */
-const classNotices = [
+const FALLBACK_CLASS_NOTICES = [
   { id: 'cn1', title: 'Annual Day Rehearsal — March 15', from: 'Class Teacher — Mrs. Meena Gupta', date: 'Today', pinned: true, content: 'All students participating in the Annual Day programme must attend rehearsal on March 15 during 6th and 7th periods. Bring your costumes.' },
   { id: 'cn2', title: 'Library Book Return Reminder', from: 'School Library', date: 'Today', pinned: true, content: 'All overdue library books must be returned by March 10. Fine of ₹5/day applies after due date.' },
   { id: 'cn3', title: 'PTM Scheduled — March 20', from: 'Principal\'s Office', date: 'Yesterday', pinned: false, content: 'Parent-Teacher Meeting for Class 9 will be held on March 20, 10:00 AM – 1:00 PM. Inform your parents.' },
@@ -23,7 +24,7 @@ const classNotices = [
 ];
 
 /* ── Study groups ── */
-const studyGroups = [
+const FALLBACK_STUDY_GROUPS = [
   { id: 'sg1', name: 'Maths Wizards — 9B', subject: 'Mathematics', members: 6, lastActive: 'Today', lastMessage: 'Anyone solved Q.15 from Ex 7.3? I\'m getting a different answer.', myRole: 'Member' },
   { id: 'sg2', name: 'Science Project Team', subject: 'Science', members: 4, lastActive: 'Today', lastMessage: 'Meeting at library after school for solar system model work.', myRole: 'Leader' },
   { id: 'sg3', name: 'English Essay Club', subject: 'English', members: 5, lastActive: 'Yesterday', lastMessage: 'Shared some sample essays for descriptive writing practice.', myRole: 'Member' },
@@ -32,7 +33,7 @@ const studyGroups = [
 ];
 
 /* ── Announcements ── */
-const announcements = [
+const FALLBACK_ANNOUNCEMENTS = [
   { id: 'a1', title: 'Term 2 Exam Schedule Released', from: 'Examination Cell', date: 'Today', audience: 'All Class 9 Students', content: 'Term 2 exams begin March 25. Detailed timetable available in the Exams section.' },
   { id: 'a2', title: 'Inter-House Quiz Competition', from: 'Academic Council', date: 'Yesterday', audience: 'All Students', content: 'Inter-house quiz on March 18. Each house to nominate 3 students per grade. Contact your house captain.' },
   { id: 'a3', title: 'Summer Internship Programme', from: 'Career Guidance Cell', date: 'Mar 4', audience: 'Classes 9–12', content: 'Applications open for summer coding bootcamp with TechXcel. Limited seats. Apply by March 15.' },
@@ -40,7 +41,7 @@ const announcements = [
 ];
 
 /* ── Sent messages ── */
-const sentMessages = [
+const FALLBACK_SENT_MESSAGES = [
   { id: 'sm1', to: 'Mr. Raghav Iyer', subject: 'Doubt in Ex. 7.3 Q.12', date: 'Today', status: 'Delivered' },
   { id: 'sm2', to: 'Mrs. Priya Sharma', subject: 'Essay revision submitted', date: 'Yesterday', status: 'Read' },
   { id: 'sm3', to: 'Class Teacher — Mrs. Meena Gupta', subject: 'Leave application for March 14', date: 'Mar 4', status: 'Read' },
@@ -59,6 +60,16 @@ const subjectColors: Record<string, string> = {
 
 export function StudentConciergeComms() {
   const { activeSubNav } = useNavigationStore();
+
+  const { data: apiMessages } = useStudentMessages();
+  const { data: apiAnnouncements } = useStudentAnnouncements();
+  const { data: apiCommunity } = useStudentCommunity();
+
+  const teacherMessages = (apiMessages as any[]) ?? FALLBACK_TEACHER_MESSAGES;
+  const classNotices = FALLBACK_CLASS_NOTICES;
+  const studyGroups = (apiCommunity as any[]) ?? FALLBACK_STUDY_GROUPS;
+  const announcements = (apiAnnouncements as any[]) ?? FALLBACK_ANNOUNCEMENTS;
+  const sentMessages = FALLBACK_SENT_MESSAGES;
 
   /* ── Teacher Messages (default) ── */
   if (!activeSubNav || activeSubNav === 'c_teacher_messages') {

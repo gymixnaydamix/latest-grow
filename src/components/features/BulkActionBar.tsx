@@ -2,6 +2,9 @@
 import { cn } from '@/lib/utils';
 import { X, Trash2, Download, Tag, Share2, CheckSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { exportToJson } from '@/lib/export';
+import { copyToClipboard } from '@/lib/export';
+import { notifySuccess, notifyWarning, notifyInfo } from '@/lib/notify';
 
 export interface BulkAction {
   id: string;
@@ -22,10 +25,47 @@ interface BulkActionBarProps {
 }
 
 const DEFAULT_ACTIONS: (onSelect: (ids: string[]) => void) => BulkAction[] = () => [
-  { id: 'export', label: 'Export', icon: <Download className="size-3" />, variant: 'default', onClick: () => {} },
-  { id: 'tag', label: 'Tag', icon: <Tag className="size-3" />, variant: 'default', onClick: () => {} },
-  { id: 'share', label: 'Share', icon: <Share2 className="size-3" />, variant: 'default', onClick: () => {} },
-  { id: 'delete', label: 'Delete', icon: <Trash2 className="size-3" />, variant: 'destructive', onClick: () => {} },
+  {
+    id: 'export',
+    label: 'Export',
+    icon: <Download className="size-3" />,
+    variant: 'default',
+    onClick: (ids) => {
+      exportToJson(ids, `export-${ids.length}-items.json`);
+      notifySuccess('Exported', `${ids.length} item(s) exported as JSON`);
+    },
+  },
+  {
+    id: 'tag',
+    label: 'Tag',
+    icon: <Tag className="size-3" />,
+    variant: 'default',
+    onClick: (ids) => {
+      notifyInfo('Tag', `${ids.length} item(s) queued for tagging`);
+    },
+  },
+  {
+    id: 'share',
+    label: 'Share',
+    icon: <Share2 className="size-3" />,
+    variant: 'default',
+    onClick: (ids) => {
+      const url = `${window.location.origin}/shared?ids=${ids.join(',')}`;
+      copyToClipboard(url).then((ok) => {
+        if (ok) notifySuccess('Link copied', 'Share link has been copied to your clipboard');
+        else notifyWarning('Share', 'Could not copy link — check clipboard permissions');
+      });
+    },
+  },
+  {
+    id: 'delete',
+    label: 'Delete',
+    icon: <Trash2 className="size-3" />,
+    variant: 'destructive',
+    onClick: (ids) => {
+      notifyWarning('Delete requested', `${ids.length} item(s) marked for deletion — confirm via your module's delete flow`);
+    },
+  },
 ];
 
 export function BulkActionBar({

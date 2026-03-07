@@ -7,8 +7,9 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { StatCard } from '@/components/features/StatCard';
 import { NeonBarChart } from '@/components/features/charts/BarChart';
 import { GlowLineChart } from '@/components/features/charts/LineChart';
+import { useTeacherClassPerformance, useTeacherClasses } from '@/hooks/api/use-teacher';
 
-const WEEKLY_DATA = [
+const FALLBACK_WEEKLY_DATA = [
   { name: 'Mon', classes: 5, avgScore: 82 },
   { name: 'Tue', classes: 4, avgScore: 78 },
   { name: 'Wed', classes: 6, avgScore: 85 },
@@ -16,7 +17,7 @@ const WEEKLY_DATA = [
   { name: 'Fri', classes: 3, avgScore: 90 },
 ];
 
-const MONTHLY_TREND = [
+const FALLBACK_MONTHLY_TREND = [
   { name: 'Sep', attendance: 94, grades: 78, engagement: 82 },
   { name: 'Oct', attendance: 92, grades: 80, engagement: 85 },
   { name: 'Nov', attendance: 88, grades: 82, engagement: 78 },
@@ -26,7 +27,7 @@ const MONTHLY_TREND = [
   { name: 'Mar', attendance: 96, grades: 89, engagement: 94 },
 ];
 
-const TOP_STUDENTS = [
+const FALLBACK_TOP_STUDENTS = [
   { name: 'Emma Wilson', grade: 'A+', change: '+3%', trend: 'up' },
   { name: 'Liam Chen', grade: 'A', change: '+5%', trend: 'up' },
   { name: 'Sofia Martinez', grade: 'A', change: '+2%', trend: 'up' },
@@ -34,7 +35,7 @@ const TOP_STUDENTS = [
   { name: 'Ava Patel', grade: 'B+', change: '+8%', trend: 'up' },
 ];
 
-const CLASS_PERFORMANCE = [
+const FALLBACK_CLASS_PERFORMANCE = [
   { name: 'Math 101', students: 28, avgGrade: 85, attendance: 94 },
   { name: 'Math 201', students: 22, avgGrade: 78, attendance: 91 },
   { name: 'AP Calculus', students: 15, avgGrade: 82, attendance: 97 },
@@ -43,6 +44,15 @@ const CLASS_PERFORMANCE = [
 
 export default function TeacherDashboardAnalytics() {
   const containerRef = useStaggerAnimate([]);
+  const { data: apiClassPerf } = useTeacherClassPerformance();
+  const { data: apiClasses } = useTeacherClasses();
+
+  const CLASS_PERFORMANCE = (apiClassPerf as any[]) ?? FALLBACK_CLASS_PERFORMANCE;
+  const WEEKLY_DATA = FALLBACK_WEEKLY_DATA;
+  const MONTHLY_TREND = FALLBACK_MONTHLY_TREND;
+  const TOP_STUDENTS = FALLBACK_TOP_STUDENTS;
+
+  const totalStudents = apiClasses ? (apiClasses as any[]).reduce((s: number, c: any) => s + (c.studentCount ?? 0), 0) : 95;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -55,7 +65,7 @@ export default function TeacherDashboardAnalytics() {
 
       {/* KPI Cards */}
       <div data-animate className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Students" value={95} icon={<Users className="size-5" />} trend="up" trendLabel="+12%" sparklineData={[80, 85, 88, 90, 92, 95]} />
+        <StatCard label="Total Students" value={totalStudents} icon={<Users className="size-5" />} trend="up" trendLabel="+12%" sparklineData={[80, 85, 88, 90, 92, 95]} />
         <StatCard label="Avg Grade" value={84.5} suffix="%" icon={<Award className="size-5" />} trend="up" trendLabel="+3.2%" sparklineData={[78, 80, 81, 83, 84, 84.5]} />
         <StatCard label="Attendance Rate" value={94.2} suffix="%" icon={<Target className="size-5" />} trend="up" trendLabel="+1.5%" sparklineData={[91, 92, 93, 94, 94, 94.2]} />
         <StatCard label="Classes This Week" value={23} icon={<BookOpen className="size-5" />} trend="up" trendLabel="+2%" sparklineData={[18, 20, 21, 22, 23, 23]} />

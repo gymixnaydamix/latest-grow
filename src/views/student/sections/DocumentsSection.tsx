@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type StudentDocument } from '@/store/student-data.store';
+import { type StudentDocument, useStudentStore } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 import { notifySuccess } from '@/lib/notify';
 
@@ -28,7 +29,7 @@ const DOC_TYPE_CONFIG: Record<string, { icon: typeof FileText; color: string; la
 };
 
 export function DocumentsSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [filter, setFilter] = useState<DocFilter>('all');
   const [search, setSearch] = useState('');
 
@@ -142,7 +143,7 @@ function DocumentCard({ document: doc }: { document: StudentDocument }) {
           <Button size="icon" variant="ghost" className="size-8 text-white/25 hover:text-white/60"
             onClick={() => notifySuccess('Preview', `Opening preview for ${doc.title}`)}><Eye className="size-3.5" /></Button>
           <Button size="icon" variant="ghost" className="size-8 text-white/25 hover:text-white/60"
-            onClick={() => { const store = useStudentStore.getState(); store.downloadDocument(doc.id); notifySuccess('Downloaded', doc.title); }}><Download className="size-3.5" /></Button>
+            onClick={() => { const s = useStudentStore.getState(); s.downloadDocument(doc.id); notifySuccess('Downloaded', doc.title); }}><Download className="size-3.5" /></Button>
         </div>
       </CardContent>
     </Card>

@@ -12,13 +12,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type StudentAssignment } from '@/store/student-data.store';
+import { type StudentAssignment } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type ViewFilter = 'all' | 'due_soon' | 'completed' | 'missing' | 'by_subject';
 
 export function AssignmentsSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [filter, setFilter] = useState<ViewFilter>('all');
   const [search, setSearch] = useState('');
   const [subjectFilter, setSubjectFilter] = useState<string | null>(null);
@@ -184,7 +185,7 @@ export function AssignmentsSection() {
 
 /* ── Assignment Detail ── */
 function AssignmentDetail({ assignment: a, onBack }: { assignment: StudentAssignment; onBack: () => void }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const subj = store.getSubject(a.subjectId);
   const teacher = subj ? store.getTeacher(subj.teacherId) : null;
 

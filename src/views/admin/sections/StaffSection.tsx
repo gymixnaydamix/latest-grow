@@ -6,6 +6,7 @@ import { useAuthStore } from '@/store/auth.store';
 import { useLeaveRequests, useApproveLeave } from '@/hooks/api/use-school-ops';
 import { useStaff, useCreateSchoolUser, useUpdateSchoolUser, useDeleteSchoolUser } from '@/hooks/api/use-admin';
 import { useDepartments, useCreateDepartment } from '@/hooks/api/use-academic';
+import { exportToCsv, downloadFromUrl } from '@/lib/export';
 import {
   Plus, Eye, Edit, Download, UserPlus, Trash2,
   Building2, CheckCircle, XCircle,
@@ -419,10 +420,10 @@ function PayrollView() {
           <p className="text-sm text-muted-foreground/60">Current payroll cycle &middot; {payroll.length} staff</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => notifySuccess('Payroll Processed', 'All payroll entries processed')}>
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { notifySuccess('Payroll Processed', 'All payroll entries processed'); }}>
             Process All
           </Button>
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => notifySuccess('Exported', 'Payroll exported to CSV')}>
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { exportToCsv(payroll.map((p: any) => ({ id: p.id, name: p.name, department: p.department, baseSalary: p.baseSalary, allowances: p.allowances, deductions: p.deductions, netPay: p.netPay, status: p.status })), 'payroll-export.csv'); notifySuccess('Exported', 'Payroll exported to CSV'); }}>
             <Download className="size-3.5 mr-1" /> Export
           </Button>
         </div>
@@ -517,7 +518,7 @@ function StaffDocumentsView() {
         ]}
         actions={[
           { label: 'View', icon: Eye, onClick: (r) => { const url = String((r as any).fileUrl ?? (r as any).url ?? ''); if (url) window.open(url, '_blank'); else notifyWarning('No File', `No file URL available for ${String(r.docType)}`); } },
-          { label: 'Download', icon: Download, onClick: (r) => notifySuccess('Downloaded', `${String(r.docType)} downloaded`) },
+          { label: 'Download', icon: Download, onClick: (r) => { const url = String((r as any).fileUrl ?? (r as any).url ?? ''); if (url) { downloadFromUrl(url, `${String(r.docType)}-${String(r.staffName)}.pdf`); notifySuccess('Downloaded', `${String(r.docType)} downloaded`); } else notifyWarning('No File', 'Download URL not available'); } },
         ]}
         searchPlaceholder="Search documents..."
       />

@@ -13,13 +13,14 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type Subject } from '@/store/student-data.store';
+import { type Subject } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type SubjectTab = 'overview' | 'lessons' | 'assignments' | 'tests' | 'grades' | 'attendance' | 'updates';
 
 export function SubjectsSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [selectedSubjectId, setSelectedSubjectId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<SubjectTab>('overview');
 
@@ -97,7 +98,7 @@ function SubjectDetail({ subject, activeTab, onTabChange, onBack }: {
   onTabChange: (tab: SubjectTab) => void;
   onBack: () => void;
 }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const teacher = store.getTeacher(subject.teacherId);
   const subGrades = useMemo(() => store.grades.filter(g => g.subjectId === subject.id), [store.grades, subject.id]);
   const subAssignments = useMemo(() => store.assignments.filter(a => a.subjectId === subject.id), [store.assignments, subject.id]);
@@ -306,7 +307,7 @@ function SubjectDetail({ subject, activeTab, onTabChange, onBack }: {
         <Card className="border-white/8 bg-white/[0.02]">
           <CardContent className="pt-5">
             {subAttendance.length === 0 ? (
-              <p className="text-sm text-white/40 text-center py-8">Subject-level attendance tracking coming soon.</p>
+              <EmptyState title="No attendance records" description={`Attendance data for ${subject.name} will appear here once lessons begin.`} />
             ) : (
               <div className="space-y-2">
                 {subAttendance.map(a => (

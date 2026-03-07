@@ -11,6 +11,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentCommunity } from '@/hooks/api/use-student';
 
 const CHANNELS = [
   { name: 'General', desc: 'Open discussion for all students and staff', members: 450, messages: 1240, icon: Hash, color: 'bg-indigo-500/20 text-indigo-400', active: '2 min ago' },
@@ -33,6 +34,10 @@ const TRENDING = [
 
 export default function CommunityOverviewPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
+
+  /* ── API data ── */
+  const { data: _apiCommunity } = useStudentCommunity();
+  const recentPosts = (_apiCommunity as any[]) ?? [];
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -83,7 +88,7 @@ export default function CommunityOverviewPage() {
             <CardTitle className="text-sm text-white/85">Recent Posts</CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
-            {RECENT_POSTS.map((post, i) => (
+            {(recentPosts.length > 0 ? recentPosts : RECENT_POSTS).map((post: any, i: number) => (
               <div key={i} className="flex items-start gap-3 rounded-lg border border-white/6 bg-white/2 p-3 hover:bg-white/4 transition-colors cursor-pointer" onClick={() => notifySuccess('Post', 'Opening post…')}>
                 <Avatar className="size-8 shrink-0">
                   <AvatarFallback className={`text-[10px] ${post.color}`}>{post.initials}</AvatarFallback>

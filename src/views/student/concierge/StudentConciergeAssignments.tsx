@@ -3,6 +3,7 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeSplitPreviewPanel, ConciergePermissionBadge } from '@/components/concierge/shared';
 import { cn } from '@/lib/utils';
 import { Upload, CheckCircle, Users, FileText, AlertTriangle } from 'lucide-react';
+import { useStudentAssignments } from '@/hooks/api/use-student';
 
 /* ── Pending assignments ── */
 interface PendingAssignment {
@@ -16,7 +17,7 @@ interface PendingAssignment {
   maxMarks: number;
 }
 
-const pendingAssignments: PendingAssignment[] = [
+const FALLBACK_PENDING_ASSIGNMENTS: PendingAssignment[] = [
   { id: 'pa1', name: 'The French Revolution — Essay', subject: 'Social Studies', teacher: 'Mr. Vikram Singh', dueDate: 'Mar 8', type: 'essay', description: 'Write a 500-word essay on the causes and effects of the French Revolution.', maxMarks: 25 },
   { id: 'pa2', name: 'Polynomials Worksheet — Set B', subject: 'Mathematics', teacher: 'Mr. Raghav Iyer', dueDate: 'Mar 9', type: 'worksheet', description: 'Exercise 2.4 — Problems 1–20, all working steps required.', maxMarks: 20 },
   { id: 'pa3', name: 'Reflection of Light — Lab Report', subject: 'Science', teacher: 'Dr. Anand Kumar', dueDate: 'Mar 10', type: 'lab', description: 'Complete lab observation with ray diagrams, readings table, and conclusion.', maxMarks: 15 },
@@ -25,7 +26,7 @@ const pendingAssignments: PendingAssignment[] = [
 ];
 
 /* ── Submitted assignments ── */
-const submittedAssignments = [
+const FALLBACK_SUBMITTED_ASSIGNMENTS = [
   { id: 'sa1', name: 'My Vision for India — Essay', subject: 'English', teacher: 'Mrs. Priya Sharma', submittedAt: 'Mar 5, 3:45 PM', status: 'Under Review', fileType: 'PDF', fileSize: '245 KB' },
   { id: 'sa2', name: 'Triangles Worksheet — Set A', subject: 'Mathematics', teacher: 'Mr. Raghav Iyer', submittedAt: 'Mar 4, 2:15 PM', status: 'Under Review', fileType: 'PDF', fileSize: '180 KB' },
   { id: 'sa3', name: 'Idgah — Character Analysis', subject: 'Hindi', teacher: 'Mrs. Sunita Verma', submittedAt: 'Mar 3, 5:30 PM', status: 'Reviewed', fileType: 'DOC', fileSize: '120 KB' },
@@ -33,7 +34,7 @@ const submittedAssignments = [
 ];
 
 /* ── Graded assignments ── */
-const gradedAssignments = [
+const FALLBACK_GRADED_ASSIGNMENTS = [
   { id: 'ga1', name: 'Idgah — Character Analysis', subject: 'Hindi', teacher: 'Mrs. Sunita Verma', score: 22, maxMarks: 25, grade: 'A', feedback: 'Excellent understanding of Hamid\'s character. Your Hindi expression has improved significantly. Minor grammar errors in paragraph 3.', rubric: [{ criterion: 'Content', marks: 9, total: 10 }, { criterion: 'Language', marks: 7, total: 8 }, { criterion: 'Presentation', marks: 6, total: 7 }] },
   { id: 'ga2', name: 'Map Work — India Rivers', subject: 'Social Studies', teacher: 'Mr. Vikram Singh', score: 18, maxMarks: 20, grade: 'A', feedback: 'All rivers accurately marked. Neat labelling. Bonus marks for adding tributaries.', rubric: [{ criterion: 'Accuracy', marks: 10, total: 10 }, { criterion: 'Neatness', marks: 4, total: 5 }, { criterion: 'Completeness', marks: 4, total: 5 }] },
   { id: 'ga3', name: 'Linear Equations Practice', subject: 'Mathematics', teacher: 'Mr. Raghav Iyer', score: 16, maxMarks: 20, grade: 'B+', feedback: 'Good problem-solving steps. Made a sign error in Q.8 and Q.12. Revise transposition method.', rubric: [{ criterion: 'Method', marks: 8, total: 10 }, { criterion: 'Accuracy', marks: 5, total: 6 }, { criterion: 'Presentation', marks: 3, total: 4 }] },
@@ -41,7 +42,7 @@ const gradedAssignments = [
 ];
 
 /* ── Projects with milestones ── */
-const projectData = [
+const FALLBACK_PROJECT_DATA = [
   {
     id: 'p1', name: 'Solar System Working Model', subject: 'Science', teacher: 'Dr. Anand Kumar',
     dueDate: 'Mar 20', maxMarks: 50, teamSize: 1,
@@ -68,7 +69,7 @@ const projectData = [
 ];
 
 /* ── Group work ── */
-const groupWorkData = [
+const FALLBACK_GROUP_WORK_DATA = [
   {
     id: 'gw1', name: 'Street Play Script — Social Awareness', subject: 'English', teacher: 'Mrs. Priya Sharma',
     dueDate: 'Mar 22', members: [
@@ -104,6 +105,13 @@ const allowedTypes = ['PDF', 'DOC', 'DOCX', 'JPG', 'PNG', 'PPTX', 'PY', 'TXT'];
 
 export function StudentConciergeAssignments() {
   const { activeSubNav } = useNavigationStore();
+
+  const { data: apiAssignments } = useStudentAssignments();
+  const pendingAssignments = (apiAssignments as any[])?.filter((a: any) => a.status === 'pending') ?? FALLBACK_PENDING_ASSIGNMENTS;
+  const submittedAssignments = (apiAssignments as any[])?.filter((a: any) => a.status === 'submitted') ?? FALLBACK_SUBMITTED_ASSIGNMENTS;
+  const gradedAssignments = (apiAssignments as any[])?.filter((a: any) => a.status === 'graded') ?? FALLBACK_GRADED_ASSIGNMENTS;
+  const projectData = FALLBACK_PROJECT_DATA;
+  const groupWorkData = FALLBACK_GROUP_WORK_DATA;
 
   /* ── Pending (default) ── */
   if (!activeSubNav || activeSubNav === 'c_pending') {
@@ -216,7 +224,7 @@ export function StudentConciergeAssignments() {
               </div>
               <div className="space-y-1">
                 <span className="text-[10px] font-medium text-muted-foreground">Rubric Breakdown</span>
-                {a.rubric.map((r) => (
+                {a.rubric.map((r: any) => (
                   <div key={r.criterion} className="flex items-center justify-between text-[10px]">
                     <span className="text-foreground/70">{r.criterion}</span>
                     <div className="flex items-center gap-2">

@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentDeptRequests } from '@/hooks/api/use-student';
 
 type ReqStatus = 'pending' | 'approved' | 'denied' | 'in-review';
 
@@ -68,14 +69,19 @@ export default function DeptMarketingPage() {
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
 
-  const filtered = MOCK
+  /* ── API data ── */
+  const { data: _apiDeptReqs } = useStudentDeptRequests();
+  const marketingReqs = ((_apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'marketing');
+
+  const filtered = (marketingReqs.length > 0 ? marketingReqs : MOCK)
     .filter((r) => filter === 'all' || r.status === filter)
     .filter((r) => typeFilter === 'all' || r.type === typeFilter)
     .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()));
 
-  const pending = MOCK.filter((r) => r.status === 'pending').length;
-  const approved = MOCK.filter((r) => r.status === 'approved').length;
-  const highPriority = MOCK.filter((r) => r.priority === 'high').length;
+  const mktItems = marketingReqs.length > 0 ? marketingReqs : MOCK;
+  const pending = mktItems.filter((r: any) => r.status === 'pending').length;
+  const approved = mktItems.filter((r: any) => r.status === 'approved').length;
+  const highPriority = mktItems.filter((r: any) => r.priority === 'high').length;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -83,7 +89,7 @@ export default function DeptMarketingPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Total Requests" value={MOCK.length} icon={<Megaphone className="h-5 w-5" />} />
+        <StatCard label="Total Requests" value={mktItems.length} icon={<Megaphone className="h-5 w-5" />} />
         <StatCard label="Pending" value={pending} icon={<Clock className="h-5 w-5" />} />
         <StatCard label="Approved" value={approved} icon={<CheckCircle2 className="h-5 w-5" />} trend="up" />
         <StatCard label="High Priority" value={highPriority} icon={<BarChart3 className="h-5 w-5" />} trend={highPriority > 0 ? 'up' : 'neutral'} />
@@ -197,10 +203,10 @@ export default function DeptMarketingPage() {
             <CardContent className="py-10 text-center text-white/30 text-sm">No requests match your filters.</CardContent>
           </Card>
         )}
-        {filtered.map((req) => {
-          const s = STATUS_CFG[req.status];
-          const tc = TYPE_CFG[req.type];
-          const pc = req.priority ? PRIORITY_CFG[req.priority] : null;
+        {filtered.map((req: any) => {
+          const s = STATUS_CFG[req.status as ReqStatus];
+          const tc = TYPE_CFG[req.type as keyof typeof TYPE_CFG];
+          const pc = req.priority ? PRIORITY_CFG[req.priority as keyof typeof PRIORITY_CFG] : null;
           return (
             <Card key={req.id} className="border-white/6 bg-white/3 backdrop-blur-xl hover:bg-white/5 transition-colors">
               <CardContent className="flex flex-col gap-3 p-4">

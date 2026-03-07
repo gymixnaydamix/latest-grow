@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
-import { useStudentStore } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { notifySuccess } from '@/lib/notify';
 
 type RequestStatus = 'pending' | 'approved' | 'denied' | 'in-review';
@@ -47,7 +47,7 @@ export default function StudentDepartmentRequestsSection() {
   const [reqTitle, setReqTitle] = useState('');
   const [reqCategory, setReqCategory] = useState('transcript');
   const [reqDesc, setReqDesc] = useState('');
-  const store = useStudentStore();
+  const store = useStudentData();
 
   const filtered = filter === 'all' ? MOCK_REQUESTS : MOCK_REQUESTS.filter((r) => r.status === filter);
   const counts = { all: MOCK_REQUESTS.length, pending: 0, 'in-review': 0, approved: 0, denied: 0 };

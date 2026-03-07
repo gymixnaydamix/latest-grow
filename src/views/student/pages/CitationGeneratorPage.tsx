@@ -15,6 +15,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useStudentCitations, useGenerateCitation, useDeleteCitation } from '@/hooks/api/use-student';
 
 type CitationStyle = 'APA' | 'MLA' | 'Chicago' | 'Harvard' | 'IEEE';
 type SourceType = 'book' | 'journal' | 'website' | 'video' | 'newspaper';
@@ -29,7 +30,8 @@ const SOURCE_ICONS: Record<SourceType, typeof BookOpen> = {
 
 const STYLES: CitationStyle[] = ['APA', 'MLA', 'Chicago', 'Harvard', 'IEEE'];
 
-const SAVED_CITATIONS = [
+// @ts-expect-error TS6133 — mock data kept for shape reference
+const _SAVED_CITATIONS = [
   {
     id: '1', type: 'book' as SourceType, title: 'Introduction to Algorithms',
     authors: 'Cormen, T. H., Leiserson, C. E., Rivest, R. L., & Stein, C.',
@@ -73,8 +75,14 @@ export default function CitationGeneratorPage() {
   const [showGenerator, setShowGenerator] = useState(false);
   const [copied, setCopied] = useState<string | null>(null);
 
-  const filtered = SAVED_CITATIONS.filter((c) => {
-    const matchSearch = c.title.toLowerCase().includes(search.toLowerCase()) || c.authors.toLowerCase().includes(search.toLowerCase());
+  /* ── API data ── */
+  const { data: _apiCitations } = useStudentCitations();
+  const generateCitationMut = useGenerateCitation();
+  const deleteCitationMut = useDeleteCitation();
+  const savedCitations = (_apiCitations as any[]) ?? [];
+
+  const filtered = savedCitations.filter((c: any) => {
+    const matchSearch = c.title?.toLowerCase().includes(search.toLowerCase()) || c.authors?.toLowerCase().includes(search.toLowerCase());
     const matchProject = projectFilter === 'All' || c.project === projectFilter;
     return matchSearch && matchProject;
   });
@@ -91,10 +99,10 @@ export default function CitationGeneratorPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Saved Citations" value={SAVED_CITATIONS.length} icon={<BookOpen className="h-5 w-5" />} />
+        <StatCard label="Saved Citations" value={savedCitations.length} icon={<BookOpen className="h-5 w-5" />} />
         <StatCard label="Projects" value={PROJECTS.length - 1} icon={<ClipboardList className="h-5 w-5" />} />
         <StatCard label="Sources Used" value={3} icon={<Library className="h-5 w-5" />} />
-        <StatCard label="Starred" value={SAVED_CITATIONS.filter((c) => c.starred).length} icon={<Star className="h-5 w-5" />} />
+        <StatCard label="Starred" value={savedCitations.filter((c: any) => c.starred).length} icon={<Star className="h-5 w-5" />} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -146,7 +154,7 @@ export default function CitationGeneratorPage() {
                 {sourceType === 'journal' && <Input placeholder="Journal Name" className="h-7 text-xs bg-white/3 border-white/8 text-white/70 placeholder:text-white/25" />}
                 {sourceType === 'website' && <Input placeholder="URL" className="h-7 text-xs bg-white/3 border-white/8 text-white/70 placeholder:text-white/25" />}
                 <Input placeholder="Project (optional)" className="h-7 text-xs bg-white/3 border-white/8 text-white/70 placeholder:text-white/25" />
-                <Button size="sm" className="w-full text-xs bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => notifySuccess('Citation', 'Citation generated in selected format')}>
+                <Button size="sm" className="w-full text-xs bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => generateCitationMut.mutate({ style, sourceType } as any, { onSuccess: () => notifySuccess('Citation', 'Citation generated in selected format') })}>
                   <Quote className="size-3" />Generate Citation
                 </Button>
               </div>
@@ -193,8 +201,8 @@ export default function CitationGeneratorPage() {
             </div>
           </CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {filtered.map((c) => {
-              const SourceIcon = SOURCE_ICONS[c.type];
+            {filtered.map((c: any) => {
+              const SourceIcon = SOURCE_ICONS[c.type as SourceType];
               return (
                 <div key={c.id} className="rounded-lg border border-white/6 bg-white/2 p-3 hover:border-white/12 transition-all group">
                   <div className="flex items-start gap-2.5">
@@ -230,7 +238,7 @@ export default function CitationGeneratorPage() {
                       {copied === c.id ? <><CheckCircle2 className="size-2.5" />Copied!</> : <><Copy className="size-2.5" />Copy</>}
                     </Button>
                     <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10 text-white/40 gap-1" onClick={() => notifySuccess('Source', 'Searching for matching sources…')}><Search className="size-2.5" />Find Source</Button>
-                    <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10 text-red-400/50 gap-1 ml-auto" onClick={() => notifySuccess('Delete', 'Citation removed from list')}><Trash2 className="size-2.5" /></Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[9px] border-white/10 text-red-400/50 gap-1 ml-auto" onClick={() => deleteCitationMut.mutate(c.id, { onSuccess: () => notifySuccess('Delete', 'Citation removed from list') })}><Trash2 className="size-2.5" /></Button>
                   </div>
                 </div>
               );

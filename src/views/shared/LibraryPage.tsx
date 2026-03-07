@@ -6,8 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { useStaggerAnimate } from '@/hooks/use-animate';
-
+import { useStaggerAnimate } from '@/hooks/use-animate';import { useLibraryItems } from '@/hooks/api/use-library';
+import { useAuthStore } from '@/store/auth.store';
 type ResourceType = 'document' | 'video' | 'image' | 'presentation';
 type ViewMode = 'grid' | 'list';
 
@@ -37,7 +37,7 @@ const COLOR_MAP: Record<ResourceType, string> = {
   presentation: 'text-amber-400 bg-amber-400/10',
 };
 
-const MOCK_RESOURCES: Resource[] = [
+const FALLBACK_RESOURCES: Resource[] = [
   { id: '1', title: 'Algebra Fundamentals', type: 'document', subject: 'Math', author: 'Dr. Smith', date: '2025-03-10', size: '2.4 MB', downloads: 234, starred: true },
   { id: '2', title: 'Cell Division Lecture', type: 'video', subject: 'Biology', author: 'Ms. Johnson', date: '2025-03-08', size: '156 MB', downloads: 89, starred: false },
   { id: '3', title: 'Solar System Diagram', type: 'image', subject: 'Science', author: 'Mr. Brown', date: '2025-03-05', size: '4.1 MB', downloads: 412, starred: true },
@@ -53,6 +53,14 @@ export default function LibraryPage() {
   const [search, setSearch] = useState('');
   const [viewMode, setViewMode] = useState<ViewMode>('grid');
   const [filterType, setFilterType] = useState<string>('all');
+  const { schoolId } = useAuthStore();
+  const { data: apiItems } = useLibraryItems(schoolId);
+
+  const MOCK_RESOURCES: Resource[] = (apiItems as any[])?.map((item: any) => ({
+    id: item.id, title: item.title ?? '', type: (item.category?.toLowerCase() ?? 'document') as ResourceType,
+    subject: item.subject ?? item.category ?? '', author: item.author ?? '',
+    date: item.createdAt ?? '', size: '', downloads: 0, starred: false,
+  })) ?? FALLBACK_RESOURCES;
 
   const filtered = MOCK_RESOURCES.filter((r) => {
     const matchSearch = r.title.toLowerCase().includes(search.toLowerCase()) || r.subject.toLowerCase().includes(search.toLowerCase());

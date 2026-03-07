@@ -1,33 +1,44 @@
 /* Admin Concierge › Comms — Announcements, Messages, Broadcasts, Templates, Delivery Log */
 import { useNavigationStore } from '@/store/navigation.store';
+import { useAuthStore } from '@/store/auth.store';
 import { ConciergeTemplatePicker } from '@/components/concierge/shared';
 import { Megaphone, Eye, Users } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import {
+  useOpsAnnouncements,
+  useMessages,
+  useBroadcasts,
+  useTemplates,
+  useCommLogs,
+  useOpsCreateAnnouncement,
+  useSendBroadcast,
+} from '@/hooks/api/use-school-ops';
+import { notifySuccess } from '@/lib/notify';
 
-const announcements = [
+const FALLBACK_ANNOUNCEMENTS = [
   { id: 'ca1', title: 'End-of-year ceremony schedule', audience: 'All parents', date: 'Jun 14', status: 'Scheduled' },
   { id: 'ca2', title: 'Summer camp registration open', audience: 'Grade 3-6 parents', date: 'Jun 12', status: 'Sent' },
   { id: 'ca3', title: 'Report card distribution', audience: 'All parents', date: 'Jun 10', status: 'Sent' },
 ];
 
-const messages = [
+const FALLBACK_MESSAGES = [
   { id: 'cm1', to: 'Mrs. Sara (Parent)', subject: 'Regarding Ahmed attendance', date: 'Jun 13', status: 'Read' },
   { id: 'cm2', to: 'Mr. Tariq (Teacher)', subject: 'Grade 5A attendance correction', date: 'Jun 12', status: 'Delivered' },
   { id: 'cm3', to: 'Finance Team', subject: 'Fee follow-up batch #12', date: 'Jun 11', status: 'Sent' },
 ];
 
-const broadcasts = [
+const FALLBACK_BROADCASTS = [
   { id: 'cb1', title: 'Payment reminder — Q3 invoices', audience: '120 parents', date: 'Jun 13', status: 'Sent', opened: 87 },
   { id: 'cb2', title: 'Transport route changes', audience: '45 parents', date: 'Jun 10', status: 'Sent', opened: 32 },
 ];
 
-const deliveryLog = [
+const FALLBACK_DELIVERY_LOG = [
   { id: 'dl1', title: 'End-of-year ceremony', channel: 'Email + SMS', queued: 210, sent: 210, delivered: 205, failed: 5, opened: 180 },
   { id: 'dl2', title: 'Payment reminder', channel: 'Email', queued: 120, sent: 120, delivered: 118, failed: 2, opened: 87 },
   { id: 'dl3', title: 'Report card distribution', channel: 'In-App + Email', queued: 350, sent: 350, delivered: 348, failed: 2, opened: 290 },
 ];
 
-const commsTemplates = [
+const FALLBACK_COMMS_TEMPLATES = [
   { id: 'ct1', name: 'Fee Reminder', type: 'Finance', lastUsed: 'Yesterday', fieldCount: 4 },
   { id: 'ct2', name: 'Meeting Invitation', type: 'Meeting', lastUsed: '3 days ago', fieldCount: 5 },
   { id: 'ct3', name: 'Attendance Warning', type: 'Attendance', lastUsed: '1 week ago', fieldCount: 3 },
@@ -36,6 +47,20 @@ const commsTemplates = [
 
 export function AdminConciergeComms() {
   const { activeSubNav } = useNavigationStore();
+  const { schoolId } = useAuthStore();
+  const { data: apiAnnouncements } = useOpsAnnouncements(schoolId);
+  const { data: apiMessages } = useMessages(schoolId);
+  const { data: apiBroadcasts } = useBroadcasts(schoolId);
+  const { data: apiTemplates } = useTemplates(schoolId);
+  const { data: apiCommLogs } = useCommLogs(schoolId);
+  const createAnnouncement = useOpsCreateAnnouncement(schoolId);
+  useSendBroadcast(schoolId);
+
+  const announcements = (apiAnnouncements as any[]) ?? FALLBACK_ANNOUNCEMENTS;
+  const messages = (apiMessages as any[]) ?? FALLBACK_MESSAGES;
+  const broadcasts = (apiBroadcasts as any[]) ?? FALLBACK_BROADCASTS;
+  const deliveryLog = (apiCommLogs as any[]) ?? FALLBACK_DELIVERY_LOG;
+  const commsTemplates = (apiTemplates as any[]) ?? FALLBACK_COMMS_TEMPLATES;
 
   if (activeSubNav === 'c_messages') {
     return (
@@ -121,7 +146,10 @@ export function AdminConciergeComms() {
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-semibold text-foreground">Announcements</h3>
-        <button className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+        <button
+          className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          onClick={() => createAnnouncement.mutate({} as any, { onSuccess: () => notifySuccess('Announcement created') })}
+        >
           <Megaphone className="h-3.5 w-3.5" /> New Announcement
         </button>
       </div>

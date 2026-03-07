@@ -1,13 +1,15 @@
 /* Admin Concierge › Settings — Permissions, Snippets, Templates, Routing, Notifications, Audit */
 import { useNavigationStore } from '@/store/navigation.store';
+import { useAuthStore } from '@/store/auth.store';
 import { Shield, FileText, Route, Eye } from 'lucide-react';
+import { useRoles, useTemplates, useSchoolProfile, useSaveSchoolProfile } from '@/hooks/api/use-school-ops';
 
-const permissionItems = [
+const FALLBACK_PERMISSIONS = [
   'Send communications', 'Approve discounts', 'Approve refunds',
   'Approve attendance edits', 'Change records', 'Run batch actions',
 ];
 
-const snippetItems = [
+const FALLBACK_SNIPPETS = [
   { id: 'sn1', name: 'Fee reminder', preview: 'Dear Parent, this is a gentle reminder...' },
   { id: 'sn2', name: 'Meeting invite', preview: 'You are invited to attend a meeting...' },
   { id: 'sn3', name: 'Attendance warning', preview: 'We notice your child has been absent...' },
@@ -15,7 +17,7 @@ const snippetItems = [
   { id: 'sn5', name: 'Certificate reply', preview: 'Your requested certificate is ready...' },
 ];
 
-const routingRules = [
+const FALLBACK_ROUTING_RULES = [
   { from: 'Facilities issue', to: 'Facilities queue' },
   { from: 'Finance issue', to: 'Finance queue' },
   { from: 'Transport issue', to: 'Transport owner' },
@@ -24,6 +26,15 @@ const routingRules = [
 
 export function AdminConciergeSettings() {
   const { activeSubNav } = useNavigationStore();
+  const { schoolId } = useAuthStore();
+  const { data: apiRoles } = useRoles(schoolId);
+  const { data: apiTemplates } = useTemplates(schoolId);
+  const { data: apiProfile } = useSchoolProfile(schoolId);
+  useSaveSchoolProfile(schoolId);
+
+  const permissionItems = (apiRoles as any[])?.map((r: any) => r.name ?? r.label ?? r) ?? FALLBACK_PERMISSIONS;
+  const snippetItems = (apiTemplates as any[])?.map((t: any) => ({ id: t.id, name: t.name, preview: t.body ?? t.preview ?? '' })) ?? FALLBACK_SNIPPETS;
+  const routingRules = ((apiProfile as any)?.routingRules as any[]) ?? FALLBACK_ROUTING_RULES;
 
   if (activeSubNav === 'c_snippets') {
     return (

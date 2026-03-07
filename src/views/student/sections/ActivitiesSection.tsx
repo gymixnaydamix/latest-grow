@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type SchoolEvent } from '@/store/student-data.store';
+import { type SchoolEvent } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type EventFilter = 'all' | 'upcoming' | 'registered' | 'club' | 'competition' | 'trip' | 'workshop';
@@ -27,7 +28,7 @@ const EVENT_TYPE_CONFIG: Record<string, { icon: typeof Calendar; color: string }
 };
 
 export function ActivitiesSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [filter, setFilter] = useState<EventFilter>('all');
   const [search, setSearch] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -154,7 +155,7 @@ function EventCard({ event, onSelect }: { event: SchoolEvent; onSelect: () => vo
 
 /* ── Event Detail ── */
 function EventDetail({ event, onClose }: { event: SchoolEvent; onClose: () => void }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const cfg = EVENT_TYPE_CONFIG[event.type] || EVENT_TYPE_CONFIG.academic;
   const isPast = new Date(event.date) < new Date();
 

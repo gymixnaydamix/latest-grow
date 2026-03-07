@@ -2,9 +2,10 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { cn } from '@/lib/utils';
 import { Target, Bell, Calendar, Palette, Shield } from 'lucide-react';
+import { useStudentNotifications, useStudentTimetable } from '@/hooks/api/use-student';
 
 /* ── Study goals ── */
-const studyGoals = [
+const FALLBACK_STUDY_GOALS = [
   { id: 'sg1', label: 'Daily study hours', current: 3, target: 4, unit: 'hours' },
   { id: 'sg2', label: 'Subjects per day', current: 3, target: 4, unit: 'subjects' },
   { id: 'sg3', label: 'Assignments per week', current: 4, target: 6, unit: 'assignments' },
@@ -13,7 +14,7 @@ const studyGoals = [
 ];
 
 /* ── Timetable display modes ── */
-const timetableOptions = [
+const FALLBACK_TIMETABLE_OPTIONS = [
   { id: 'td1', name: 'Day View', description: 'Show one day at a time with full period details', active: true },
   { id: 'td2', name: 'Week View', description: 'Show the entire week in a grid layout', active: false },
   { id: 'td3', name: 'List View', description: 'Simple list of classes sorted by time', active: false },
@@ -21,7 +22,7 @@ const timetableOptions = [
 ];
 
 /* ── Theme options ── */
-const themeOptions = [
+const FALLBACK_THEME_OPTIONS = [
   { id: 'th1', name: 'System Default', description: 'Follow your device theme setting', active: true },
   { id: 'th2', name: 'Light Mode', description: 'Clean and bright interface', active: false },
   { id: 'th3', name: 'Dark Mode', description: 'Easy on the eyes for night study', active: false },
@@ -39,6 +40,13 @@ const accentColors = [
 
 export function StudentConciergeSettings() {
   const { activeSubNav } = useNavigationStore();
+
+  const { data: _apiNotifications } = useStudentNotifications();
+  const { data: _apiTimetable } = useStudentTimetable();
+
+  const studyGoals = FALLBACK_STUDY_GOALS;
+  const timetableOptions = FALLBACK_TIMETABLE_OPTIONS;
+  const themeOptions = FALLBACK_THEME_OPTIONS;
 
   /* ── Preferences (default) ── */
   if (!activeSubNav || activeSubNav === 'c_preferences') {

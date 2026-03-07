@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { useStaggerAnimate } from '@/hooks/use-animate';
+import { useGrants, useCreateGrant } from '@/hooks/api/use-finance';
+import { useAuthStore } from '@/store/auth.store';
+import { notifySuccess } from '@/lib/notify';
 
 type GrantStatus = 'active' | 'pending' | 'approved' | 'expired' | 'rejected';
 
@@ -32,7 +35,7 @@ const STATUS_CFG: Record<GrantStatus, { cls: string; bg: string }> = {
   rejected: { cls: 'text-red-400', bg: 'bg-red-400/10' },
 };
 
-const MOCK_GRANTS: Grant[] = [
+const FALLBACK_GRANTS: Grant[] = [
   { id: '1', title: 'STEM Excellence Initiative', funder: 'National Science Foundation', amount: 250000, spent: 142000, status: 'active', startDate: '2024-09-01', endDate: '2026-08-31', category: 'Academic', description: 'Fund STEM labs and teacher training' },
   { id: '2', title: 'Digital Literacy Program', funder: 'Tech Education Fund', amount: 75000, spent: 68000, status: 'active', startDate: '2024-06-01', endDate: '2025-05-31', category: 'Technology', description: '1:1 device program for under-served students' },
   { id: '3', title: 'Wellness & Mental Health', funder: 'State Dept. of Education', amount: 120000, spent: 0, status: 'approved', startDate: '2025-04-01', endDate: '2026-03-31', category: 'Wellness', description: 'Hiring counselors and wellness resources' },
@@ -47,6 +50,17 @@ export default function GrantsView() {
   const containerRef = useStaggerAnimate([]);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | GrantStatus>('all');
+  const { schoolId } = useAuthStore();
+  const { data: apiGrants } = useGrants(schoolId);
+  const createGrant = useCreateGrant(schoolId ?? '');
+
+  const MOCK_GRANTS: Grant[] = (apiGrants as any[])?.map((g: any) => ({
+    id: g.id, title: g.name ?? g.title ?? '', funder: g.source ?? g.funder ?? '',
+    amount: Number(g.amount ?? 0), spent: Number(g.spent ?? 0),
+    status: (g.status?.toLowerCase() ?? 'pending') as GrantStatus,
+    startDate: g.startDate ?? g.createdAt ?? '', endDate: g.endDate ?? g.deadline ?? '',
+    category: g.category ?? 'General', description: g.description ?? '',
+  })) ?? FALLBACK_GRANTS;
 
   const filtered = MOCK_GRANTS.filter((g) => {
     const s = statusFilter === 'all' || g.status === statusFilter;
@@ -64,7 +78,7 @@ export default function GrantsView() {
           <Landmark className="size-5 text-indigo-400" />
           <h2 className="text-lg font-bold text-white/90">Grants & Funding</h2>
         </div>
-        <Button className="gap-1.5 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-400/20 text-xs h-8">
+        <Button className="gap-1.5 bg-indigo-500/20 text-indigo-300 hover:bg-indigo-500/30 border border-indigo-400/20 text-xs h-8" onClick={() => createGrant.mutate({ name: 'New Grant', amount: 0, source: '', deadline: new Date().toISOString() }, { onSuccess: () => notifySuccess('Grant created', 'New grant record added') })}>
           <Plus className="size-3" />New Grant
         </Button>
       </div>

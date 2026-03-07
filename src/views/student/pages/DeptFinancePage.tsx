@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
+import { useStudentDeptRequests } from '@/hooks/api/use-student';
 
 type ReqStatus = 'pending' | 'approved' | 'denied' | 'in-review';
 
@@ -60,14 +61,19 @@ export default function DeptFinancePage() {
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
 
-  const filtered = MOCK
+  /* ── API data ── */
+  const { data: _apiDeptReqs } = useStudentDeptRequests();
+  const financeReqs = ((_apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'finance');
+
+  const filtered = (financeReqs.length > 0 ? financeReqs : MOCK)
     .filter((r) => filter === 'all' || r.status === filter)
     .filter((r) => typeFilter === 'all' || r.type === typeFilter)
     .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()));
 
-  const pending = MOCK.filter((r) => r.status === 'pending').length;
-  const approved = MOCK.filter((r) => r.status === 'approved').length;
-  const totalAmount = MOCK.filter((r) => r.amount).reduce((s, r) => s + (r.amount ?? 0), 0);
+  const items = financeReqs.length > 0 ? financeReqs : MOCK;
+  const pending = items.filter((r: any) => r.status === 'pending').length;
+  const approved = items.filter((r: any) => r.status === 'approved').length;
+  const totalAmount = items.filter((r: any) => r.amount).reduce((s: number, r: any) => s + (r.amount ?? 0), 0);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -75,7 +81,7 @@ export default function DeptFinancePage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Total Requests" value={MOCK.length} icon={<Receipt className="h-5 w-5" />} />
+        <StatCard label="Total Requests" value={items.length} icon={<Receipt className="h-5 w-5" />} />
         <StatCard label="Pending" value={pending} icon={<Clock className="h-5 w-5" />} trend={pending > 0 ? 'up' : 'neutral'} />
         <StatCard label="Approved" value={approved} icon={<CheckCircle2 className="h-5 w-5" />} trend="up" />
         <StatCard label="Amount Involved" value={totalAmount} prefix="$" icon={<DollarSign className="h-5 w-5" />} />
@@ -174,8 +180,8 @@ export default function DeptFinancePage() {
             <CardContent className="py-10 text-center text-white/30 text-sm">No requests match your filters.</CardContent>
           </Card>
         )}
-        {filtered.map((req) => {
-          const s = STATUS_CFG[req.status];
+        {filtered.map((req: any) => {
+          const s = STATUS_CFG[req.status as ReqStatus];
           return (
             <Card key={req.id} className="border-white/6 bg-white/3 backdrop-blur-xl hover:bg-white/5 transition-colors">
               <CardContent className="flex flex-col gap-3 p-4">
@@ -184,7 +190,7 @@ export default function DeptFinancePage() {
                     <s.Icon className={cn('size-4 shrink-0', s.cls)} />
                     <div>
                       <p className="text-sm font-semibold text-white/80">{req.title}</p>
-                      <p className="text-[10px] text-white/30">{TYPE_LABELS[req.type]}{req.amount ? ` • $${req.amount.toLocaleString()}` : ''}</p>
+                      <p className="text-[10px] text-white/30">{TYPE_LABELS[req.type as keyof typeof TYPE_LABELS]}{req.amount ? ` • $${req.amount.toLocaleString()}` : ''}</p>
                     </div>
                   </div>
                   <Badge className={cn('border-0 text-[9px]', s.bg, s.cls)}>{s.label}</Badge>

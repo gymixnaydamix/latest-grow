@@ -8,6 +8,8 @@ import {
   Eye, FileText, Megaphone, Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useProviderTenants, useUpdateProviderTenantStatus } from '@/hooks/api/use-provider-console';
+import { notifySuccess } from '@/lib/notify';
 
 interface Tenant {
   id: string;
@@ -24,7 +26,7 @@ interface Tenant {
   onboardingStep?: string;
 }
 
-const tenants: Tenant[] = [
+const FALLBACK_TENANTS: Tenant[] = [
   {
     id: 'tn1', name: 'Greenfield Academy', status: 'Active', plan: 'Enterprise',
     billingState: 'Current', healthState: 'Healthy', activeModules: ['Enrollment', 'Finance', 'Attendance', 'LMS', 'Transport', 'Comms'],
@@ -93,6 +95,12 @@ const healthColor: Record<string, string> = {
 
 export function ProviderConciergeTenants() {
   const { activeSubNav } = useNavigationStore();
+
+  /* ── API hooks ── */
+  const { data: apiTenants } = useProviderTenants();
+  const updateStatus = useUpdateProviderTenantStatus();
+
+  const tenants = (apiTenants as any as Tenant[]) ?? FALLBACK_TENANTS;
   const [selected, setSelected] = useState<Tenant | null>(tenants[0] ?? null);
 
   const filtered = (() => {
@@ -205,12 +213,24 @@ export function ProviderConciergeTenants() {
           <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />Open</span>
         </button>
         {selected.status === 'Active' && (
-          <button className="rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700">
+          <button
+            className="rounded-xl bg-amber-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-amber-700"
+            onClick={() => updateStatus.mutate(
+              { tenantId: selected.id, nextStatus: 'Suspended', reason: 'Concierge action' },
+              { onSuccess: () => notifySuccess('Tenant suspended', `${selected.name} has been suspended`) },
+            )}
+          >
             <span className="inline-flex items-center gap-1"><Pause className="h-3 w-3" />Suspend</span>
           </button>
         )}
         {selected.status === 'Suspended' && (
-          <button className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700">
+          <button
+            className="rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
+            onClick={() => updateStatus.mutate(
+              { tenantId: selected.id, nextStatus: 'Active', reason: 'Concierge reactivation' },
+              { onSuccess: () => notifySuccess('Tenant reactivated', `${selected.name} is now active`) },
+            )}
+          >
             <span className="inline-flex items-center gap-1"><Play className="h-3 w-3" />Reactivate</span>
           </button>
         )}

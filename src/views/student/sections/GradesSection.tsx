@@ -10,13 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
-import { useStudentStore, type FeedbackNote } from '@/store/student-data.store';
+import { type FeedbackNote } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { EmptyState } from '@/components/features/EmptyState';
 
 type GradeView = 'overview' | 'subject' | 'feedback' | 'report_card';
 
 export function GradesSection() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const [view, setView] = useState<GradeView>('overview');
   const [selectedSubject, setSelectedSubject] = useState<string | null>(null);
 
@@ -88,7 +89,7 @@ function OverviewView({ subjectGrades, overallAvg, onSelectSubject }: {
   overallAvg: number;
   onSelectSubject: (id: string) => void;
 }) {
-  const store = useStudentStore();
+  const store = useStudentData();
 
   // Recently graded
   const recent = useMemo(() => {
@@ -166,7 +167,7 @@ function SubjectView({ subjectGrades, selectedSubject, setSelectedSubject }: {
   selectedSubject: string | null;
   setSelectedSubject: (s: string | null) => void;
 }) {
-  const store = useStudentStore();
+  const store = useStudentData();
   const subject = selectedSubject ? subjectGrades.find((s: any) => s.id === selectedSubject) : null;
 
   if (!subject) {
@@ -266,7 +267,7 @@ function SubjectView({ subjectGrades, selectedSubject, setSelectedSubject }: {
 
 /* ── Feedback View ── */
 function FeedbackView() {
-  const store = useStudentStore();
+  const store = useStudentData();
   const notes = useMemo(() => {
     return [...store.feedback].sort((a: FeedbackNote, b: FeedbackNote) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [store.feedback]);
