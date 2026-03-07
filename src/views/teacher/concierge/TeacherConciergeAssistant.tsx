@@ -1,6 +1,7 @@
 /* Teacher Concierge › Assistant — Chat, Quick Actions, Today, Search, History */
 import { useNavigationStore } from '@/store/navigation.store';
 import { useConciergeStore } from '@/store/concierge.store';
+import { useAIChat } from '@/hooks/api/use-ai';
 import {
   ConciergeLayout, ConciergeChatView, ConciergeSearchResultsPanel,
   ConciergeHistoryTimeline, ConciergeQuickLaunchBoard, ConciergeTodayTimeline,
@@ -127,7 +128,8 @@ const todayTimelineItems = [
 
 export function TeacherConciergeAssistant() {
   const { activeSubNav } = useNavigationStore();
-  const { history } = useConciergeStore();
+  const { messages, addMessage, history } = useConciergeStore();
+  const aiChat = useAIChat();
 
   const content = (() => {
     switch (activeSubNav) {
@@ -154,7 +156,16 @@ export function TeacherConciergeAssistant() {
             todayChips={todayChips}
             starterMessages={starterMessages}
             slashCommands={slashCommands}
-            onSend={(t: string) => console.log('Teacher send:', t)}
+            onSend={(t: string) => {
+              const userMsg = { id: `u-${Date.now()}`, role: 'user' as const, content: t, timestamp: new Date().toISOString() };
+              addMessage(userMsg);
+              const history = [...messages, userMsg].map((m) => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content }));
+              aiChat.mutate({ messages: history }, {
+                onSuccess: (res) => {
+                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text, timestamp: new Date().toISOString() });
+                },
+              });
+            }}
           />
         );
     }

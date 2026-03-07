@@ -6,6 +6,10 @@ import { useAuthStore } from '@/store/auth.store';
 import {
   useRooms, useOpsMaintenanceRequests, useAssets,
   useOpsFacilityBookings, useOpsCreateMaintenanceRequest, useBookFacility,
+  useCreateRoom, useUpdateRoom, useDeleteRoom,
+  useOpsUpdateMaintenanceRequest, useOpsDeleteMaintenanceRequest,
+  useCreateAsset, useUpdateAsset, useDeleteAsset,
+  useUpdateBooking, useCancelBooking,
 } from '@/hooks/api/use-school-ops';
 
 /* ─── Local types matching API shape ─── */
@@ -38,13 +42,16 @@ import {
   DetailPanel, DetailFields, type DetailTab,
 } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
-import { notifySuccess, notifyInfo } from '@/lib/notify';
+import { notifySuccess } from '@/lib/notify';
 
 /* ═══════════════ Rooms & Spaces ═══════════════ */
 function RoomsView() {
   const { schoolId } = useAuthStore();
   const { data: roomsRes } = useRooms(schoolId);
   const rooms: Room[] = Array.isArray(roomsRes) ? roomsRes : (roomsRes as any)?.items ?? [];
+  const createRoom = useCreateRoom(schoolId);
+  const updateRoom = useUpdateRoom(schoolId);
+  const deleteRoom = useDeleteRoom(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Room | null>(null);
@@ -71,8 +78,16 @@ function RoomsView() {
     ] },
   ];
 
-  const handleSave = (_data: Record<string, unknown>) => {
-    notifyInfo('Not yet implemented', 'Room create/update is not yet wired to the API');
+  const handleSave = (data: Record<string, unknown>) => {
+    if (editing) {
+      updateRoom.mutate({ id: editing.id, ...data } as any, {
+        onSuccess: () => notifySuccess('Updated', `Room "${data.name}" updated`),
+      });
+    } else {
+      createRoom.mutate(data, {
+        onSuccess: () => notifySuccess('Created', `Room "${data.name}" added`),
+      });
+    }
     setFormOpen(false);
     setEditing(null);
   };
@@ -137,7 +152,14 @@ function RoomsView() {
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}
         title="Remove Room?" description={`Remove "${deleteTarget?.name}" from facilities?`}
         confirmLabel="Remove" variant="destructive"
-        onConfirm={() => { if (deleteTarget) { notifyInfo('Not yet implemented', 'Room removal is not yet wired to the API'); setDeleteTarget(null); } }} />
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteRoom.mutate(deleteTarget.id, {
+              onSuccess: () => notifySuccess('Removed', `Room "${deleteTarget.name}" removed`),
+            });
+            setDeleteTarget(null);
+          }
+        }} />
     </div>
   );
 }
@@ -148,6 +170,8 @@ function MaintenanceView() {
   const { data: maintRes } = useOpsMaintenanceRequests(schoolId);
   const requests: MaintenanceRequest[] = Array.isArray(maintRes) ? maintRes : (maintRes as any)?.items ?? [];
   const createMaintenance = useOpsCreateMaintenanceRequest(schoolId);
+  const updateMaintenance = useOpsUpdateMaintenanceRequest(schoolId);
+  const deleteMaintenance = useOpsDeleteMaintenanceRequest(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<MaintenanceRequest | null>(null);
@@ -186,7 +210,9 @@ function MaintenanceView() {
 
   const handleSave = (data: Record<string, unknown>) => {
     if (editing) {
-      notifyInfo('Not yet implemented', 'Maintenance update is not yet wired to the API');
+      updateMaintenance.mutate({ id: editing.id, ...data } as any, {
+        onSuccess: () => notifySuccess('Updated', `Ticket ${editing.id} updated`),
+      });
     } else {
       createMaintenance.mutate(data, {
         onSuccess: () => notifySuccess('Reported', `Maintenance issue for ${data.room} logged`),
@@ -249,7 +275,9 @@ function MaintenanceView() {
           { label: 'View', icon: Eye, onClick: r => setDetail(r as unknown as MaintenanceRequest) },
           { label: 'Edit', icon: Edit, onClick: r => { setEditing(r as unknown as MaintenanceRequest); setFormOpen(true); } },
           { label: 'Complete', icon: CheckCircle, onClick: r => {
-            notifyInfo('Not yet implemented', `Update for ticket ${String(r.id)} is not yet wired to the API`);
+            updateMaintenance.mutate({ id: String(r.id), status: 'Completed', completedAt: new Date().toISOString().split('T')[0] } as any, {
+              onSuccess: () => notifySuccess('Completed', `Ticket ${String(r.id)} marked complete`),
+            });
           } },
         ]}
         searchPlaceholder="Search tickets..."
@@ -266,7 +294,9 @@ function MaintenanceView() {
           { label: 'Edit', icon: <Edit className="size-3.5" />, onClick: () => { setEditing(detail); setFormOpen(true); setDetail(null); } },
           { label: 'Mark Complete', icon: <CheckCircle className="size-3.5" />, onClick: () => {
             if (detail) {
-              notifyInfo('Not yet implemented', `Update for ticket ${detail.id} is not yet wired to the API`);
+              updateMaintenance.mutate({ id: detail.id, status: 'Completed', completedAt: new Date().toISOString().split('T')[0] } as any, {
+                onSuccess: () => notifySuccess('Completed', `Ticket ${detail.id} marked complete`),
+              });
               setDetail(null);
             }
           } },
@@ -275,7 +305,14 @@ function MaintenanceView() {
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}
         title="Delete Ticket?" description={`Remove maintenance ticket ${deleteTarget?.id}?`}
         confirmLabel="Delete" variant="destructive"
-        onConfirm={() => { if (deleteTarget) { notifyInfo('Not yet implemented', 'Maintenance delete is not yet wired to the API'); setDeleteTarget(null); } }} />
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteMaintenance.mutate(deleteTarget.id, {
+              onSuccess: () => notifySuccess('Deleted', `Ticket ${deleteTarget.id} removed`),
+            });
+            setDeleteTarget(null);
+          }
+        }} />
     </div>
   );
 }
@@ -285,11 +322,20 @@ function AssetsView() {
   const { schoolId } = useAuthStore();
   const { data: assetsRes } = useAssets(schoolId);
   const assets: Asset[] = Array.isArray(assetsRes) ? assetsRes : (assetsRes as any)?.items ?? [];
+  const createAsset = useCreateAsset(schoolId);
+  const updateAsset = useUpdateAsset(schoolId);
+  const deleteAsset = useDeleteAsset(schoolId);
+
+  /* Maintenance log for an asset — filter requests by asset location */
+  const { data: maintRes } = useOpsMaintenanceRequests(schoolId);
+  const allMaint: MaintenanceRequest[] = Array.isArray(maintRes) ? maintRes : (maintRes as any)?.items ?? [];
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Asset | null>(null);
   const [detail, setDetail] = useState<Asset | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Asset | null>(null);
+  const [maintLogAsset, setMaintLogAsset] = useState<Asset | null>(null);
+  const assetMaintHistory = allMaint.filter(m => maintLogAsset && m.room.toLowerCase().includes(maintLogAsset.location.toLowerCase()));
 
   const fields: FormField[] = [
     { name: 'name', label: 'Asset Name', type: 'text', required: true },
@@ -312,8 +358,16 @@ function AssetsView() {
     { name: 'assignedTo', label: 'Assigned To', type: 'text', half: true },
   ];
 
-  const handleSave = (_data: Record<string, unknown>) => {
-    notifyInfo('Not yet implemented', 'Asset create/update is not yet wired to the API');
+  const handleSave = (data: Record<string, unknown>) => {
+    if (editing) {
+      updateAsset.mutate({ id: editing.id, ...data } as any, {
+        onSuccess: () => notifySuccess('Updated', `Asset "${data.name}" updated`),
+      });
+    } else {
+      createAsset.mutate(data, {
+        onSuccess: () => notifySuccess('Registered', `Asset "${data.name}" added`),
+      });
+    }
     setFormOpen(false);
     setEditing(null);
   };
@@ -373,13 +427,49 @@ function AssetsView() {
         tabs={tabs}
         actions={[
           { label: 'Edit', icon: <Edit className="size-3.5" />, onClick: () => { setEditing(detail); setFormOpen(true); setDetail(null); } },
-          { label: 'Maintenance Log', icon: <Wrench className="size-3.5" />, onClick: () => notifyInfo('Maintenance Log', `Opening log for ${detail?.name}`) },
+          { label: 'Maintenance Log', icon: <Wrench className="size-3.5" />, onClick: () => { setMaintLogAsset(detail); setDetail(null); } },
         ]} />
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}
         title="Remove Asset?" description={`Remove "${deleteTarget?.name}" from register?`}
         confirmLabel="Remove" variant="destructive"
-        onConfirm={() => { if (deleteTarget) { notifyInfo('Not yet implemented', 'Asset removal is not yet wired to the API'); setDeleteTarget(null); } }} />
+        onConfirm={() => {
+          if (deleteTarget) {
+            deleteAsset.mutate(deleteTarget.id, {
+              onSuccess: () => notifySuccess('Removed', `Asset "${deleteTarget.name}" removed`),
+            });
+            setDeleteTarget(null);
+          }
+        }} />
+
+      {/* Maintenance Log panel for this asset */}
+      <DetailPanel open={!!maintLogAsset} onOpenChange={() => setMaintLogAsset(null)}
+        title={`Maintenance Log — ${maintLogAsset?.name ?? ''}`}
+        subtitle={`Location: ${maintLogAsset?.location ?? ''}`}
+        tabs={[{
+          id: 'log', label: 'History', content: assetMaintHistory.length === 0
+            ? <p className="text-sm text-muted-foreground/60 py-4">No maintenance records found for this location.</p>
+            : (
+              <div className="space-y-3">
+                {assetMaintHistory.map(m => (
+                  <div key={m.id} className="border border-border rounded-lg p-3 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-mono text-xs text-amber-400">{m.id}</span>
+                      <StatusBadge status={m.status} />
+                    </div>
+                    <p className="text-sm text-foreground/80">{m.description}</p>
+                    <div className="flex gap-4 text-xs text-muted-foreground/60">
+                      <span>Type: {m.type}</span>
+                      <span>Priority: {m.priority}</span>
+                      <span>Reported: {m.reportedAt}</span>
+                      {m.completedAt && <span>Completed: {m.completedAt}</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ),
+        }]}
+        actions={[]} />
     </div>
   );
 }
@@ -390,6 +480,8 @@ function FacilityCalendarView() {
   const { data: bookingsRes } = useOpsFacilityBookings(schoolId);
   const bookings: FacilityBooking[] = Array.isArray(bookingsRes) ? bookingsRes : (bookingsRes as any)?.items ?? [];
   const bookFacility = useBookFacility(schoolId);
+  const updateBooking = useUpdateBooking(schoolId);
+  const cancelBooking = useCancelBooking(schoolId);
   const { data: roomsRes } = useRooms(schoolId);
   const rooms: Room[] = Array.isArray(roomsRes) ? roomsRes : (roomsRes as any)?.items ?? [];
 
@@ -412,7 +504,9 @@ function FacilityCalendarView() {
 
   const handleSave = (data: Record<string, unknown>) => {
     if (editing) {
-      notifyInfo('Not yet implemented', 'Booking update is not yet wired to the API');
+      updateBooking.mutate({ id: editing.id, ...data } as any, {
+        onSuccess: () => notifySuccess('Updated', `Booking for "${data.event}" updated`),
+      });
     } else {
       bookFacility.mutate(data, {
         onSuccess: () => notifySuccess('Booked', `${data.room} booked for ${data.event}`),
@@ -449,7 +543,9 @@ function FacilityCalendarView() {
         actions={[
           { label: 'Edit', icon: Edit, onClick: r => { setEditing(r as unknown as FacilityBooking); setFormOpen(true); } },
           { label: 'Confirm', icon: CheckCircle, onClick: r => {
-            notifyInfo('Not yet implemented', `Booking confirmation for ${String(r.id)} is not yet wired to the API`);
+            updateBooking.mutate({ id: String(r.id), status: 'Confirmed' } as any, {
+              onSuccess: () => notifySuccess('Confirmed', `Booking ${String(r.id)} confirmed`),
+            });
           } },
           { label: 'Cancel', icon: AlertTriangle, onClick: r => setDeleteTarget(r as unknown as FacilityBooking), variant: 'destructive' },
         ]}
@@ -465,7 +561,9 @@ function FacilityCalendarView() {
         confirmLabel="Cancel Booking" variant="destructive"
         onConfirm={() => {
           if (deleteTarget) {
-            notifyInfo('Not yet implemented', 'Booking cancellation is not yet wired to the API');
+            cancelBooking.mutate({ id: deleteTarget.id, status: 'Cancelled' } as any, {
+              onSuccess: () => notifySuccess('Cancelled', `Booking for "${deleteTarget.event}" cancelled`),
+            });
             setDeleteTarget(null);
           }
         }} />

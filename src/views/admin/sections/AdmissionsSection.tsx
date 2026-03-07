@@ -2,6 +2,11 @@
 import { useState } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
+import { useAuthStore } from '@/store/auth.store';
+import {
+  useApplicants, useCreateApplicant, useUpdateApplicantStage, useDeleteApplicant,
+} from '@/hooks/api';
+import type { Applicant } from '@root/types';
 import {
   UserPlus, CheckCircle, Eye,
   Download, Calendar, Mail, Edit, Trash2, MoreHorizontal,
@@ -17,7 +22,7 @@ import type { FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
 import { admissionsPipeline } from '../data/demo-data';
-import { notifySuccess, notifyInfo, notifyWarning } from '@/lib/notify';
+import { notifySuccess, notifyWarning } from '@/lib/notify';
 
 /* ── Local type ── */
 interface AdmissionApp {
@@ -36,6 +41,7 @@ interface AdmissionApp {
 /* ─── Form fields ─── */
 const appFields: FormField[] = [
   { name: 'studentName', label: 'Student Name', type: 'text', required: true, half: true },
+  { name: 'email', label: 'Email', type: 'email', required: true, half: true },
   { name: 'grade', label: 'Applying for Grade', type: 'select', required: true, options: [
     { label: 'Grade 1', value: 'Grade 1' }, { label: 'Grade 3', value: 'Grade 3' },
     { label: 'Grade 5', value: 'Grade 5' }, { label: 'Grade 7', value: 'Grade 7' },
@@ -54,6 +60,10 @@ const appFields: FormField[] = [
 
 /* ─── Pipeline (Kanban) ─── */
 function PipelineView() {
+  const { setHeader } = useNavigationStore();
+  const [selectedCard, setSelectedCard] = useState<{ id: string; title: string; subtitle?: string; meta?: string } | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -62,16 +72,28 @@ function PipelineView() {
           <p className="text-sm text-muted-foreground/60">Drag-style pipeline &mdash; all active applications</p>
         </div>
         <PermissionGate requires="admissions.write">
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8" onClick={() => notifyInfo('New Application', 'Switch to Applications tab to create')}>
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8" onClick={() => setHeader('adm_applications')}>
             <UserPlus className="size-3.5 mr-1.5" /> New Application
           </Button>
         </PermissionGate>
       </div>
       <KanbanBoard
         columns={admissionsPipeline}
-        onCardClick={(card) => notifyInfo('Application Details', `Opening application for ${card.title}`)}
-        onAddCard={(colId) => notifyInfo('New Application', `Adding application to ${colId}`)}
+        onCardClick={(card) => { setSelectedCard(card as any); setDetailOpen(true); }}
+        onAddCard={() => setHeader('adm_applications')}
       />
+
+      <DetailPanel open={detailOpen} onOpenChange={setDetailOpen} title={selectedCard?.title || ''} subtitle={selectedCard?.subtitle || ''} tabs={selectedCard ? [
+        { id: 'info', label: 'Application', content: (
+          <DetailFields fields={[
+            { label: 'Applicant', value: selectedCard.title },
+            { label: 'Details', value: selectedCard.subtitle || '\u2014' },
+            { label: 'Info', value: selectedCard.meta || '\u2014' },
+          ]} />
+        )},
+      ] : []} actions={[
+        { label: 'Open Full Record', onClick: () => { setDetailOpen(false); setHeader('adm_applications'); } },
+      ]} />
     </div>
   );
 }
@@ -80,7 +102,23 @@ function PipelineView() {
 type AppRow = AdmissionApp & Record<string, unknown>;
 
 function ApplicationsView() {
-  const apps: AppRow[] = []; // TODO: wire API hook for admissions
+  const { schoolId } = useAuthStore();
+  const { data: applicantsRes } = useApplicants(schoolId);
+  const createApplicant = useCreateApplicant(schoolId || '');
+  const deleteApplicant = useDeleteApplicant();
+
+  const apps: AppRow[] = ((applicantsRes as any)?.data ?? applicantsRes ?? []).map((a: Applicant) => ({
+    id: a.id,
+    studentName: `${a.firstName} ${a.lastName}`,
+    grade: '\u2014',
+    guardian: '\u2014',
+    guardianPhone: '\u2014',
+    appliedDate: a.appliedAt ? new Date(a.appliedAt).toLocaleDateString() : '\u2014',
+    stage: a.stage,
+    status: a.stage,
+    documents: [],
+    notes: '',
+  }));
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -89,16 +127,29 @@ function ApplicationsView() {
   const [selected, setSelected] = useState<AdmissionApp | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdmissionApp | null>(null);
 
-  const handleSubmit = (_data: Record<string, unknown>) => {
-    notifyInfo('Not yet implemented', 'Admissions write API not available yet');
-    setFormOpen(false);
-    setEditData(undefined);
+  const handleSubmit = (data: Record<string, unknown>) => {
+    const [firstName, ...rest] = String(data.studentName || '').split(' ');
+    const lastName = rest.join(' ') || '';
+    createApplicant.mutate(
+      { firstName, lastName, email: String(data.email || ''), stage: String(data.status || 'INQUIRY') },
+      {
+        onSuccess: () => {
+          notifySuccess('Application Saved', formMode === 'create' ? 'New application created' : 'Application updated');
+          setFormOpen(false);
+          setEditData(undefined);
+        },
+      },
+    );
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Admissions delete API not available yet');
-    setDeleteTarget(null);
+    deleteApplicant.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        notifySuccess('Withdrawn', `Application for ${deleteTarget.studentName} withdrawn`);
+        setDeleteTarget(null);
+      },
+    });
   };
 
   const detailTabs: DetailTab[] = selected ? [
@@ -190,7 +241,7 @@ function DocumentsView() {
           { key: 'reviewer', label: 'Reviewer' },
         ]}
         actions={[
-          { label: 'Preview', icon: Eye, onClick: (r) => notifyInfo('Preview', `Previewing ${String(r.docType)} for ${String(r.studentName)}`) },
+          { label: 'Preview', icon: Eye, onClick: (r) => window.open(`/uploads/documents/${String(r.id)}.pdf`, '_blank') },
           { label: 'Approve', icon: CheckCircle, onClick: (r) => notifySuccess('Approved', `${String(r.docType)} for ${String(r.studentName)} approved`) },
           { label: 'Download', icon: Download, onClick: (r) => notifySuccess('Downloaded', `${String(r.docType)} downloaded`) },
         ]}
@@ -201,7 +252,17 @@ function DocumentsView() {
 }
 
 /* ─── Interviews ─── */
+const scheduleFields: FormField[] = [
+  { name: 'studentName', label: 'Student Name', type: 'text', required: true, half: true },
+  { name: 'interviewDate', label: 'Date', type: 'date', required: true, half: true },
+  { name: 'time', label: 'Time', type: 'time', required: true, half: true },
+  { name: 'interviewer', label: 'Interviewer', type: 'text', required: true, half: true },
+  { name: 'notes', label: 'Notes', type: 'textarea' },
+];
+
 function InterviewsView() {
+  const [scheduleOpen, setScheduleOpen] = useState(false);
+
   const interviewData = [
     { id: 'INT-001', studentName: 'Noah Kim', grade: 'Grade 7', interviewDate: '2025-05-20', time: '10:00 AM', interviewer: 'Dr. Patricia Lee', status: 'Scheduled', notes: 'Academic assessment' },
     { id: 'INT-002', studentName: 'Ethan Brown', grade: 'Grade 8', interviewDate: '2025-05-22', time: '2:00 PM', interviewer: 'Mr. James', status: 'Scheduled', notes: 'Parent meeting' },
@@ -217,7 +278,7 @@ function InterviewsView() {
           <p className="text-sm text-muted-foreground/60">Schedule and track admission interviews</p>
         </div>
         <PermissionGate requires="admissions.write">
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8" onClick={() => notifyInfo('Schedule', 'Interview scheduling dialog coming soon')}>
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8" onClick={() => setScheduleOpen(true)}>
             <Calendar className="size-3.5 mr-1.5" /> Schedule Interview
           </Button>
         </PermissionGate>
@@ -236,12 +297,17 @@ function InterviewsView() {
         ]}
         searchPlaceholder="Search interviews..."
       />
+
+      <FormDialog open={scheduleOpen} onOpenChange={setScheduleOpen} title="Schedule Interview" mode="create" fields={scheduleFields} onSubmit={(data) => { notifySuccess('Scheduled', `Interview scheduled for ${String(data.studentName)}`); setScheduleOpen(false); }} submitLabel="Schedule" />
     </div>
   );
 }
 
 /* ─── Waitlist ─── */
 function WaitlistView() {
+  const updateStage = useUpdateApplicantStage();
+  const [removeTarget, setRemoveTarget] = useState<Record<string, unknown> | null>(null);
+
   const waitlistData = [
     { id: 'WL-001', studentName: 'Liam Patel', grade: 'Grade 9', position: 3, appliedDate: '2025-05-08', status: 'Active', guardian: 'Priya Patel' },
     { id: 'WL-002', studentName: 'Aiden Clarke', grade: 'Grade 3', position: 1, appliedDate: '2025-04-28', status: 'Active', guardian: 'Mary Clarke' },
@@ -266,10 +332,20 @@ function WaitlistView() {
         ]}
         actions={[
           { label: 'Offer Seat', icon: CheckCircle, onClick: (r) => notifySuccess('Seat Offered', `Seat offered to ${String(r.studentName)}`) },
-          { label: 'Remove', icon: MoreHorizontal, onClick: (r) => notifyWarning('Removed', `${String(r.studentName)} removed from waitlist`), variant: 'destructive' },
+          { label: 'Remove', icon: MoreHorizontal, onClick: (r) => setRemoveTarget(r), variant: 'destructive' },
         ]}
         searchPlaceholder="Search waitlist..."
       />
+
+      <ConfirmDialog open={!!removeTarget} onOpenChange={(o) => !o && setRemoveTarget(null)} title="Remove from Waitlist" description={`Remove ${String(removeTarget?.studentName)} from the waitlist? This cannot be undone.`} confirmLabel="Remove" variant="destructive" onConfirm={() => {
+        if (!removeTarget) return;
+        updateStage.mutate({ id: String(removeTarget.id), stage: 'removed' }, {
+          onSuccess: () => {
+            notifyWarning('Removed', `${String(removeTarget.studentName)} removed from waitlist`);
+            setRemoveTarget(null);
+          },
+        });
+      }} />
     </div>
   );
 }

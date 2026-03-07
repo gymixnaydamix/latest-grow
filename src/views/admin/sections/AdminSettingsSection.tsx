@@ -8,6 +8,15 @@ import {
   useRoles,
   useSaveSchoolProfile,
   useSaveFeeConfig,
+  useGradingScales,
+  useDeleteFeeType,
+  useTemplates,
+  useCreateTemplate,
+  useUpdateTemplate,
+  useDeleteTemplate,
+  useCreateGradingScale,
+  useCreateSchoolRole,
+  useUpdateSchoolRole,
 } from '@/hooks/api/use-school-ops';
 import {
   Building, BookOpen, GraduationCap, Shield,
@@ -24,7 +33,7 @@ import {
   type Column, type FormField as FormFieldDef, type DetailTab,
 } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
-import { notifySuccess, notifyInfo } from '@/lib/notify';
+import { notifySuccess } from '@/lib/notify';
 
 /* ---- Local types ---- */
 interface FeeType {
@@ -210,9 +219,14 @@ function AcademicConfigView() {
   );
 }
 
-/* ---- Grading Scales (reference data) ---- */
+/* ---- Grading Scales (API-wired) ---- */
 function GradingScalesView() {
-  const scales = [
+  const { schoolId } = useAuthStore();
+  const { data: scalesRes } = useGradingScales(schoolId);
+  const createScale = useCreateGradingScale(schoolId);
+  const [showForm, setShowForm] = useState(false);
+
+  const defaultScales = [
     { grade: 'A+', min: 95, max: 100, gpa: '4.0', desc: 'Outstanding' },
     { grade: 'A', min: 90, max: 94, gpa: '4.0', desc: 'Excellent' },
     { grade: 'B+', min: 85, max: 89, gpa: '3.5', desc: 'Very Good' },
@@ -222,6 +236,22 @@ function GradingScalesView() {
     { grade: 'D', min: 60, max: 69, gpa: '1.0', desc: 'Below Average' },
     { grade: 'F', min: 0, max: 59, gpa: '0.0', desc: 'Fail' },
   ];
+  const scales: typeof defaultScales = Array.isArray(scalesRes) ? scalesRes as typeof defaultScales : (scalesRes as any)?.items ?? defaultScales;
+
+  const scaleFields: FormFieldDef[] = [
+    { name: 'grade', label: 'Grade Letter', type: 'text', required: true },
+    { name: 'min', label: 'Min %', type: 'text', required: true },
+    { name: 'max', label: 'Max %', type: 'text', required: true },
+    { name: 'gpa', label: 'GPA Value', type: 'text', required: true },
+    { name: 'desc', label: 'Description', type: 'text' },
+  ];
+
+  const handleSaveScale = (data: Record<string, string>) => {
+    createScale.mutate({ grade: data.grade, min: Number(data.min), max: Number(data.max), gpa: data.gpa, desc: data.desc }, {
+      onSuccess: () => { notifySuccess('Scale Created', `Grade ${data.grade} added`); setShowForm(false); },
+    });
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -229,7 +259,7 @@ function GradingScalesView() {
           <h2 className="text-lg font-semibold text-foreground">Grading Scales</h2>
           <p className="text-sm text-muted-foreground/60">Configure grade boundaries and GPA mappings</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground" onClick={() => notifyInfo('New Scale', 'Grading scale editor would open')}><Plus className="size-3.5 mr-1.5" /> New Scale</Button>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground" onClick={() => setShowForm(true)}><Plus className="size-3.5 mr-1.5" /> New Scale</Button>
       </div>
       <Card className="border-border bg-card backdrop-blur-xl">
         <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground"><GraduationCap className="size-4 inline mr-2" />Default Grading Scale</CardTitle></CardHeader>
@@ -250,6 +280,7 @@ function GradingScalesView() {
           </div>
         </CardContent>
       </Card>
+      <FormDialog open={showForm} onOpenChange={setShowForm} title="New Grading Scale" fields={scaleFields} mode="create" onSubmit={handleSaveScale} />
     </div>
   );
 }
@@ -260,6 +291,7 @@ function FeeConfigView() {
   const { data: feeRes } = useFeeConfig(schoolId);
   const fees = Array.isArray(feeRes) ? feeRes : (feeRes as any)?.items ?? [];
   const saveFee = useSaveFeeConfig(schoolId);
+  const deleteFee = useDeleteFeeType(schoolId);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<FeeType | null>(null);
   const [detail, setDetail] = useState<FeeType | null>(null);
@@ -298,9 +330,9 @@ function FeeConfigView() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Delete fee type API not available yet');
-    setDeleteTarget(null);
-    setDetail(null);
+    deleteFee.mutate(deleteTarget.id, {
+      onSuccess: () => { notifySuccess('Fee Deleted', `${deleteTarget.name} removed`); setDeleteTarget(null); setDetail(null); },
+    });
   };
 
   const detailTabs: DetailTab[] | undefined = detail
@@ -345,24 +377,48 @@ function FeeConfigView() {
   );
 }
 
-/* ---- Roles & Permissions (local reference data, info-only) ---- */
+/* ---- Roles & Permissions (API-wired) ---- */
 function RolesView() {
   const { schoolId } = useAuthStore();
-  void useRoles(schoolId); // TODO: use roleRes when wiring the roles API
-  // const _staff: unknown[] = []; // TODO: wire API hook for staff list
+  const { data: rolesRes } = useRoles(schoolId);
+  const createRole = useCreateSchoolRole(schoolId);
+  const updateRole = useUpdateSchoolRole(schoolId);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing] = useState<{ id: string; role: string; users: number; perms: string; desc: string } | null>(null);
 
-  const roles = useMemo(() => {
-    return [
-      { role: 'Super Admin', users: 1, perms: 'Full Access', desc: 'Complete system control' },
-      { role: 'Principal', users: 1, perms: '48/52 permissions', desc: 'All operations except billing config' },
-      { role: 'Vice Principal', users: 2, perms: '40/52 permissions', desc: 'Academic and student management' },
-      { role: 'Head of Department', users: 6, perms: '25/52 permissions', desc: 'Department-level access' },
-      { role: 'Teacher', users: 35, perms: '12/52 permissions', desc: 'Class and grade management' },
-      { role: 'Accountant', users: 2, perms: '18/52 permissions', desc: 'Finance and billing' },
-      { role: 'Receptionist', users: 2, perms: '8/52 permissions', desc: 'Admissions and communication' },
-      { role: 'Transport Manager', users: 1, perms: '10/52 permissions', desc: 'Transport operations' },
-    ];
-  }, []);
+  const defaultRoles = [
+    { id: 'r1', role: 'Super Admin', users: 1, perms: 'Full Access', desc: 'Complete system control' },
+    { id: 'r2', role: 'Principal', users: 1, perms: '48/52 permissions', desc: 'All operations except billing config' },
+    { id: 'r3', role: 'Vice Principal', users: 2, perms: '40/52 permissions', desc: 'Academic and student management' },
+    { id: 'r4', role: 'Head of Department', users: 6, perms: '25/52 permissions', desc: 'Department-level access' },
+    { id: 'r5', role: 'Teacher', users: 35, perms: '12/52 permissions', desc: 'Class and grade management' },
+    { id: 'r6', role: 'Accountant', users: 2, perms: '18/52 permissions', desc: 'Finance and billing' },
+    { id: 'r7', role: 'Receptionist', users: 2, perms: '8/52 permissions', desc: 'Admissions and communication' },
+    { id: 'r8', role: 'Transport Manager', users: 1, perms: '10/52 permissions', desc: 'Transport operations' },
+  ];
+  const roles: typeof defaultRoles = useMemo(() => {
+    const apiRoles = Array.isArray(rolesRes) ? rolesRes : (rolesRes as any)?.items;
+    if (apiRoles?.length) return apiRoles.map((r: any) => ({ id: r.id, role: r.name ?? r.role, users: r.userCount ?? r.users ?? 0, perms: r.permissions ?? r.perms ?? '', desc: r.description ?? r.desc ?? '' }));
+    return defaultRoles;
+  }, [rolesRes]);
+
+  const roleFields: FormFieldDef[] = [
+    { name: 'role', label: 'Role Name', type: 'text', required: true },
+    { name: 'desc', label: 'Description', type: 'text' },
+    { name: 'perms', label: 'Permissions', type: 'text', placeholder: 'e.g. 12/52 permissions' },
+  ];
+
+  const handleSaveRole = (data: Record<string, string>) => {
+    if (editing) {
+      updateRole.mutate({ id: editing.id, name: data.role, description: data.desc, permissions: data.perms }, {
+        onSuccess: () => { notifySuccess('Role Updated', `${data.role} updated`); setShowForm(false); setEditing(null); },
+      });
+    } else {
+      createRole.mutate({ name: data.role, description: data.desc, permissions: data.perms }, {
+        onSuccess: () => { notifySuccess('Role Created', `${data.role} created`); setShowForm(false); setEditing(null); },
+      });
+    }
+  };
 
   return (
     <div className="space-y-4">
@@ -371,11 +427,11 @@ function RolesView() {
           <h2 className="text-lg font-semibold text-foreground">Roles & Permissions</h2>
           <p className="text-sm text-muted-foreground/60">Manage staff roles and access control</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground" onClick={() => notifyInfo('Create Role', 'Role configuration form would open')}><Plus className="size-3.5 mr-1.5" /> Create Role</Button>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground" onClick={() => { setEditing(null); setShowForm(true); }}><Plus className="size-3.5 mr-1.5" /> Create Role</Button>
       </div>
       <div className="space-y-2">
         {roles.map((r) => (
-          <Card key={r.role} className="border-border bg-card backdrop-blur-xl">
+          <Card key={r.id} className="border-border bg-card backdrop-blur-xl">
             <CardContent className="py-3 flex items-center justify-between">
               <div className="flex items-center gap-4">
                 <div className="p-2 rounded-lg bg-purple-500/10"><Shield className="size-4 text-purple-400" /></div>
@@ -389,20 +445,26 @@ function RolesView() {
                   <p className="text-xs text-muted-foreground/70">{r.perms}</p>
                   <p className="text-[10px] text-muted-foreground/30">{r.users} user{r.users > 1 ? 's' : ''}</p>
                 </div>
-                <Button variant="ghost" size="sm" className="text-muted-foreground/40 h-7" onClick={() => notifyInfo('Edit Role', `Editing ${r.role} permissions`)}><Edit className="size-3" /></Button>
+                <Button variant="ghost" size="sm" className="text-muted-foreground/40 h-7" onClick={() => { setEditing(r); setShowForm(true); }}><Edit className="size-3" /></Button>
               </div>
             </CardContent>
           </Card>
         ))}
       </div>
+      <FormDialog open={showForm} onOpenChange={setShowForm} title={editing ? 'Edit Role' : 'Create Role'} fields={roleFields} mode={editing ? 'edit' : 'create'} initialData={editing ? { role: editing.role, desc: editing.desc, perms: editing.perms } : undefined} onSubmit={handleSaveRole} />
     </div>
   );
 }
 
 /* ---- Document Templates ---- */
 function TemplatesSettingsView() {
-  const items: unknown[] = []; // TODO: wire API hook
-  const templates = items as Template[];
+  const { schoolId } = useAuthStore();
+  const { data: tplRes } = useTemplates(schoolId);
+  const createTpl = useCreateTemplate(schoolId);
+  const updateTpl = useUpdateTemplate(schoolId);
+  const deleteTpl = useDeleteTemplate(schoolId);
+  const tplItems = Array.isArray(tplRes) ? tplRes : (tplRes as any)?.items ?? [];
+  const templates = tplItems as Template[];
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<Template | null>(null);
   const [detail, setDetail] = useState<Template | null>(null);
@@ -416,17 +478,24 @@ function TemplatesSettingsView() {
     { name: 'body', label: 'Template Body', type: 'textarea' },
   ];
 
-  const handleSave = (_data: Record<string, string>) => {
-    notifyInfo('Not yet implemented', 'Template save API not available yet');
-    setShowForm(false);
-    setEditing(null);
+  const handleSave = (data: Record<string, string>) => {
+    const payload = { name: data.name, type: data.type || 'PDF', category: data.category || 'Certificate', status: data.status || 'Draft', body: data.body || '' };
+    if (editing) {
+      updateTpl.mutate({ id: editing.id, ...payload }, {
+        onSuccess: () => { notifySuccess('Template Updated', `${data.name} updated`); setShowForm(false); setEditing(null); },
+      });
+    } else {
+      createTpl.mutate(payload, {
+        onSuccess: () => { notifySuccess('Template Created', `${data.name} created`); setShowForm(false); setEditing(null); },
+      });
+    }
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Template delete API not available yet');
-    setDeleteTarget(null);
-    setDetail(null);
+    deleteTpl.mutate(deleteTarget.id, {
+      onSuccess: () => { notifySuccess('Template Deleted', `${deleteTarget.name} removed`); setDeleteTarget(null); setDetail(null); },
+    });
   };
 
   const detailTabs: DetailTab[] | undefined = detail
@@ -498,7 +567,7 @@ function BrandingView() {
         <Card className="border-border bg-card backdrop-blur-xl">
           <CardHeader className="pb-3"><CardTitle className="text-sm text-muted-foreground"><Palette className="size-4 inline mr-2" />School Logo</CardTitle></CardHeader>
           <CardContent className="space-y-3">
-            <div className="h-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-muted-foreground/30 transition-colors" onClick={() => notifyInfo('Upload', 'File picker would open here')}>
+            <div className="h-32 rounded-lg border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-muted-foreground/30 transition-colors" onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.accept = 'image/png,image/svg+xml'; input.onchange = (e) => { const file = (e.target as HTMLInputElement).files?.[0]; if (file) notifySuccess('Logo Selected', `${file.name} ready for upload`); }; input.click(); }}>
               <div className="text-center">
                 <Building className="size-8 text-muted-foreground/20 mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground/40">Drop logo here or click to upload</p>

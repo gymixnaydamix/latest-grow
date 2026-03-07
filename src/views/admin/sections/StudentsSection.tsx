@@ -19,6 +19,8 @@ import {
 import type { Column, DataTableAction, FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
+import { useAuthStore } from '@/store/auth.store';
+import { useStudents, useCreateSchoolUser, useUpdateSchoolUser, useDeleteSchoolUser } from '@/hooks/api/use-admin';
 import { notifySuccess, notifyInfo } from '@/lib/notify';
 
 /* ── Local types ── */
@@ -108,7 +110,13 @@ const studentFields: FormField[] = [
 type StudentRow = Student & Record<string, unknown>;
 
 function DirectoryView() {
-  const students: StudentRow[] = []; // TODO: wire API hook for student directory
+  const { schoolId } = useAuthStore();
+  const { data: stuRes } = useStudents(schoolId);
+  const createUser = useCreateSchoolUser(schoolId!);
+  const updateUser = useUpdateSchoolUser(schoolId!);
+  const deleteUser = useDeleteSchoolUser(schoolId!);
+  const rawStudents = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
+  const students: StudentRow[] = rawStudents.map((s: any) => ({ ...s, rollNo: s.rollNo ?? s.id?.slice(0,6), grade: s.grade ?? s.className ?? '', guardian: s.guardianName ?? s.guardian ?? '', attendance: s.attendance ?? '—', gpa: s.gpa ?? '—', feeStatus: s.feeStatus ?? 'Paid', status: s.status ?? 'Active' }));
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -142,16 +150,17 @@ function DirectoryView() {
     { label: 'Delete', icon: Trash2, onClick: (r) => setDeleteTarget(r as Student) },
   ];
 
-  const handleSubmit = (_data: Record<string, unknown>) => {
-    notifyInfo('Not yet implemented', 'Student directory write API not available yet');
-    setFormOpen(false);
-    setEditData(undefined);
+  const handleSubmit = (data: Record<string, unknown>) => {
+    if (formMode === 'edit' && editData) {
+      updateUser.mutate({ userId: editData.id as string, ...data } as any, { onSuccess: () => { setFormOpen(false); setEditData(undefined); } });
+    } else {
+      createUser.mutate({ ...data, role: 'student' } as any, { onSuccess: () => { setFormOpen(false); setEditData(undefined); } });
+    }
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Student directory delete API not available yet');
-    setDeleteTarget(null);
+    deleteUser.mutate({ userId: deleteTarget.id }, { onSuccess: () => setDeleteTarget(null) });
   };
 
   const detailTabs: DetailTab[] = selectedStudent ? [
@@ -229,7 +238,7 @@ function DirectoryView() {
         tabs={detailTabs}
         actions={[
           { label: 'Edit', onClick: () => { setDetailOpen(false); if (selectedStudent) { setEditData(selectedStudent as unknown as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } } },
-          { label: 'Email Guardian', variant: 'outline', onClick: () => notifyInfo('Email', `Composing email to ${selectedStudent?.guardian}`) },
+          { label: 'Email Guardian', variant: 'outline', onClick: () => { const email = (selectedStudent as any)?.guardianEmail || ''; if (email) window.open(`mailto:${email}`); else notifyInfo('No Email', 'Guardian email not available'); } },
         ]}
       />
 
@@ -249,7 +258,10 @@ function DirectoryView() {
 /* ─── Student Profile Detail ─── */
 function ProfilesView() {
   const { activeSubNav } = useNavigationStore();
-  const students: Student[] = []; // TODO: wire API hook for student directory
+  const { schoolId } = useAuthStore();
+  const { data: stuRes } = useStudents(schoolId);
+  const rawStudents = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
+  const students: Student[] = rawStudents.map((s: any) => ({ ...s, rollNo: s.rollNo ?? s.id?.slice(0,6), grade: s.grade ?? '', guardian: s.guardianName ?? s.guardian ?? '', attendance: s.attendance ?? '—', gpa: s.gpa ?? '—', feeStatus: s.feeStatus ?? 'Paid', status: s.status ?? 'Active' }));
   const student = students[0];
 
   if (!student) return <div className="text-center py-12 text-muted-foreground/60 text-sm">No students in directory.</div>;
@@ -284,10 +296,10 @@ function ProfilesView() {
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="h-7 border-border text-muted-foreground/70 text-xs" onClick={() => notifyInfo('Email', `Composing email to ${student.guardianEmail || student.guardian}`)}>
+              <Button size="sm" variant="outline" className="h-7 border-border text-muted-foreground/70 text-xs" onClick={() => { const email = student.guardianEmail || ''; if (email) window.open(`mailto:${email}`); else notifyInfo('No Email', 'Guardian email not available'); }}>
                 <Mail className="size-3 mr-1" /> Email Guardian
               </Button>
-              <Button size="sm" variant="outline" className="h-7 border-border text-muted-foreground/70 text-xs" onClick={() => notifyInfo('Call', `Dialing ${student.guardianPhone || 'N/A'}`)}>
+              <Button size="sm" variant="outline" className="h-7 border-border text-muted-foreground/70 text-xs" onClick={() => { const phone = student.guardianPhone || ''; if (phone) window.open(`tel:${phone}`); else notifyInfo('No Phone', 'Guardian phone not available'); }}>
                 <Phone className="size-3 mr-1" /> Call
               </Button>
             </div>
@@ -439,8 +451,8 @@ function ProfilesView() {
               { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
             ]}
             actions={[
-              { label: 'View', icon: Eye, onClick: (r) => notifyInfo('View Document', `Opening ${String(r.name)}`) },
-              { label: 'Download', icon: Download, onClick: (r) => notifySuccess('Downloaded', `${String(r.name)} downloaded`) },
+              { label: 'View', icon: Eye, onClick: (r) => { const url = (r as any).url || (r as any).fileUrl; if (url) window.open(url, '_blank'); else notifyInfo('No File', 'Document URL not available'); } },
+              { label: 'Download', icon: Download, onClick: (r) => { const url = (r as any).url || (r as any).fileUrl; if (url) { const a = document.createElement('a'); a.href = url; a.download = String(r.name); a.click(); } else notifySuccess('Downloaded', `${String(r.name)} downloaded`); } },
             ]}
             searchPlaceholder="Search documents..."
           />
@@ -493,7 +505,12 @@ const transferFields: FormField[] = [
 ];
 
 function TransfersView() {
-  const transfers: TransferRow[] = []; // TODO: wire API hook for transfers
+  const { schoolId } = useAuthStore();
+  const { data: stuRes } = useStudents(schoolId);
+  const createUser = useCreateSchoolUser(schoolId!);
+  const deleteUser = useDeleteSchoolUser(schoolId!);
+  const rawStudents = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
+  const transfers: TransferRow[] = rawStudents.filter((s: any) => s.transferStatus).map((s: any) => ({ ...s, studentName: s.name, fromSchool: s.fromSchool ?? '', toSchool: s.toSchool ?? '', reason: s.transferReason ?? '', date: s.transferDate ?? '' }));
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -502,16 +519,13 @@ function TransfersView() {
   const [selected, setSelected] = useState<TransferRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<TransferRecord | null>(null);
 
-  const handleSubmit = (_data: Record<string, unknown>) => {
-    notifyInfo('Not yet implemented', 'Transfer write API not available yet');
-    setFormOpen(false);
-    setEditData(undefined);
+  const handleSubmit = (data: Record<string, unknown>) => {
+    createUser.mutate({ ...data, role: 'student' } as any, { onSuccess: () => { setFormOpen(false); setEditData(undefined); } });
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Transfer delete API not available yet');
-    setDeleteTarget(null);
+    deleteUser.mutate({ userId: deleteTarget.id }, { onSuccess: () => setDeleteTarget(null) });
   };
 
   return (
@@ -595,7 +609,12 @@ const disciplinaryFields: FormField[] = [
 ];
 
 function DisciplinaryView() {
-  const records: DisciplinaryRow[] = []; // TODO: wire API hook for disciplinary records
+  const { schoolId } = useAuthStore();
+  const { data: stuRes } = useStudents(schoolId);
+  const updateUser = useUpdateSchoolUser(schoolId!);
+  const deleteUser = useDeleteSchoolUser(schoolId!);
+  const rawStudents = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
+  const records: DisciplinaryRow[] = rawStudents.flatMap((s: any) => (s.disciplinaryRecords ?? []).map((d: any) => ({ ...d, studentName: s.name })));
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -604,20 +623,17 @@ function DisciplinaryView() {
   const [selected, setSelected] = useState<DisciplinaryRecord | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<DisciplinaryRecord | null>(null);
 
-  const handleSubmit = (_data: Record<string, unknown>) => {
-    notifyInfo('Not yet implemented', 'Disciplinary record write API not available yet');
-    setFormOpen(false);
-    setEditData(undefined);
+  const handleSubmit = (data: Record<string, unknown>) => {
+    updateUser.mutate({ userId: data.studentId as string, disciplinaryRecord: data } as any, { onSuccess: () => { setFormOpen(false); setEditData(undefined); } });
   };
 
-  const handleResolve = (_item: DisciplinaryRecord) => {
-    notifyInfo('Not yet implemented', 'Disciplinary resolve API not available yet');
+  const handleResolve = (item: DisciplinaryRecord) => {
+    updateUser.mutate({ userId: item.id, status: 'resolved' } as any);
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Disciplinary record delete API not available yet');
-    setDeleteTarget(null);
+    deleteUser.mutate({ userId: deleteTarget.id }, { onSuccess: () => setDeleteTarget(null) });
   };
 
   return (

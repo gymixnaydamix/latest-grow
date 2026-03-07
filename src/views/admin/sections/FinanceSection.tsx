@@ -6,8 +6,12 @@ import { useAuthStore } from '@/store/auth.store';
 import {
   useOpsInvoices, usePayments, useFeeStructure,
   useDiscounts, useOverdueAccounts,
-  useGenerateInvoice,
+  useGenerateInvoice, useRecordPayment,
+  useUpdateInvoice,
+  useCreateFeeType, useUpdateFeeType, useDeleteFeeType,
+  useCreateDiscount, useUpdateDiscount, useDeleteDiscount,
 } from '@/hooks/api/use-school-ops';
+import { useUpdateInvoiceStatus } from '@/hooks/api/use-finance';
 import {
   CreditCard, DollarSign, Percent, AlertCircle,
   Plus, Eye, Edit, Send, Clock, TrendingUp,
@@ -23,7 +27,7 @@ import {
 import type { FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
-import { notifySuccess, notifyInfo } from '@/lib/notify';
+import { notifySuccess } from '@/lib/notify';
 
 /* ─── Local types (fields accessed in JSX) ─── */
 type Invoice = Record<string, unknown> & {
@@ -85,6 +89,19 @@ const discountFields: FormField[] = [
   { name: 'status', label: 'Status', type: 'select', options: [
     { label: 'Active', value: 'Active' }, { label: 'Inactive', value: 'Inactive' },
   ] },
+];
+
+const paymentFields: FormField[] = [
+  { name: 'invoiceRef', label: 'Invoice Reference', type: 'text', required: true, half: true },
+  { name: 'student', label: 'Student Name', type: 'text', required: true, half: true },
+  { name: 'amount', label: 'Amount', type: 'text', required: true, placeholder: '$500', half: true },
+  { name: 'method', label: 'Payment Method', type: 'select', required: true, options: [
+    { label: 'Bank Transfer', value: 'Bank Transfer' }, { label: 'Credit Card', value: 'Credit Card' },
+    { label: 'Cash', value: 'Cash' }, { label: 'Check', value: 'Check' },
+  ], half: true },
+  { name: 'reference', label: 'Transaction Reference', type: 'text', placeholder: 'TXN-XXXXX', half: true },
+  { name: 'receivedDate', label: 'Date Received', type: 'date', required: true, half: true },
+  { name: 'notes', label: 'Notes', type: 'textarea' },
 ];
 
 /* ── Finance Overview ── */
@@ -154,6 +171,9 @@ function InvoicesView() {
   const { data: invRes } = useOpsInvoices(schoolId);
   const invoices = (Array.isArray(invRes) ? invRes : ((invRes as any)?.items ?? [])) as InvoiceRow[];
   const generateInvoice = useGenerateInvoice(schoolId);
+  const updateInvoice = useUpdateInvoice(schoolId);
+  /* voidInvoice hook available via useVoidInvoice(schoolId) when needed */
+  const updateInvoiceStatus = useUpdateInvoiceStatus();
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -181,7 +201,10 @@ function InvoicesView() {
         onSuccess: () => notifySuccess('Invoice Created', `Invoice for ${payload.student}`),
       });
     } else if (editData) {
-      notifyInfo('Not yet implemented', 'Invoice update via API coming soon');
+      const id = String(editData.id || '');
+      updateInvoice.mutate({ id, ...data } as any, {
+        onSuccess: () => notifySuccess('Invoice Updated', `Invoice ${editData.invoiceNo || id} updated`),
+      });
     }
     setFormOpen(false);
     setEditData(undefined);
@@ -189,7 +212,10 @@ function InvoicesView() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', `Void invoice ${deleteTarget.invoiceNo} via API coming soon`);
+    updateInvoiceStatus.mutate(
+      { id: deleteTarget.id, status: 'Void' },
+      { onSuccess: () => notifySuccess('Invoice Voided', `Invoice ${deleteTarget.invoiceNo} has been voided`) },
+    );
     setDeleteTarget(null);
   };
 
@@ -261,6 +287,15 @@ function PaymentsView() {
   const { schoolId } = useAuthStore();
   const { data: payRes } = usePayments(schoolId);
   const payments = (Array.isArray(payRes) ? payRes : ((payRes as any)?.items ?? [])) as Array<Record<string, unknown>>;
+  const recordPayment = useRecordPayment(schoolId);
+  const [payFormOpen, setPayFormOpen] = useState(false);
+
+  const handleRecordPayment = (data: Record<string, unknown>) => {
+    recordPayment.mutate(data, {
+      onSuccess: () => notifySuccess('Payment Recorded', `Payment of ${data.amount} for ${data.student} recorded`),
+    });
+    setPayFormOpen(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -270,7 +305,7 @@ function PaymentsView() {
           <p className="text-sm text-muted-foreground/60">All received payments and reconciliation</p>
         </div>
         <PermissionGate requires="finance.write">
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8" onClick={() => notifyInfo('Record Payment', 'Payment recording dialog coming soon')}>
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8" onClick={() => setPayFormOpen(true)}>
             <Plus className="size-3.5 mr-1.5" /> Record Payment
           </Button>
         </PermissionGate>
@@ -289,6 +324,8 @@ function PaymentsView() {
         ]}
         searchPlaceholder="Search payments..."
       />
+
+      <FormDialog open={payFormOpen} onOpenChange={setPayFormOpen} title="Record Payment" mode="create" fields={paymentFields} onSubmit={handleRecordPayment} submitLabel="Record Payment" />
     </div>
   );
 }
@@ -300,6 +337,9 @@ function FeeStructureView() {
   const { schoolId } = useAuthStore();
   const { data: feeRes } = useFeeStructure(schoolId);
   const fees = (Array.isArray(feeRes) ? feeRes : ((feeRes as any)?.items ?? [])) as FeeRow[];
+  const createFeeType = useCreateFeeType(schoolId);
+  const updateFeeType = useUpdateFeeType(schoolId);
+  const deleteFeeType = useDeleteFeeType(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -308,9 +348,13 @@ function FeeStructureView() {
 
   const handleSubmit = (_data: Record<string, unknown>) => {
     if (formMode === 'create') {
-      notifyInfo('Not yet implemented', 'Fee type creation via API coming soon');
+      createFeeType.mutate(_data, {
+        onSuccess: () => notifySuccess('Fee Type Created', `Fee "${_data.name}" has been added`),
+      });
     } else if (editData) {
-      notifyInfo('Not yet implemented', 'Fee type update via API coming soon');
+      updateFeeType.mutate({ id: String(editData.id), ..._data } as any, {
+        onSuccess: () => notifySuccess('Fee Type Updated', `Fee "${_data.name || editData.name}" updated`),
+      });
     }
     setFormOpen(false);
     setEditData(undefined);
@@ -318,7 +362,9 @@ function FeeStructureView() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', `Remove fee ${deleteTarget.name} via API coming soon`);
+    deleteFeeType.mutate(deleteTarget.id, {
+      onSuccess: () => notifySuccess('Fee Type Removed', `Fee "${deleteTarget.name}" has been removed`),
+    });
     setDeleteTarget(null);
   };
 
@@ -366,6 +412,9 @@ function DiscountsView() {
   const { schoolId } = useAuthStore();
   const { data: discRes } = useDiscounts(schoolId);
   const discounts = (Array.isArray(discRes) ? discRes : ((discRes as any)?.items ?? [])) as DiscountRow[];
+  const createDiscount = useCreateDiscount(schoolId);
+  const updateDiscount = useUpdateDiscount(schoolId);
+  const deleteDiscount = useDeleteDiscount(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -374,9 +423,13 @@ function DiscountsView() {
 
   const handleSubmit = (_data: Record<string, unknown>) => {
     if (formMode === 'create') {
-      notifyInfo('Not yet implemented', 'Discount creation via API coming soon');
+      createDiscount.mutate(_data, {
+        onSuccess: () => notifySuccess('Discount Created', `Discount "${_data.name}" has been added`),
+      });
     } else if (editData) {
-      notifyInfo('Not yet implemented', 'Discount update via API coming soon');
+      updateDiscount.mutate({ id: String(editData.id), ..._data } as any, {
+        onSuccess: () => notifySuccess('Discount Updated', `Discount "${_data.name || editData.name}" updated`),
+      });
     }
     setFormOpen(false);
     setEditData(undefined);
@@ -384,7 +437,9 @@ function DiscountsView() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', `Remove discount ${deleteTarget.name} via API coming soon`);
+    deleteDiscount.mutate(deleteTarget.id, {
+      onSuccess: () => notifySuccess('Discount Removed', `Discount "${deleteTarget.name}" has been removed`),
+    });
     setDeleteTarget(null);
   };
 
@@ -431,6 +486,9 @@ function OverdueView() {
   const { schoolId } = useAuthStore();
   const { data: overdueRes } = useOverdueAccounts(schoolId);
   const overdueRaw = (Array.isArray(overdueRes) ? overdueRes : ((overdueRes as any)?.items ?? [])) as Invoice[];
+  const recordPayment = useRecordPayment(schoolId);
+  const [payFormOpen, setPayFormOpen] = useState(false);
+  const [payTarget, setPayTarget] = useState<Record<string, unknown> | null>(null);
 
   const overdue = overdueRaw.map(i => ({
     ...i,
@@ -462,10 +520,21 @@ function OverdueView() {
           { label: 'Send Reminder', icon: Send, onClick: (r) => {
             notifySuccess('Reminder Sent', `Payment reminder sent for ${String(r.invoiceNo)}`);
           }},
-          { label: 'Record Payment', icon: CreditCard, onClick: (r) => notifyInfo('Record Payment', `Recording payment for ${String(r.invoiceNo)}`) },
+          { label: 'Record Payment', icon: CreditCard, onClick: (r) => {
+            setPayTarget({ invoiceRef: String(r.invoiceNo), student: String(r.student), amount: String(r.balance) });
+            setPayFormOpen(true);
+          }},
         ]}
         searchPlaceholder="Search overdue..."
       />
+
+      <FormDialog open={payFormOpen} onOpenChange={setPayFormOpen} title="Record Payment" mode="create" fields={paymentFields} initialData={payTarget ?? undefined} onSubmit={(data) => {
+        recordPayment.mutate(data, {
+          onSuccess: () => notifySuccess('Payment Recorded', `Payment of ${data.amount} recorded for ${data.student}`),
+        });
+        setPayFormOpen(false);
+        setPayTarget(null);
+      }} submitLabel="Record Payment" />
     </div>
   );
 }

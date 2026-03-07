@@ -4,6 +4,8 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useLeaveRequests, useApproveLeave } from '@/hooks/api/use-school-ops';
+import { useStaff, useCreateSchoolUser, useUpdateSchoolUser, useDeleteSchoolUser } from '@/hooks/api/use-admin';
+import { useDepartments, useCreateDepartment } from '@/hooks/api/use-academic';
 import {
   Plus, Eye, Edit, Download, UserPlus, Trash2,
   Building2, CheckCircle, XCircle,
@@ -18,7 +20,7 @@ import {
 import type { FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
-import { notifySuccess, notifyInfo, notifyWarning } from '@/lib/notify';
+import { notifySuccess, notifyWarning } from '@/lib/notify';
 
 /* ── Local types ── */
 interface StaffMember {
@@ -78,7 +80,26 @@ const staffFields: FormField[] = [
 type StaffRow = StaffMember & Record<string, unknown>;
 
 function DirectoryView() {
-  const staff: StaffRow[] = []; // TODO: wire API hook for staff directory
+  const { schoolId } = useAuthStore();
+  const { data: staffRes } = useStaff(schoolId);
+  const createMutation = useCreateSchoolUser(schoolId!);
+  const updateMutation = useUpdateSchoolUser(schoolId!);
+  const deleteMutation = useDeleteSchoolUser(schoolId!);
+
+  const staff: StaffRow[] = ((staffRes as any)?.data ?? []).map((u: any) => ({
+    id: u.id,
+    name: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
+    department: u.department ?? '\u2014',
+    role: u.role ?? '\u2014',
+    status: u.isActive ? 'Active' : 'Inactive',
+    joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '\u2014',
+    email: u.email ?? '',
+    phone: u.phone ?? '\u2014',
+    leaveBalance: u.leaveBalance ?? '\u2014',
+    salary: u.salary ?? '\u2014',
+    emergencyContact: u.emergencyContact ?? '\u2014',
+    qualification: u.qualification ?? '\u2014',
+  }));
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -87,15 +108,30 @@ function DirectoryView() {
   const [selected, setSelected] = useState<StaffMember | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<StaffMember | null>(null);
 
-  const handleSubmit = (_data: Record<string, unknown>) => {
-    notifyInfo('Not yet implemented', 'Staff directory write API not available yet');
+  const handleSubmit = (data: Record<string, unknown>) => {
+    const [firstName, ...rest] = String(data.name ?? '').split(' ');
+    const lastName = rest.join(' ') || firstName;
+    if (formMode === 'create') {
+      createMutation.mutate(
+        { email: String(data.email ?? ''), firstName, lastName, role: 'TEACHER' },
+        { onSuccess: () => notifySuccess('Staff Created', `${data.name} added successfully`) },
+      );
+    } else {
+      updateMutation.mutate(
+        { userId: String(data.id ?? ''), email: String(data.email ?? ''), firstName, lastName },
+        { onSuccess: () => notifySuccess('Staff Updated', `${data.name} updated successfully`) },
+      );
+    }
     setFormOpen(false);
     setEditData(undefined);
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Staff directory delete API not available yet');
+    deleteMutation.mutate(
+      { userId: deleteTarget.id },
+      { onSuccess: () => notifySuccess('Staff Removed', `${deleteTarget.name} has been removed`) },
+    );
     setDeleteTarget(null);
   };
 
@@ -157,7 +193,7 @@ function DirectoryView() {
 
       <DetailPanel open={detailOpen} onOpenChange={setDetailOpen} title={selected?.name || ''} subtitle={`${selected?.department || ''} \u00b7 ${selected?.role || ''}`} status={selected?.status} tabs={detailTabs} actions={[
         { label: 'Edit', onClick: () => { setDetailOpen(false); if (selected) { setEditData(selected as unknown as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } } },
-        { label: 'Email', variant: 'outline', onClick: () => notifyInfo('Email', `Composing email to ${selected?.email}`) },
+        { label: 'Email', variant: 'outline', onClick: () => { if (selected?.email) window.open(`mailto:${selected.email}`); } },
       ]} />
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)} title="Remove Staff" description={`Are you sure you want to remove ${deleteTarget?.name}?`} confirmLabel="Remove" variant="destructive" onConfirm={handleDelete} />
@@ -251,18 +287,48 @@ function LeaveView() {
 }
 
 /* ── Departments ── */
+const deptFormFields: FormField[] = [
+  { name: 'name', label: 'Department Name', type: 'text', required: true },
+  { name: 'description', label: 'Description', type: 'text' },
+];
+
 function DepartmentsView() {
-  const staff: StaffMember[] = []; // TODO: wire API hook for staff directory
-  const departments = [
-    { id: 'DEP-001', name: 'Mathematics', head: 'Mrs. Chen', budget: '$42,000' },
-    { id: 'DEP-002', name: 'English', head: 'Mr. Davis', budget: '$38,000' },
-    { id: 'DEP-003', name: 'Science', head: 'Mrs. Nelson', budget: '$55,000' },
-    { id: 'DEP-004', name: 'History', head: 'Mr. Harris', budget: '$28,000' },
-    { id: 'DEP-005', name: 'Physical Ed', head: 'Mr. Okoro', budget: '$32,000' },
-    { id: 'DEP-006', name: 'Primary', head: 'Mrs. Adams', budget: '$45,000' },
-    { id: 'DEP-007', name: 'Admissions', head: 'Ms. Johnson', budget: '$25,000' },
-    { id: 'DEP-008', name: 'Administration', head: 'Ms. Cooper', budget: '$65,000' },
-  ];
+  const { schoolId } = useAuthStore();
+  const { data: staffRes } = useStaff(schoolId);
+  const { data: deptRes } = useDepartments(schoolId);
+  const createDeptMutation = useCreateDepartment(schoolId!);
+
+  const staff: StaffMember[] = ((staffRes as any)?.data ?? []).map((u: any) => ({
+    id: u.id,
+    name: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
+    department: u.department ?? '\u2014',
+    role: u.role ?? '\u2014',
+    status: u.isActive ? 'Active' : 'Inactive',
+    joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '\u2014',
+    email: u.email ?? '',
+    phone: u.phone ?? '\u2014',
+    leaveBalance: u.leaveBalance ?? '\u2014',
+    salary: u.salary ?? '\u2014',
+    emergencyContact: u.emergencyContact ?? '\u2014',
+    qualification: u.qualification ?? '\u2014',
+  }));
+
+  const departments = ((deptRes as any)?.data ?? []).map((d: any) => ({
+    id: d.id,
+    name: d.name,
+    head: d.head ? `${d.head.firstName ?? ''} ${d.head.lastName ?? ''}`.trim() : '\u2014',
+    budget: '\u2014',
+  }));
+
+  const [deptFormOpen, setDeptFormOpen] = useState(false);
+
+  const handleCreateDept = (data: Record<string, unknown>) => {
+    createDeptMutation.mutate(
+      { name: String(data.name ?? ''), description: String(data.description ?? '') },
+      { onSuccess: () => notifySuccess('Department Created', `${data.name} created successfully`) },
+    );
+    setDeptFormOpen(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -272,14 +338,14 @@ function DepartmentsView() {
           <p className="text-sm text-muted-foreground/60">{departments.length} departments configured</p>
         </div>
         <PermissionGate requires="staff.write">
-          <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8" onClick={() => notifyInfo('Add Department', 'Department creation coming soon')}>
+          <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8" onClick={() => setDeptFormOpen(true)}>
             <Plus className="size-3.5 mr-1.5" /> Add Department
           </Button>
         </PermissionGate>
       </div>
 
       <div className="grid gap-3 lg:grid-cols-2">
-        {departments.map(d => {
+        {departments.map((d: any) => {
           const memberCount = staff.filter(s => s.department === d.name).length;
           return (
             <Card key={d.id} className="border-border bg-card backdrop-blur-xl hover:bg-accent transition-colors">
@@ -310,13 +376,30 @@ function DepartmentsView() {
           );
         })}
       </div>
+
+      <FormDialog open={deptFormOpen} onOpenChange={setDeptFormOpen} title="Add Department" mode="create" fields={deptFormFields} onSubmit={handleCreateDept} submitLabel="Create Department" />
     </div>
   );
 }
 
 /* ── Payroll ── */
 function PayrollView() {
-  const staff: StaffMember[] = []; // TODO: wire API hook for staff directory
+  const { schoolId } = useAuthStore();
+  const { data: staffRes } = useStaff(schoolId);
+  const staff: StaffMember[] = ((staffRes as any)?.data ?? []).map((u: any) => ({
+    id: u.id,
+    name: `${u.firstName ?? ''} ${u.lastName ?? ''}`.trim(),
+    department: u.department ?? '\u2014',
+    role: u.role ?? '\u2014',
+    status: u.isActive ? 'Active' : 'Inactive',
+    joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : '\u2014',
+    email: u.email ?? '',
+    phone: u.phone ?? '\u2014',
+    leaveBalance: u.leaveBalance ?? '\u2014',
+    salary: u.salary ?? '\u2014',
+    emergencyContact: u.emergencyContact ?? '\u2014',
+    qualification: u.qualification ?? '\u2014',
+  }));
   const payroll = staff.filter(s => s.salary).map((s, i) => ({
     id: `PR-${String(i + 1).padStart(3, '0')}`,
     name: s.name,
@@ -433,7 +516,7 @@ function StaffDocumentsView() {
           { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
         ]}
         actions={[
-          { label: 'View', icon: Eye, onClick: (r) => notifyInfo('View Document', `Opening ${String(r.docType)}`) },
+          { label: 'View', icon: Eye, onClick: (r) => { const url = String((r as any).fileUrl ?? (r as any).url ?? ''); if (url) window.open(url, '_blank'); else notifyWarning('No File', `No file URL available for ${String(r.docType)}`); } },
           { label: 'Download', icon: Download, onClick: (r) => notifySuccess('Downloaded', `${String(r.docType)} downloaded`) },
         ]}
         searchPlaceholder="Search documents..."

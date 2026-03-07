@@ -10,7 +10,11 @@ import {
   useAttendanceCorrections,
   useOpsMarkAttendance,
   useApproveCorrection,
+  useDeleteAttendanceRecord,
+  useDeleteCorrection,
+  useExportAttendance,
 } from '@/hooks/api/use-school-ops';
+import { useStudents, useStaff } from '@/hooks/api/use-admin';
 import {
   Users, CheckCircle, XCircle, Clock, AlertCircle,
   Eye, Download, Plus, FileText, Trash2,
@@ -24,7 +28,7 @@ import {
   DetailPanel, DetailFields, type DetailTab,
 } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
-import { notifySuccess, notifyInfo, notifyWarning } from '@/lib/notify';
+import { notifySuccess, notifyWarning } from '@/lib/notify';
 
 /* ─── Local types ─── */
 type AttendanceRecord = Record<string, unknown> & {
@@ -44,8 +48,10 @@ function OverviewView() {
   const records: AttendanceRecord[] = Array.isArray(overviewRes) ? overviewRes : (overviewRes as any)?.items ?? [];
   const { data: corrRes } = useAttendanceCorrections(schoolId);
   const corrections: AttendanceCorrection[] = Array.isArray(corrRes) ? corrRes : (corrRes as any)?.items ?? [];
-  const students: unknown[] = []; // TODO: wire useSchoolStudents
-  const staff: Record<string, unknown>[] = []; // TODO: wire useSchoolStaff
+  const { data: studentRes } = useStudents(schoolId);
+  const students: unknown[] = Array.isArray(studentRes) ? studentRes : (studentRes as any)?.items ?? [];
+  const { data: staffRes } = useStaff(schoolId);
+  const staff: Record<string, unknown>[] = Array.isArray(staffRes) ? staffRes : (staffRes as any)?.items ?? [];
 
   const today = new Date().toISOString().split('T')[0];
   const todayRecs = records.filter(r => r.date === today);
@@ -162,6 +168,8 @@ function DailyView() {
   const { data: dailyRes } = useAttendanceDaily(schoolId, today);
   const records: AttendanceRecord[] = Array.isArray(dailyRes) ? dailyRes : (dailyRes as any)?.items ?? [];
   const markAttendance = useOpsMarkAttendance(schoolId);
+  const deleteRecord = useDeleteAttendanceRecord(schoolId);
+  const exportAttendance = useExportAttendance(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<AttendanceRecord | null>(null);
@@ -218,8 +226,14 @@ function DailyView() {
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8"
-            onClick={() => notifyInfo('Export', 'Exporting attendance records...')}>
-            <Download className="size-3.5 mr-1" /> Export
+            disabled={exportAttendance.isPending}
+            onClick={() => {
+              exportAttendance.mutate({}, {
+                onSuccess: () => notifySuccess('Export Complete', 'Attendance CSV downloaded.'),
+                onError: () => notifyWarning('Export Failed', 'Could not export attendance data.'),
+              });
+            }}>
+            <Download className="size-3.5 mr-1" /> {exportAttendance.isPending ? 'Exporting…' : 'Export'}
           </Button>
           <Button size="sm" className="bg-blue-600 hover:bg-blue-500 h-8"
             onClick={() => { setEditing(null); setFormOpen(true); }}>
@@ -276,9 +290,11 @@ function DailyView() {
         variant="destructive"
         onConfirm={() => {
           if (deleteTarget) {
-            // TODO: wire useDeleteAttendance hook when available
-            notifyWarning('Not Available', 'Delete not yet wired to API');
-            setDeleteTarget(null);
+            deleteRecord.mutate(deleteTarget.id, {
+              onSuccess: () => notifySuccess('Deleted', `Attendance record for ${deleteTarget.studentName} removed.`),
+              onError: () => notifyWarning('Error', 'Failed to delete the attendance record.'),
+              onSettled: () => setDeleteTarget(null),
+            });
           }
         }}
       />
@@ -291,6 +307,40 @@ function ExceptionsView() {
   const { schoolId } = useAuthStore();
   const { data: excRes } = useAttendanceExceptions(schoolId);
   const exceptions: Record<string, unknown>[] = Array.isArray(excRes) ? excRes : (excRes as any)?.items ?? [];
+  const { data: overviewRes } = useAttendanceOverview(schoolId);
+  const allRecords: AttendanceRecord[] = Array.isArray(overviewRes) ? overviewRes : (overviewRes as any)?.items ?? [];
+  const [detail, setDetail] = useState<Record<string, unknown> | null>(null);
+
+  /* Build history tab from all attendance records for the selected student */
+  const historyRecords = useMemo(() => {
+    if (!detail) return [];
+    return allRecords.filter(r => r.studentName === detail.student || r.studentId === detail.studentId);
+  }, [detail, allRecords]);
+
+  const detailTabs: DetailTab[] = detail ? [
+    { id: 'info', label: 'Exception Details', content: (
+      <DetailFields fields={[
+        { label: 'Student', value: String(detail.student ?? '') },
+        { label: 'Grade', value: String(detail.grade ?? '') },
+        { label: 'Type', value: String(detail.type ?? '') },
+        { label: 'Occurrences', value: String(detail.count ?? '') },
+        { label: 'Status', value: String(detail.status ?? '') },
+      ]} />
+    ) },
+    { id: 'history', label: 'Attendance History', content: (
+      <div className="space-y-2">
+        {historyRecords.length === 0 ? (
+          <p className="text-xs text-muted-foreground/60 text-center py-4">No attendance records found for this student.</p>
+        ) : historyRecords.map(r => (
+          <div key={r.id} className="flex items-center justify-between py-1.5 border-b border-border/40 last:border-0">
+            <span className="text-xs text-muted-foreground/70">{r.date}</span>
+            <StatusBadge status={r.status} />
+            <span className="text-xs text-muted-foreground/50 max-w-32 truncate">{r.note || '—'}</span>
+          </div>
+        ))}
+      </div>
+    ) },
+  ] : [];
 
   return (
     <div className="space-y-4">
@@ -320,11 +370,19 @@ function ExceptionsView() {
           ]}
           actions={[
             { label: 'Contact Parent', icon: Users, onClick: r => notifySuccess('Contacting Parent', `Initiating contact for ${String(r.student)}`) },
-            { label: 'View History', icon: Eye, onClick: r => notifyInfo('History', `Opening history for ${String(r.student)}`) },
+            { label: 'View History', icon: Eye, onClick: r => setDetail(r) },
           ]}
           searchPlaceholder="Search exceptions..."
         />
       )}
+
+      <DetailPanel
+        open={!!detail}
+        onOpenChange={() => setDetail(null)}
+        title={String(detail?.student ?? '')}
+        subtitle={`${detail?.grade ?? ''} — ${detail?.type ?? ''} (${detail?.count ?? 0} occurrences)`}
+        tabs={detailTabs}
+      />
     </div>
   );
 }
@@ -336,6 +394,7 @@ function CorrectionsView() {
   const corrections: AttendanceCorrection[] = Array.isArray(corrRes) ? corrRes : (corrRes as any)?.items ?? [];
   const approveCorrectionMut = useApproveCorrection(schoolId);
   const markAttendance = useOpsMarkAttendance(schoolId);
+  const deleteCorrectionMut = useDeleteCorrection(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<AttendanceCorrection | null>(null);
@@ -465,9 +524,11 @@ function CorrectionsView() {
         variant="destructive"
         onConfirm={() => {
           if (deleteTarget) {
-            // TODO: wire useDeleteCorrection hook when available
-            notifyWarning('Not Available', 'Delete not yet wired to API');
-            setDeleteTarget(null);
+            deleteCorrectionMut.mutate(deleteTarget.id, {
+              onSuccess: () => notifySuccess('Deleted', `Correction for ${deleteTarget.student} removed.`),
+              onError: () => notifyWarning('Error', 'Failed to delete the correction.'),
+              onSettled: () => setDeleteTarget(null),
+            });
           }
         }}
       />
@@ -477,7 +538,9 @@ function CorrectionsView() {
 
 /* ═══════════════ Staff Attendance ═══════════════ */
 function StaffAttendanceView() {
-  const staff: Record<string, unknown>[] = []; // TODO: wire useSchoolStaff
+  const { schoolId } = useAuthStore();
+  const { data: staffRes } = useStaff(schoolId);
+  const staff: Record<string, unknown>[] = Array.isArray(staffRes) ? staffRes : (staffRes as any)?.items ?? [];
 
   const staffRows: Record<string, unknown>[] = staff.map(s => ({
     id: s.id,

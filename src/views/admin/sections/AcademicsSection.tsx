@@ -4,10 +4,22 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
 import {
+  useAcademicYears,
   useClasses,
   useSubjects,
+  useTeacherAssignments,
   useCreateClass,
   useUpdateClass,
+  useDeleteClass,
+  useCreateSubject,
+  useUpdateSubject,
+  useDeleteSubject,
+  useCreateAcademicYear,
+  usePromotionRules,
+  useCreatePromotionRule,
+  useUpdatePromotionRule,
+  useCreateTeacherAssignment,
+  useUpdateTeacherAssignment,
 } from '@/hooks/api/use-school-ops';
 import {
   Calendar, Plus, Edit, Eye, Trash2,
@@ -21,7 +33,7 @@ import {
 import type { FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
-import { notifySuccess, notifyInfo } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 
 /* ─── Local types ─── */
 interface AcademicClass {
@@ -74,13 +86,51 @@ const subjectFields: FormField[] = [
   { name: 'classes', label: 'Applicable Grades', type: 'text', placeholder: 'e.g. Grade 9-12' },
 ];
 
+/* ─── Academic Year form fields ─── */
+const academicYearFields: FormField[] = [
+  { name: 'name', label: 'Year Name', type: 'text', required: true, placeholder: 'e.g. 2025-2026', half: true },
+  { name: 'startDate', label: 'Start Date', type: 'date', required: true, half: true },
+  { name: 'endDate', label: 'End Date', type: 'date', required: true, half: true },
+  { name: 'terms', label: 'Number of Terms', type: 'number', required: true, half: true },
+  { name: 'status', label: 'Status', type: 'select', required: true, options: [
+    { label: 'Planning', value: 'Planning' }, { label: 'Active', value: 'Active' }, { label: 'Closed', value: 'Closed' },
+  ], half: true },
+];
+
+/* ─── Teacher Assignment form fields ─── */
+const teacherAssignmentFields: FormField[] = [
+  { name: 'teacher', label: 'Teacher', type: 'text', required: true, half: true },
+  { name: 'subject', label: 'Subject', type: 'text', required: true, half: true },
+  { name: 'classes', label: 'Classes Assigned', type: 'text', required: true, placeholder: 'e.g. Grade 5A, Grade 6B' },
+  { name: 'periodsPerWeek', label: 'Periods/Week', type: 'number', required: true, half: true },
+];
+
+/* ─── Promotion Rule form fields ─── */
+const promotionRuleFields: FormField[] = [
+  { name: 'fromGrade', label: 'From Grade', type: 'text', required: true, half: true },
+  { name: 'toGrade', label: 'To Grade', type: 'text', required: true, half: true },
+  { name: 'minAttendance', label: 'Min Attendance %', type: 'text', required: true, placeholder: 'e.g. 75%', half: true },
+  { name: 'minGPA', label: 'Min GPA', type: 'text', required: true, placeholder: 'e.g. 2.0', half: true },
+  { name: 'passingSubjects', label: 'Passing Subjects', type: 'text', required: true, placeholder: 'e.g. 5/7', half: true },
+];
+
 /* ─── Academic Years ─── */
 function AcademicYearsView() {
-  const years = [
-    { id: 'AY-2025', name: '2024-2025', startDate: '2024-09-01', endDate: '2025-06-30', status: 'Active', terms: 3, students: 510, staff: 45 },
-    { id: 'AY-2026', name: '2025-2026', startDate: '2025-09-01', endDate: '2026-06-30', status: 'Planning', terms: 3, students: 0, staff: 0 },
-    { id: 'AY-2024', name: '2023-2024', startDate: '2023-09-01', endDate: '2024-06-30', status: 'Closed', terms: 3, students: 495, staff: 42 },
-  ] as Array<Record<string, unknown>>;
+  const { schoolId } = useAuthStore();
+  const { navigate } = useNavigationStore();
+  const { data: yearRes } = useAcademicYears(schoolId);
+  const years = Array.isArray(yearRes) ? yearRes : (yearRes as any)?.items ?? [];
+  const createYear = useCreateAcademicYear(schoolId);
+
+  const [formOpen, setFormOpen] = useState(false);
+
+  const handleYearSubmit = (data: Record<string, unknown>) => {
+    createYear.mutate(data, {
+      onSuccess: () => notifySuccess('Year Created', `${String(data.name)} added`),
+      onError: () => notifyError('Error', 'Failed to create academic year'),
+    });
+    setFormOpen(false);
+  };
 
   return (
     <div className="space-y-4">
@@ -90,14 +140,14 @@ function AcademicYearsView() {
           <p className="text-sm text-muted-foreground/60">Manage academic year cycles and terms</p>
         </div>
         <PermissionGate requires="academics.write">
-          <Button size="sm" className="h-8" onClick={() => notifyInfo('New Year', 'Academic year wizard coming soon')}>
+          <Button size="sm" className="h-8" onClick={() => setFormOpen(true)}>
             <Plus className="size-3.5 mr-1.5" /> New Academic Year
           </Button>
         </PermissionGate>
       </div>
 
       <div className="space-y-3">
-        {years.map(yr => (
+        {years.map((yr: Record<string, unknown>) => (
           <Card key={yr.id as string} className={`border-border bg-card backdrop-blur-xl ${yr.status === 'Active' ? 'border-l-2 border-l-emerald-500' : ''}`}>
             <CardContent className="pt-4">
               <div className="flex flex-wrap items-start justify-between gap-3">
@@ -122,7 +172,7 @@ function AcademicYearsView() {
                     <p className="text-lg font-bold text-muted-foreground">{yr.staff as number}</p>
                     <p className="text-xs text-muted-foreground/60">Staff</p>
                   </div>
-                  <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => notifyInfo('Manage Year', `Opening ${yr.name as string}`)}>
+                  <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => navigate('academics', `acad_year_${yr.id as string}`)}>
                     <Settings className="size-3.5 mr-1" /> Manage
                   </Button>
                 </div>
@@ -131,6 +181,8 @@ function AcademicYearsView() {
           </Card>
         ))}
       </div>
+
+      <FormDialog open={formOpen} onOpenChange={setFormOpen} title="New Academic Year" mode="create" fields={academicYearFields} onSubmit={handleYearSubmit} submitLabel="Create Year" />
     </div>
   );
 }
@@ -144,6 +196,7 @@ function ClassesView() {
   const classes = Array.isArray(classRes) ? classRes : (classRes as any)?.items ?? [];
   const createClass = useCreateClass(schoolId);
   const updateClass = useUpdateClass(schoolId);
+  const deleteClass = useDeleteClass(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -179,7 +232,10 @@ function ClassesView() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Delete class API not available yet');
+    deleteClass.mutate(deleteTarget.id, {
+      onSuccess: () => notifySuccess('Removed', `${deleteTarget.name} has been deleted`),
+      onError: () => notifyError('Error', 'Failed to delete class'),
+    });
     setDeleteTarget(null);
   };
 
@@ -260,17 +316,27 @@ function SubjectsView() {
   const { schoolId } = useAuthStore();
   const { data: subjectRes } = useSubjects(schoolId);
   const subjects = Array.isArray(subjectRes) ? subjectRes : (subjectRes as any)?.items ?? [];
+  const createSubject = useCreateSubject(schoolId);
+  const updateSubject = useUpdateSubject(schoolId);
+  const deleteSubject = useDeleteSubject(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
   const [editData, setEditData] = useState<Record<string, unknown> | undefined>();
   const [deleteTarget, setDeleteTarget] = useState<Subject | null>(null);
 
-  const handleSubmit = (_data: Record<string, unknown>) => {
+  const handleSubmit = (data: Record<string, unknown>) => {
     if (formMode === 'create') {
-      notifyInfo('Not yet implemented', 'Create subject API not available yet');
+      createSubject.mutate(data, {
+        onSuccess: () => notifySuccess('Subject Added', `${String(data.name)} created`),
+        onError: () => notifyError('Error', 'Failed to create subject'),
+      });
     } else if (editData) {
-      notifyInfo('Not yet implemented', 'Update subject API not available yet');
+      const id = String(editData.id);
+      updateSubject.mutate({ id, ...data }, {
+        onSuccess: () => notifySuccess('Subject Updated', 'Subject details saved'),
+        onError: () => notifyError('Error', 'Failed to update subject'),
+      });
     }
     setFormOpen(false);
     setEditData(undefined);
@@ -278,7 +344,10 @@ function SubjectsView() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Delete subject API not available yet');
+    deleteSubject.mutate(deleteTarget.id, {
+      onSuccess: () => notifySuccess('Removed', `${deleteTarget.name} has been deleted`),
+      onError: () => notifyError('Error', 'Failed to delete subject'),
+    });
     setDeleteTarget(null);
   };
 
@@ -323,28 +392,51 @@ function SubjectsView() {
 /* ─── Teacher Assignment ─── */
 function TeacherAssignmentView() {
   const { schoolId } = useAuthStore();
-  const { data: subjectRes } = useSubjects(schoolId);
-  const subjects = Array.isArray(subjectRes) ? subjectRes : (subjectRes as any)?.items ?? [];
-  const staff: unknown[] = []; // TODO: wire API hook for staff list
+  const { navigate } = useNavigationStore();
+  const { data: assignmentRes } = useTeacherAssignments(schoolId);
+  const rawAssignments = Array.isArray(assignmentRes) ? assignmentRes : (assignmentRes as any)?.items ?? [];
+  const createAssignment = useCreateTeacherAssignment(schoolId);
+  const updateAssignment = useUpdateTeacherAssignment(schoolId);
 
-  const assignments = subjects.map((sub: any, i: number) => ({
-    id: `TA-${String(i + 1).padStart(3, '0')}`,
-    teacher: sub.teacher,
-    subject: sub.name,
-    classes: sub.classes,
-    periodsPerWeek: sub.periods,
-    status: 'Active',
+  const assignments = rawAssignments.map((a: any, i: number) => ({
+    id: a.id || `TA-${String(i + 1).padStart(3, '0')}`,
+    teacher: a.teacher || a.teacherName || '',
+    subject: a.subject || a.subjectName || '',
+    classes: a.classes || '',
+    periodsPerWeek: a.periodsPerWeek || a.periods || 0,
+    status: a.status || 'Active',
   })) as Array<Record<string, unknown>>;
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [editData, setEditData] = useState<Record<string, unknown> | undefined>();
+
+  const handleSubmit = (data: Record<string, unknown>) => {
+    if (formMode === 'create') {
+      createAssignment.mutate(data, {
+        onSuccess: () => notifySuccess('Assigned', `${String(data.teacher)} assigned to ${String(data.subject)}`),
+        onError: () => notifyError('Error', 'Failed to assign teacher'),
+      });
+    } else if (editData) {
+      const id = String(editData.id);
+      updateAssignment.mutate({ id, ...data }, {
+        onSuccess: () => notifySuccess('Updated', 'Assignment updated'),
+        onError: () => notifyError('Error', 'Failed to update assignment'),
+      });
+    }
+    setFormOpen(false);
+    setEditData(undefined);
+  };
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Teacher-Subject Assignment</h2>
-          <p className="text-sm text-muted-foreground/60">{assignments.length} assignments &middot; {staff.length} staff members</p>
+          <p className="text-sm text-muted-foreground/60">{assignments.length} assignments</p>
         </div>
         <PermissionGate requires="academics.write">
-          <Button size="sm" className="h-8" onClick={() => notifyInfo('Assign Teacher', 'Teacher assignment dialog coming soon')}>
+          <Button size="sm" className="h-8" onClick={() => { setFormMode('create'); setEditData(undefined); setFormOpen(true); }}>
             <Plus className="size-3.5 mr-1.5" /> Assign Teacher
           </Button>
         </PermissionGate>
@@ -359,11 +451,13 @@ function TeacherAssignmentView() {
           { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
         ]}
         actions={[
-          { label: 'Edit Assignment', icon: Edit, onClick: (r) => notifyInfo('Edit', `Editing assignment for ${String(r.teacher)}`) },
-          { label: 'View Schedule', icon: Calendar, onClick: (r) => notifyInfo('Schedule', `Opening schedule for ${String(r.teacher)}`) },
+          { label: 'Edit Assignment', icon: Edit, onClick: (r) => { setEditData(r as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } },
+          { label: 'View Schedule', icon: Calendar, onClick: () => navigate('academics', 'acad_timetable') },
         ]}
         searchPlaceholder="Search assignments..."
       />
+
+      <FormDialog open={formOpen} onOpenChange={setFormOpen} title={formMode === 'create' ? 'Assign Teacher' : 'Edit Assignment'} mode={formMode} fields={teacherAssignmentFields} initialData={editData} onSubmit={handleSubmit} submitLabel={formMode === 'create' ? 'Assign' : 'Save Changes'} />
     </div>
   );
 }
@@ -454,13 +548,32 @@ function TimetableView() {
 
 /* ─── Promotion Rules ─── */
 function PromotionView() {
-  const rules = [
-    { id: 'PR-001', fromGrade: 'Grade 1', toGrade: 'Grade 2', minAttendance: '75%', minGPA: '1.5', passingSubjects: '4/6', status: 'Active' },
-    { id: 'PR-002', fromGrade: 'Grade 5', toGrade: 'Grade 6', minAttendance: '75%', minGPA: '2.0', passingSubjects: '5/7', status: 'Active' },
-    { id: 'PR-003', fromGrade: 'Grade 8', toGrade: 'Grade 9', minAttendance: '80%', minGPA: '2.0', passingSubjects: '6/8', status: 'Active' },
-    { id: 'PR-004', fromGrade: 'Grade 10', toGrade: 'Grade 11', minAttendance: '80%', minGPA: '2.5', passingSubjects: '7/8', status: 'Active' },
-    { id: 'PR-005', fromGrade: 'Grade 12', toGrade: 'Graduation', minAttendance: '85%', minGPA: '2.5', passingSubjects: '8/8', status: 'Active' },
-  ] as Array<Record<string, unknown>>;
+  const { schoolId } = useAuthStore();
+  const { data: ruleRes } = usePromotionRules(schoolId);
+  const rules = Array.isArray(ruleRes) ? ruleRes : (ruleRes as any)?.items ?? [];
+  const createRule = useCreatePromotionRule(schoolId);
+  const updateRule = useUpdatePromotionRule(schoolId);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
+  const [editData, setEditData] = useState<Record<string, unknown> | undefined>();
+
+  const handleSubmit = (data: Record<string, unknown>) => {
+    if (formMode === 'create') {
+      createRule.mutate({ ...data, status: 'Active' }, {
+        onSuccess: () => notifySuccess('Rule Added', `${String(data.fromGrade)} → ${String(data.toGrade)} rule created`),
+        onError: () => notifyError('Error', 'Failed to create promotion rule'),
+      });
+    } else if (editData) {
+      const id = String(editData.id);
+      updateRule.mutate({ id, ...data }, {
+        onSuccess: () => notifySuccess('Rule Updated', 'Promotion rule saved'),
+        onError: () => notifyError('Error', 'Failed to update promotion rule'),
+      });
+    }
+    setFormOpen(false);
+    setEditData(undefined);
+  };
 
   return (
     <div className="space-y-4">
@@ -470,7 +583,7 @@ function PromotionView() {
           <p className="text-sm text-muted-foreground/60">Define grade promotion criteria and policies</p>
         </div>
         <PermissionGate requires="academics.write">
-          <Button size="sm" className="h-8" onClick={() => notifyInfo('Add Rule', 'Promotion rule editor coming soon')}>
+          <Button size="sm" className="h-8" onClick={() => { setFormMode('create'); setEditData(undefined); setFormOpen(true); }}>
             <Plus className="size-3.5 mr-1.5" /> Add Rule
           </Button>
         </PermissionGate>
@@ -486,10 +599,12 @@ function PromotionView() {
           { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
         ]}
         actions={[
-          { label: 'Edit Rule', icon: Edit, onClick: (r) => notifyInfo('Edit Rule', `Editing promotion rule ${String(r.id)}`) },
+          { label: 'Edit Rule', icon: Edit, onClick: (r) => { setEditData(r as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } },
         ]}
         searchPlaceholder="Search rules..."
       />
+
+      <FormDialog open={formOpen} onOpenChange={setFormOpen} title={formMode === 'create' ? 'Add Promotion Rule' : 'Edit Promotion Rule'} mode={formMode} fields={promotionRuleFields} initialData={editData} onSubmit={handleSubmit} submitLabel={formMode === 'create' ? 'Add Rule' : 'Save Changes'} />
     </div>
   );
 }

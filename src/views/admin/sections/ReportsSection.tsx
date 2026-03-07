@@ -3,6 +3,11 @@ import { useMemo } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
+import { useApplicants, useStudents, useStaff } from '@/hooks/api/use-admin';
+import {
+  useOpsInvoices, useFeeStructure, useAttendanceOverview,
+  useExamSchedule, useSubjects, useComplianceTasks, useOpsAuditLog,
+} from '@/hooks/api/use-school-ops';
 import {
   BarChart3, TrendingUp, Users, DollarSign, Clock,
   BookOpen, Shield, Download, FileText, Calendar,
@@ -17,9 +22,11 @@ import { notifySuccess } from '@/lib/notify';
 
 /* ---- Admissions Report ---- */
 function AdmissionsReportView() {
-  useAuthStore(); // schoolId available when report hooks are wired
-  const admissions: any[] = []; // TODO: wire admissions API hook
-  const students: any[] = [];   // TODO: wire students list API hook
+  const { schoolId } = useAuthStore();
+  const { data: admRes } = useApplicants(schoolId);
+  const admissions = Array.isArray(admRes) ? admRes : (admRes as any)?.items ?? [];
+  const { data: stuRes } = useStudents(schoolId);
+  const students = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
 
   const { pipelineData, gradeDistData, totals } = useMemo(() => {
     const stages: Record<string, number> = { new: 0, under_review: 0, interview: 0, accepted: 0, waitlisted: 0, enrolled: 0 };
@@ -86,10 +93,13 @@ function AdmissionsReportView() {
 
 /* ---- Finance Report ---- */
 function FinanceReportView() {
-  useAuthStore(); // schoolId available when report hooks are wired
-  const invoices: any[] = []; // TODO: wire useOpsInvoices API hook
-  const feeTypes: any[] = []; // TODO: wire fee types API hook
-  const students: any[] = []; // TODO: wire students list API hook
+  const { schoolId } = useAuthStore();
+  const { data: invRes } = useOpsInvoices(schoolId);
+  const invoices = Array.isArray(invRes) ? invRes : (invRes as any)?.items ?? [];
+  const { data: feeRes } = useFeeStructure(schoolId);
+  const feeTypes = Array.isArray(feeRes) ? feeRes : (feeRes as any)?.items ?? [];
+  const { data: stuRes } = useStudents(schoolId);
+  const students = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
 
   const { monthlyData, feeBreakdown, totals } = useMemo(() => {
     let totalAmount = 0;
@@ -186,10 +196,13 @@ function FinanceReportView() {
 
 /* ---- Attendance Report ---- */
 function AttendanceReportView() {
-  useAuthStore(); // schoolId available when report hooks are wired
-  const records: any[] = [];  // TODO: wire attendance records API hook
-  const students: any[] = []; // TODO: wire students list API hook
-  const staff: any[] = [];    // TODO: wire staff list API hook
+  const { schoolId } = useAuthStore();
+  const { data: attRes } = useAttendanceOverview(schoolId);
+  const records = Array.isArray(attRes) ? attRes : (attRes as any)?.items ?? [];
+  const { data: stuRes } = useStudents(schoolId);
+  const students = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
+  const { data: staffRes } = useStaff(schoolId);
+  const staff = Array.isArray(staffRes) ? staffRes : (staffRes as any)?.items ?? [];
 
   const { monthlyData, gradeData, totals } = useMemo(() => {
     const monthBuckets: Record<string, { present: number; total: number }> = {};
@@ -282,10 +295,13 @@ function AttendanceReportView() {
 
 /* ---- Grades Report ---- */
 function GradesReportView() {
-  useAuthStore(); // schoolId available when report hooks are wired
-  const exams: any[] = [];    // TODO: wire exams API hook
-  const subjects: any[] = []; // TODO: wire useSubjects API hook
-  const students: any[] = []; // TODO: wire students list API hook
+  const { schoolId } = useAuthStore();
+  const { data: examRes } = useExamSchedule(schoolId);
+  const exams = Array.isArray(examRes) ? examRes : (examRes as any)?.items ?? [];
+  const { data: subRes } = useSubjects(schoolId);
+  const subjects = Array.isArray(subRes) ? subRes : (subRes as any)?.items ?? [];
+  const { data: stuRes } = useStudents(schoolId);
+  const students = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
 
   const { gradeDistribution, subjectAvg, totals } = useMemo(() => {
     const gpaBuckets = { 'A/A+': 0, 'B/B+': 0, 'C/C+': 0, D: 0, F: 0 };
@@ -368,9 +384,11 @@ function GradesReportView() {
 
 /* ---- Staff Report ---- */
 function StaffReportView() {
-  useAuthStore(); // schoolId available when report hooks are wired
-  const staff: any[] = [];    // TODO: wire staff list API hook
-  const students: any[] = []; // TODO: wire students list API hook
+  const { schoolId } = useAuthStore();
+  const { data: staffRes } = useStaff(schoolId);
+  const staff = Array.isArray(staffRes) ? staffRes : (staffRes as any)?.items ?? [];
+  const { data: stuRes } = useStudents(schoolId);
+  const students = Array.isArray(stuRes) ? stuRes : (stuRes as any)?.items ?? [];
 
   const { deptBreakdown, payrollTrend, totals } = useMemo(() => {
     const deptCounts: Record<string, number> = {};
@@ -455,9 +473,11 @@ function StaffReportView() {
 
 /* ---- Compliance Report ---- */
 function ComplianceReportView() {
-  useAuthStore(); // schoolId available when report hooks are wired
-  const tasks: any[] = [];        // TODO: wire useComplianceTasks API hook
-  const auditEntries: any[] = []; // TODO: wire useOpsAuditLog API hook
+  const { schoolId } = useAuthStore();
+  const { data: taskRes } = useComplianceTasks(schoolId);
+  const tasks = Array.isArray(taskRes) ? taskRes : (taskRes as any)?.items ?? [];
+  const { data: auditRes } = useOpsAuditLog(schoolId);
+  const auditEntries = Array.isArray(auditRes) ? auditRes : (auditRes as any)?.items ?? [];
 
   const { areaScores, statusData, totals } = useMemo(() => {
     const areaMap: Record<string, { passing: boolean; status: string }> = {};

@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { Image, Video, FileText, Upload, Search, Eye, Download, Heart, Share2, Play } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useUploadDocument } from '@/hooks/api/use-upload';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -47,6 +48,7 @@ const STATUS_CLR = { published: 'bg-emerald-400/10 text-emerald-400', draft: 'bg
 
 export default function MediaHubView() {
   const containerRef = useStaggerAnimate([]);
+  const uploadDoc = useUploadDocument();
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | MediaType>('all');
 
@@ -100,7 +102,9 @@ export default function MediaHubView() {
           accept="image/*,video/*,application/pdf"
           multiple
           maxSizeMB={200}
-          onUpload={(files) => console.log('Uploaded:', files)}
+          onUpload={(files) => {
+            files.forEach((file) => uploadDoc.mutate({ file, category: 'media' }));
+          }}
         />
       </div>
 

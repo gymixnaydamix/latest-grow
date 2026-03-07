@@ -7,7 +7,12 @@ import {
   useOpsAuditLog,
   useApprovalHistory,
   useComplianceTasks,
+  useCreateComplianceTask,
+  useUpdateComplianceTask,
+  useDeleteComplianceTask,
+  useOpsInvoices,
 } from '@/hooks/api/use-school-ops';
+import { useStudents, useStaff } from '@/hooks/api/use-admin';
 import {
   Eye, CheckSquare, Shield, Archive, FileText,
   Clock, AlertTriangle, Download, Search, User,
@@ -22,7 +27,7 @@ import {
   type Column, type FormField as FormFieldDef, type DetailTab,
 } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
-import { notifySuccess, notifyInfo } from '@/lib/notify';
+import { notifySuccess } from '@/lib/notify';
 
 /* ---- Local types ---- */
 interface AuditEntry {
@@ -231,6 +236,9 @@ function ComplianceTasksView() {
   const { schoolId } = useAuthStore();
   const { data: compRes } = useComplianceTasks(schoolId);
   const tasks: ComplianceTask[] = Array.isArray(compRes) ? compRes : (compRes as any)?.items ?? [];
+  const createTask = useCreateComplianceTask(schoolId);
+  const updateTask = useUpdateComplianceTask(schoolId);
+  const deleteTask = useDeleteComplianceTask(schoolId);
   const [showForm, setShowForm] = useState(false);
   const [editing, setEditing] = useState<ComplianceTask | null>(null);
   const [detail, setDetail] = useState<ComplianceTask | null>(null);
@@ -264,22 +272,29 @@ function ComplianceTasksView() {
     ] },
   ];
 
-  const handleSave = (_data: Record<string, string>) => {
-    notifyInfo('Not yet implemented', 'Compliance task save API not available yet');
-    setShowForm(false);
-    setEditing(null);
+  const handleSave = (data: Record<string, string>) => {
+    if (editing) {
+      updateTask.mutate({ id: editing.id, ...data } as any, {
+        onSuccess: () => { notifySuccess('Updated', `Compliance task "${data.area}" updated`); setShowForm(false); setEditing(null); },
+      });
+    } else {
+      createTask.mutate(data as any, {
+        onSuccess: () => { notifySuccess('Created', `Compliance task "${data.area}" created`); setShowForm(false); setEditing(null); },
+      });
+    }
   };
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not yet implemented', 'Compliance task delete API not available yet');
-    setDeleteTarget(null);
-    setDetail(null);
+    deleteTask.mutate(deleteTarget.id, {
+      onSuccess: () => { notifySuccess('Deleted', `Compliance task "${deleteTarget.area}" removed`); setDeleteTarget(null); setDetail(null); },
+    });
   };
 
   const handleComplete = (task: ComplianceTask) => {
-    notifyInfo('Not yet implemented', `Mark "${task.area}" as completed — API not available yet`);
-    setDetail(null);
+    updateTask.mutate({ id: task.id, status: 'Completed' } as any, {
+      onSuccess: () => { notifySuccess('Completed', `"${task.area}" marked as completed`); setDetail(null); },
+    });
   };
 
   const detailTabs: DetailTab[] | undefined = detail
@@ -349,10 +364,15 @@ function ComplianceTasksView() {
 
 /* ---- Document Archive (static reference with placeholder counts) ---- */
 function DocumentArchiveView() {
-  const students: unknown[] = []; // TODO: wire API hook
-  const invoices: unknown[] = []; // TODO: wire API hook
-  const staff: unknown[] = []; // TODO: wire API hook
-  const complianceTasks: unknown[] = []; // TODO: wire API hook
+  const { schoolId } = useAuthStore();
+  const { data: studentsRes } = useStudents(schoolId);
+  const students: unknown[] = Array.isArray(studentsRes) ? studentsRes : (studentsRes as any)?.items ?? [];
+  const { data: invoicesRes } = useOpsInvoices(schoolId);
+  const invoices: unknown[] = Array.isArray(invoicesRes) ? invoicesRes : (invoicesRes as any)?.items ?? [];
+  const { data: staffRes } = useStaff(schoolId);
+  const staff: unknown[] = Array.isArray(staffRes) ? staffRes : (staffRes as any)?.items ?? [];
+  const { data: compRes } = useComplianceTasks(schoolId);
+  const complianceTasks: unknown[] = Array.isArray(compRes) ? compRes : (compRes as any)?.items ?? [];
 
   const archives = useMemo(() => [
     { category: 'Academic Records', count: students.length * 8 || 120, size: `${(students.length * 0.15 || 1.8).toFixed(1)} GB`, lastUpdated: 'Today', icon: '📚' },

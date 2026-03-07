@@ -5,7 +5,10 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
 import {
   useRoutes, useVehicles, useRouteAssignments, useTransportIncidents,
-  useCreateRoute, useReportIncident,
+  useCreateRoute, useUpdateRoute, useDeleteRoute,
+  useCreateVehicle, useUpdateVehicle, useDeleteVehicle,
+  useReportIncident, useUpdateIncident, useResolveIncident, useDeleteIncident,
+  useUpdateRouteAssignment,
 } from '@/hooks/api/use-school-ops';
 import {
   Bus, Plus, Eye, Edit, AlertTriangle, Wrench, Trash2,
@@ -19,7 +22,7 @@ import {
   DetailPanel, DetailFields, type DetailTab,
 } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
-import { notifySuccess, notifyInfo } from '@/lib/notify';
+import { notifySuccess } from '@/lib/notify';
 
 /* ─── Local types ─── */
 type TransportRoute = Record<string, unknown> & {
@@ -44,6 +47,8 @@ function RoutesView() {
   const { data: routesRes } = useRoutes(schoolId);
   const routes: TransportRoute[] = Array.isArray(routesRes) ? routesRes : (routesRes as any)?.items ?? [];
   const createRoute = useCreateRoute(schoolId);
+  const updateRoute = useUpdateRoute(schoolId);
+  const deleteRoute = useDeleteRoute(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TransportRoute | null>(null);
@@ -68,7 +73,7 @@ function RoutesView() {
 
   const handleSave = (data: Record<string, unknown>) => {
     if (editing) {
-      notifyInfo('Not yet implemented');
+      updateRoute.mutate({ id: editing.id, ...data }, { onSuccess: () => notifySuccess('Route Updated', `${data.name} updated`) });
     } else {
       createRoute.mutate(data, { onSuccess: () => notifySuccess('Route Added', `${data.name} created`) });
     }
@@ -170,7 +175,7 @@ function RoutesView() {
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}
         title="Delete Route?" description={`Remove route "${deleteTarget?.name}"?`}
         confirmLabel="Delete" variant="destructive"
-        onConfirm={() => { notifyInfo('Not yet implemented'); setDeleteTarget(null); }} />
+        onConfirm={() => { deleteRoute.mutate(deleteTarget!.id, { onSuccess: () => notifySuccess('Route Deleted', `${deleteTarget?.name} removed`) }); setDeleteTarget(null); }} />
     </div>
   );
 }
@@ -180,6 +185,9 @@ function VehiclesView() {
   const { schoolId } = useAuthStore();
   const { data: vehiclesRes } = useVehicles(schoolId);
   const vehicles: Vehicle[] = Array.isArray(vehiclesRes) ? vehiclesRes : (vehiclesRes as any)?.items ?? [];
+  const createVehicle = useCreateVehicle(schoolId);
+  const updateVehicle = useUpdateVehicle(schoolId);
+  const deleteVehicle = useDeleteVehicle(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Vehicle | null>(null);
@@ -206,8 +214,12 @@ function VehiclesView() {
     ] },
   ];
 
-  const handleSave = (_data: Record<string, unknown>) => {
-    notifyInfo('Not yet implemented');
+  const handleSave = (data: Record<string, unknown>) => {
+    if (editing) {
+      updateVehicle.mutate({ id: editing.id, ...data }, { onSuccess: () => notifySuccess('Vehicle Updated', `${data.regNumber} updated`) });
+    } else {
+      createVehicle.mutate(data, { onSuccess: () => notifySuccess('Vehicle Added', `${data.regNumber} added to fleet`) });
+    }
     setFormOpen(false);
     setEditing(null);
   };
@@ -282,7 +294,7 @@ function VehiclesView() {
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}
         title="Remove Vehicle?" description={`Remove ${deleteTarget?.regNumber} from fleet?`}
         confirmLabel="Remove" variant="destructive"
-        onConfirm={() => { notifyInfo('Not yet implemented'); setDeleteTarget(null); }} />
+        onConfirm={() => { deleteVehicle.mutate(deleteTarget!.id, { onSuccess: () => notifySuccess('Vehicle Removed', `${deleteTarget?.regNumber} removed from fleet`) }); setDeleteTarget(null); }} />
     </div>
   );
 }
@@ -294,6 +306,35 @@ function AssignmentsView() {
   const assignments: Record<string, unknown>[] = Array.isArray(assignmentsRes)
     ? assignmentsRes
     : (assignmentsRes as any)?.items ?? [];
+  const updateAssignment = useUpdateRouteAssignment(schoolId);
+
+  const [formOpen, setFormOpen] = useState(false);
+  const [editing, setEditing] = useState<Record<string, unknown> | null>(null);
+
+  const fields: FormField[] = [
+    { name: 'student', label: 'Student', type: 'text', required: true },
+    { name: 'grade', label: 'Grade', type: 'text', required: true, half: true },
+    { name: 'route', label: 'Route', type: 'text', required: true, half: true },
+    { name: 'stop', label: 'Stop', type: 'text', required: true, half: true },
+    { name: 'pickupTime', label: 'Pickup Time', type: 'time', required: true, half: true },
+    { name: 'dropTime', label: 'Drop Time', type: 'time', required: true, half: true },
+    { name: 'status', label: 'Status', type: 'select', required: true, half: true, options: [
+      { label: 'Active', value: 'Active' },
+      { label: 'Inactive', value: 'Inactive' },
+      { label: 'Pending', value: 'Pending' },
+    ] },
+  ];
+
+  const handleSave = (data: Record<string, unknown>) => {
+    if (editing) {
+      updateAssignment.mutate(
+        { id: String(editing.id), ...data },
+        { onSuccess: () => notifySuccess('Assignment Updated', `Assignment for ${data.student} updated`) },
+      );
+    }
+    setFormOpen(false);
+    setEditing(null);
+  };
 
   return (
     <div className="space-y-4">
@@ -313,10 +354,14 @@ function AssignmentsView() {
           { key: 'status', label: 'Status', render: v => <StatusBadge status={String(v)} /> },
         ]}
         actions={[
-          { label: 'Edit Assignment', icon: Edit, onClick: r => notifyInfo('Edit', `Editing assignment for ${String(r.student)}`) },
+          { label: 'Edit Assignment', icon: Edit, onClick: r => { setEditing(r); setFormOpen(true); } },
         ]}
         searchPlaceholder="Search assignments..."
       />
+
+      <FormDialog open={formOpen} onOpenChange={setFormOpen}
+        title="Edit Assignment"
+        fields={fields} mode="edit" initialData={editing ?? undefined} onSubmit={handleSave} />
     </div>
   );
 }
@@ -327,6 +372,9 @@ function IncidentsView() {
   const { data: incidentsRes } = useTransportIncidents(schoolId);
   const incidents: TransportIncident[] = Array.isArray(incidentsRes) ? incidentsRes : (incidentsRes as any)?.items ?? [];
   const reportIncident = useReportIncident(schoolId);
+  const updateIncident = useUpdateIncident(schoolId);
+  const resolveIncident = useResolveIncident(schoolId);
+  const deleteIncident = useDeleteIncident(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<TransportIncident | null>(null);
@@ -361,7 +409,7 @@ function IncidentsView() {
 
   const handleSave = (data: Record<string, unknown>) => {
     if (editing) {
-      notifyInfo('Not yet implemented');
+      updateIncident.mutate({ id: editing.id, ...data }, { onSuccess: () => notifySuccess('Incident Updated', `Incident on ${data.route} updated`) });
     } else {
       reportIncident.mutate(data, { onSuccess: () => notifySuccess('Incident Reported', `Incident on ${data.route} logged`) });
     }
@@ -428,13 +476,13 @@ function IncidentsView() {
         tabs={tabs}
         actions={[
           { label: 'Edit', icon: <Edit className="size-3.5" />, onClick: () => { setEditing(detail); setFormOpen(true); setDetail(null); } },
-          { label: 'Resolve', icon: <AlertTriangle className="size-3.5" />, onClick: () => { notifyInfo('Not yet implemented'); setDetail(null); } },
+          { label: 'Resolve', icon: <AlertTriangle className="size-3.5" />, onClick: () => { resolveIncident.mutate({ id: detail!.id, status: 'Resolved' }, { onSuccess: () => notifySuccess('Incident Resolved', `Incident on ${detail?.route} resolved`) }); setDetail(null); } },
         ]} />
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={() => setDeleteTarget(null)}
         title="Delete Incident?" description={`Remove incident ${deleteTarget?.id}?`}
         confirmLabel="Delete" variant="destructive"
-        onConfirm={() => { notifyInfo('Not yet implemented'); setDeleteTarget(null); }} />
+        onConfirm={() => { deleteIncident.mutate(deleteTarget!.id, { onSuccess: () => notifySuccess('Incident Deleted', `Incident ${deleteTarget?.id} removed`) }); setDeleteTarget(null); }} />
     </div>
   );
 }

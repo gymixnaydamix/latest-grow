@@ -163,6 +163,34 @@ export function useApproveCorrection(schoolId: string | null) {
     schoolOpsKeys.attendanceCorrections(schoolId!),
   ]);
 }
+export function useDeleteAttendanceRecord(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'attendance', [
+    schoolOpsKeys.attendanceDaily(schoolId!, new Date().toISOString().slice(0, 10)),
+    schoolOpsKeys.attendanceOverview(schoolId!),
+  ]);
+}
+export function useDeleteCorrection(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'attendance/corrections', [
+    schoolOpsKeys.attendanceCorrections(schoolId!),
+  ]);
+}
+export function useExportAttendance(schoolId: string | null) {
+  return useMutation({
+    mutationFn: (params: { from?: string; to?: string }) =>
+      api
+        .get<Blob>(
+          `/admin/schools/${schoolId}/attendance/export?from=${params.from ?? ''}&to=${params.to ?? ''}`,
+        )
+        .then(blob => {
+          const url = URL.createObjectURL(blob as unknown as Blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `attendance-export-${new Date().toISOString().slice(0, 10)}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+        }),
+  });
+}
 
 // ═══════════════════ ACADEMICS HOOKS ═══════════════════
 
@@ -187,6 +215,49 @@ export function useCreateClass(schoolId: string | null) {
 export function useUpdateClass(schoolId: string | null) {
   return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'academics/classes', [schoolOpsKeys.classes(schoolId!)]);
 }
+export function useDeleteClass(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'academics/classes', [schoolOpsKeys.classes(schoolId!)]);
+}
+
+export function useCreateSubject(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'academics/subjects', [schoolOpsKeys.subjects(schoolId!)]);
+}
+export function useUpdateSubject(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'academics/subjects', [schoolOpsKeys.subjects(schoolId!)]);
+}
+export function useDeleteSubject(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'academics/subjects', [schoolOpsKeys.subjects(schoolId!)]);
+}
+
+export function useCreateAcademicYear(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'academics/years', [schoolOpsKeys.academicYears(schoolId!)]);
+}
+export function useUpdateAcademicYear(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'academics/years', [schoolOpsKeys.academicYears(schoolId!)]);
+}
+
+export function usePromotionRules(schoolId: string | null) {
+  return useSchoolResource(schoolId, 'academics/promotion', schoolOpsKeys.promotionRules(schoolId!));
+}
+export function useCreatePromotionRule(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'academics/promotion', [schoolOpsKeys.promotionRules(schoolId!)]);
+}
+export function useUpdatePromotionRule(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'academics/promotion', [schoolOpsKeys.promotionRules(schoolId!)]);
+}
+
+export function useCreateTeacherAssignment(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'academics/assignments', [
+    schoolOpsKeys.teacherAssignments(schoolId!),
+    schoolOpsKeys.subjects(schoolId!),
+  ]);
+}
+export function useUpdateTeacherAssignment(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'academics/assignments', [
+    schoolOpsKeys.teacherAssignments(schoolId!),
+    schoolOpsKeys.subjects(schoolId!),
+  ]);
+}
 
 // ═══════════════════ EXAMS HOOKS ═══════════════════
 
@@ -210,6 +281,9 @@ export function useUpdateMarks(schoolId: string | null) {
     schoolOpsKeys.examSchedule(schoolId!),
     schoolOpsKeys.missingMarks(schoolId!),
   ]);
+}
+export function useDeleteExam(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'exams/schedule', [schoolOpsKeys.examSchedule(schoolId!)]);
 }
 
 // ═══════════════════ FINANCE OPS HOOKS ═══════════════════
@@ -239,6 +313,36 @@ export function useRecordPayment(schoolId: string | null) {
     schoolOpsKeys.overdueAccounts(schoolId!),
   ]);
 }
+export function useUpdateInvoice(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'finance/invoices', [
+    schoolOpsKeys.invoices(schoolId!),
+    schoolOpsKeys.overdueAccounts(schoolId!),
+  ]);
+}
+export function useVoidInvoice(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; status: string }>(schoolId, 'finance/invoices', [
+    schoolOpsKeys.invoices(schoolId!),
+    schoolOpsKeys.overdueAccounts(schoolId!),
+  ]);
+}
+export function useCreateFeeType(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'finance/fees', [schoolOpsKeys.feeStructure(schoolId!)]);
+}
+export function useUpdateFeeType(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'finance/fees', [schoolOpsKeys.feeStructure(schoolId!)]);
+}
+export function useDeleteFeeType(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'finance/fees', [schoolOpsKeys.feeStructure(schoolId!)]);
+}
+export function useCreateDiscount(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'finance/discounts', [schoolOpsKeys.discounts(schoolId!)]);
+}
+export function useUpdateDiscount(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'finance/discounts', [schoolOpsKeys.discounts(schoolId!)]);
+}
+export function useDeleteDiscount(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'finance/discounts', [schoolOpsKeys.discounts(schoolId!)]);
+}
 
 // ═══════════════════ TRANSPORT HOOKS ═══════════════════
 
@@ -260,6 +364,33 @@ export function useCreateRoute(schoolId: string | null) {
 export function useReportIncident(schoolId: string | null) {
   return useSchoolMutationPost(schoolId, 'transport/incidents', [schoolOpsKeys.transportIncidents(schoolId!)]);
 }
+export function useUpdateRoute(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'transport/routes', [schoolOpsKeys.routes(schoolId!)]);
+}
+export function useDeleteRoute(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'transport/routes', [schoolOpsKeys.routes(schoolId!)]);
+}
+export function useCreateVehicle(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'transport/vehicles', [schoolOpsKeys.vehicles(schoolId!)]);
+}
+export function useUpdateVehicle(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'transport/vehicles', [schoolOpsKeys.vehicles(schoolId!)]);
+}
+export function useDeleteVehicle(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'transport/vehicles', [schoolOpsKeys.vehicles(schoolId!)]);
+}
+export function useUpdateIncident(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'transport/incidents', [schoolOpsKeys.transportIncidents(schoolId!)]);
+}
+export function useResolveIncident(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; status: string }>(schoolId, 'transport/incidents', [schoolOpsKeys.transportIncidents(schoolId!)]);
+}
+export function useDeleteIncident(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'transport/incidents', [schoolOpsKeys.transportIncidents(schoolId!)]);
+}
+export function useUpdateRouteAssignment(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'transport/assignments', [schoolOpsKeys.routeAssignments(schoolId!)]);
+}
 
 // ═══════════════════ FACILITIES HOOKS ═══════════════════
 
@@ -280,6 +411,36 @@ export function useOpsCreateMaintenanceRequest(schoolId: string | null) {
 }
 export function useBookFacility(schoolId: string | null) {
   return useSchoolMutationPost(schoolId, 'facilities/bookings', [schoolOpsKeys.facilityBookings(schoolId!)]);
+}
+export function useCreateRoom(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'facilities/rooms', [schoolOpsKeys.rooms(schoolId!)]);
+}
+export function useUpdateRoom(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'facilities/rooms', [schoolOpsKeys.rooms(schoolId!)]);
+}
+export function useDeleteRoom(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'facilities/rooms', [schoolOpsKeys.rooms(schoolId!)]);
+}
+export function useOpsUpdateMaintenanceRequest(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'facilities/maintenance', [schoolOpsKeys.maintenance(schoolId!)]);
+}
+export function useOpsDeleteMaintenanceRequest(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'facilities/maintenance', [schoolOpsKeys.maintenance(schoolId!)]);
+}
+export function useCreateAsset(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'facilities/assets', [schoolOpsKeys.assets(schoolId!)]);
+}
+export function useUpdateAsset(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'facilities/assets', [schoolOpsKeys.assets(schoolId!)]);
+}
+export function useDeleteAsset(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'facilities/assets', [schoolOpsKeys.assets(schoolId!)]);
+}
+export function useUpdateBooking(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'facilities/bookings', [schoolOpsKeys.facilityBookings(schoolId!)]);
+}
+export function useCancelBooking(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; status: string }>(schoolId, 'facilities/bookings', [schoolOpsKeys.facilityBookings(schoolId!)]);
 }
 
 // ═══════════════════ COMMUNICATION HOOKS ═══════════════════
@@ -307,6 +468,28 @@ export function useSendBroadcast(schoolId: string | null) {
 }
 export function useOpsDeleteAnnouncement(schoolId: string | null) {
   return useSchoolMutationDelete(schoolId, 'communication/announcements', [schoolOpsKeys.announcements(schoolId!)]);
+}
+export function useOpsUpdateAnnouncement(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'communication/announcements', [schoolOpsKeys.announcements(schoolId!)]);
+}
+export function useCreateTemplate(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'communication/templates', [schoolOpsKeys.templates(schoolId!)]);
+}
+export function useUpdateTemplate(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'communication/templates', [schoolOpsKeys.templates(schoolId!)]);
+}
+export function useDeleteTemplate(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'communication/templates', [schoolOpsKeys.templates(schoolId!)]);
+}
+export function useMarkMessageRead(schoolId: string | null) {
+  const qc = useQueryClient();
+  return useMutation<void, Error, string>({
+    mutationFn: (messageId) =>
+      api.put(`/admin/schools/${schoolId}/communication/messages/${messageId}/read`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: schoolOpsKeys.messages(schoolId!) });
+    },
+  });
 }
 
 // ═══════════════════ SETTINGS HOOKS ═══════════════════
@@ -342,6 +525,15 @@ export function useSaveFeeConfig(schoolId: string | null) {
     onSuccess: () => { qc.invalidateQueries({ queryKey: schoolOpsKeys.feeConfig(schoolId!) }); },
   });
 }
+export function useCreateGradingScale(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'settings/grading', [schoolOpsKeys.gradingScales(schoolId!)]);
+}
+export function useCreateSchoolRole(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'settings/roles', [schoolOpsKeys.roles(schoolId!)]);
+}
+export function useUpdateSchoolRole(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'settings/roles', [schoolOpsKeys.roles(schoolId!)]);
+}
 
 // ═══════════════════ AUDIT HOOKS ═══════════════════
 
@@ -353,6 +545,15 @@ export function useApprovalHistory(schoolId: string | null) {
 }
 export function useComplianceTasks(schoolId: string | null) {
   return useSchoolResource(schoolId, 'audit/compliance', schoolOpsKeys.complianceTasks(schoolId!));
+}
+export function useCreateComplianceTask(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'audit/compliance', [schoolOpsKeys.complianceTasks(schoolId!)]);
+}
+export function useUpdateComplianceTask(schoolId: string | null) {
+  return useSchoolMutationPatch<{ id: string; [k: string]: unknown }>(schoolId, 'audit/compliance', [schoolOpsKeys.complianceTasks(schoolId!)]);
+}
+export function useDeleteComplianceTask(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'audit/compliance', [schoolOpsKeys.complianceTasks(schoolId!)]);
 }
 
 // ═══════════════════ LEAVE REQUESTS ═══════════════════

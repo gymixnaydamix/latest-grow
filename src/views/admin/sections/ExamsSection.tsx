@@ -4,7 +4,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
 import {
-  useExamSchedule, useCreateExam, useUpdateMarks,
+  useExamSchedule, useCreateExam, useUpdateMarks, useDeleteExam,
 } from '@/hooks/api/use-school-ops';
 import {
   CheckCircle, AlertCircle, Eye, Download,
@@ -21,7 +21,7 @@ import {
 import type { FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
-import { notifySuccess, notifyInfo } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 
 /* ─── Form fields ─── */
 const examFields: FormField[] = [
@@ -55,6 +55,7 @@ function ScheduleView() {
   const exams = ((examScheduleRes as any)?.items ?? examScheduleRes ?? []) as ExamRow[];
   const createExam = useCreateExam(schoolId);
   const updateMarks = useUpdateMarks(schoolId);
+  const deleteExam = useDeleteExam(schoolId);
 
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<'create' | 'edit'>('create');
@@ -80,7 +81,10 @@ function ScheduleView() {
 
   const handleDelete = () => {
     if (!deleteTarget) return;
-    notifyInfo('Not implemented', 'Delete exam is not yet available');
+    deleteExam.mutate(deleteTarget.id, {
+      onSuccess: () => notifySuccess('Exam Removed', `${deleteTarget.subject ?? ''} exam deleted`),
+      onError: (err) => notifyError('Delete Failed', err.message),
+    });
     setDeleteTarget(null);
   };
 
@@ -144,8 +148,25 @@ function ScheduleView() {
   );
 }
 
+/* ── Marks form fields ── */
+const marksFields: FormField[] = [
+  { name: 'obtained', label: 'Marks Obtained', type: 'number', required: true, placeholder: '0' },
+  { name: 'maxMarks', label: 'Max Marks', type: 'number', required: true, placeholder: '100' },
+  { name: 'grade', label: 'Grade', type: 'select', options: [
+    { label: 'A+', value: 'A+' }, { label: 'A', value: 'A' }, { label: 'A-', value: 'A-' },
+    { label: 'B+', value: 'B+' }, { label: 'B', value: 'B' }, { label: 'B-', value: 'B-' },
+    { label: 'C+', value: 'C+' }, { label: 'C', value: 'C' }, { label: 'D', value: 'D' },
+    { label: 'F', value: 'F' },
+  ] },
+  { name: 'remarks', label: 'Remarks', type: 'text', placeholder: 'Optional comments' },
+];
+
 /* ── Gradebook ── */
 function GradebookView() {
+  const { schoolId } = useAuthStore();
+  const updateMarks = useUpdateMarks(schoolId);
+  const [marksFormOpen, setMarksFormOpen] = useState(false);
+  const [marksTarget, setMarksTarget] = useState<Record<string, unknown> | null>(null);
   const [selectedExam] = useState('Mid-Term Exam');
   const grades = [
     { id: 'G-001', rollNo: 'R-001', name: 'Alice Thompson', subject: 'Mathematics', maxMarks: 100, obtained: 92, grade: 'A', percentage: '92%', status: 'Graded' },
@@ -193,9 +214,28 @@ function GradebookView() {
           { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
         ]}
         actions={[
-          { label: 'Edit Marks', icon: Edit, onClick: (r) => notifyInfo('Edit Marks', `Editing marks for ${String(r.name)}`) },
+          { label: 'Edit Marks', icon: Edit, onClick: (r) => { setMarksTarget(r as Record<string, unknown>); setMarksFormOpen(true); } },
         ]}
         searchPlaceholder="Search grades..."
+      />
+
+      <FormDialog
+        open={marksFormOpen}
+        onOpenChange={setMarksFormOpen}
+        title={`Edit Marks — ${String(marksTarget?.name ?? '')}`}
+        mode="edit"
+        fields={marksFields}
+        initialData={marksTarget ?? undefined}
+        onSubmit={(data) => {
+          const id = String(marksTarget?.id ?? '');
+          updateMarks.mutate({ id, marks: { obtained: Number(data.obtained) } } as any, {
+            onSuccess: () => notifySuccess('Marks Updated', `Marks saved for ${String(marksTarget?.name ?? '')}`),
+            onError: (err: Error) => notifyError('Update Failed', err.message),
+          });
+          setMarksFormOpen(false);
+          setMarksTarget(null);
+        }}
+        submitLabel="Save Marks"
       />
     </div>
   );
@@ -295,6 +335,7 @@ function ResultsView() {
 
 /* ── Report Cards ── */
 function ReportCardsView() {
+  const { schoolId } = useAuthStore();
   const reports = [
     { id: 'RC-001', student: 'Alice Thompson', grade: 'Grade 5A', gpa: 3.85, rank: 2, totalMarks: '542/600', status: 'Generated' },
     { id: 'RC-002', student: 'Diana Patel', grade: 'Grade 5B', gpa: 3.92, rank: 1, totalMarks: '558/600', status: 'Generated' },
@@ -331,8 +372,15 @@ function ReportCardsView() {
           { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
         ]}
         actions={[
-          { label: 'Preview', icon: Eye, onClick: (r) => notifyInfo('Preview', `Previewing report for ${String(r.student)}`) },
-          { label: 'Download PDF', icon: Download, onClick: (r) => notifySuccess('Downloaded', `Report card for ${String(r.student)} downloaded`) },
+          { label: 'Preview', icon: Eye, onClick: (r) => {
+            const url = `/api/admin/schools/${schoolId}/exams/reports/${String(r.id)}/preview`;
+            window.open(url, '_blank', 'noopener,noreferrer');
+          } },
+          { label: 'Download PDF', icon: Download, onClick: (r) => {
+            const url = `/api/admin/schools/${schoolId}/exams/reports/${String(r.id)}/download`;
+            const a = document.createElement('a'); a.href = url; a.download = `report-${String(r.student)}.pdf`; a.click();
+            notifySuccess('Downloaded', `Report card for ${String(r.student)} downloaded`);
+          } },
         ]}
         searchPlaceholder="Search report cards..."
       />
