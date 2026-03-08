@@ -16,6 +16,8 @@ import {
   schoolOpsDashboardController,
   schoolOpsStaffController,
   schoolOpsReportsController,
+  schoolOpsNotificationsController,
+  schoolOpsExamReportsController,
 } from '../controllers/school-ops.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { authorize } from '../middlewares/rbac.middleware.js';
@@ -184,5 +186,14 @@ router.patch('/:schoolId/staff/leave/:id', validateCsrf, validate({ body: approv
 
 // ─────────────────── Reports ───────────────────────
 router.get('/:schoolId/reports/:type', schoolOpsReportsController.report);
+
+// ─────────────────── Notifications ─────────────────
+router.post('/:schoolId/notifications/send', validateCsrf, schoolOpsNotificationsController.send);
+
+// ─────────────────── Exam Reports ──────────────────
+router.get('/:schoolId/exams/reports/generate-all', schoolOpsExamReportsController.generateAll);
+router.get('/:schoolId/exams/reports/bulk-download', schoolOpsExamReportsController.bulkDownload);
+router.get('/:schoolId/exams/reports/:reportId/preview', schoolOpsExamReportsController.preview);
+router.get('/:schoolId/exams/reports/:reportId/download', schoolOpsExamReportsController.download);
 
 export default router;

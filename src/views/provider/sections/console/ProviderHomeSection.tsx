@@ -1,5 +1,5 @@
 /* ─── ProviderHomeSection ─── Command Center with sub-page routing ─── */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useProviderConsoleStore } from '@/store/provider-console.store';
+import { useProviderStore } from '@/store/provider-data.store';
 import {
   useProviderHome,
   useProviderModuleData,
@@ -63,6 +64,7 @@ function CommandCenterView() {
   const navTo = useNavigate();
   const { activeSubNav } = useNavigationStore();
   const { addRecentTenant } = useProviderConsoleStore();
+  const { setTenantSummary, setPlatformHealth, setQuickStats } = useProviderStore();
 
   const [search, setSearch] = useState('');
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
@@ -80,6 +82,38 @@ function CommandCenterView() {
   const billing = (moduleData?.invoices ?? []) as BillingExceptionItem[];
   const tickets = (moduleData?.tickets ?? []) as SupportTicketDTO[];
   const flags = (moduleData?.featureFlags ?? []) as FeatureFlagRuleDTO[];
+
+  // Sync API data into provider-data store for cross-component access
+  useEffect(() => {
+    if (tenants.length > 0) {
+      const active = tenants.filter((t) => (t as any).status === 'ACTIVE').length;
+      const trial = tenants.filter((t) => (t as any).status === 'TRIAL').length;
+      setTenantSummary({
+        totalTenants: tenants.length,
+        activeTenants: active,
+        trialTenants: trial,
+        totalRevenue: 0,
+      });
+    }
+  }, [tenants, setTenantSummary]);
+
+  useEffect(() => {
+    if (home?.systemHealth) {
+      const sh = home.systemHealth as Record<string, unknown>;
+      setPlatformHealth({
+        uptime: home.systemHealth.uptimePct ?? 99.9,
+        avgLatency: (sh.avgLatency as number) ?? 0,
+        errorRate: (sh.errorRate as number) ?? 0,
+        activeUsers: (sh.activeUsers as number) ?? 0,
+      });
+      setQuickStats({
+        actionInbox: actionInbox.length,
+        healthWatch: healthWatch.length,
+        activeIncidents: home.systemHealth.activeIncidents ?? 0,
+        queueBacklog: home.systemHealth.queueBacklog ?? 0,
+      });
+    }
+  }, [home, actionInbox.length, healthWatch.length, setPlatformHealth, setQuickStats]);
 
   const openTenant = (tenantId: string | null) => {
     if (!tenantId) return;
