@@ -870,12 +870,12 @@ export const generateCitationSchema = z.object({
   sourceType: z.string().min(1, 'Source type is required'),
   title: z.string().min(1, 'Title is required'),
   authors: z.string().min(1, 'Authors are required'),
-  year: z.number().int().positive('Year must be a positive integer'),
+  year: z.number().int().positive('Year must be a positive integer').max(new Date().getFullYear() + 5, 'Year cannot be more than 5 years in the future'),
   project: z.string().optional().default(''),
 });
 
 export const createFocusSessionSchema = z.object({
-  duration: z.number().positive('Duration must be positive'),
+  duration: z.number().positive('Duration must be positive').max(480, 'Duration cannot exceed 480 minutes'),
   task: z.string().min(1, 'Task is required'),
 });
 

@@ -182,6 +182,14 @@ describe('generateCitationSchema', () => {
       }).success,
     ).toBe(false);
   });
+
+  it('rejects year too far in the future', () => {
+    expect(
+      generateCitationSchema.safeParse({
+        sourceType: 'book', title: 'X', authors: 'Y', year: new Date().getFullYear() + 10,
+      }).success,
+    ).toBe(false);
+  });
 });
 
 describe('createFocusSessionSchema', () => {
@@ -191,6 +199,10 @@ describe('createFocusSessionSchema', () => {
 
   it('rejects zero duration', () => {
     expect(createFocusSessionSchema.safeParse({ duration: 0, task: 'Math' }).success).toBe(false);
+  });
+
+  it('rejects duration exceeding max', () => {
+    expect(createFocusSessionSchema.safeParse({ duration: 500, task: 'Math' }).success).toBe(false);
   });
 });
 
