@@ -2,7 +2,7 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { Send, Calendar, Star, AlertTriangle, Clock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useParentV2MessageThreads, useParentV2Announcements, useParentV2Events, useParentV2Feedback } from '@/hooks/api/use-parent-v2';
+import { useParentV2MessageThreads, useParentV2Announcements, useParentV2Events, useParentV2Feedback, useParentV2Notifications } from '@/hooks/api/use-parent-v2';
 import { useAuthStore } from '@/store/auth.store';
 
 /* ── Teacher messages ── */
@@ -69,13 +69,14 @@ export function ParentConciergeComms() {
   const { data: apiAnnouncements } = useParentV2Announcements();
   const { data: apiEvents } = useParentV2Events();
   const { data: apiFeedback } = useParentV2Feedback();
+  const { data: apiNotifications } = useParentV2Notifications();
 
   const teacherMessages = (apiMessages as any[]) ?? FALLBACK_TEACHER_MESSAGES;
   const schoolNotices = (apiAnnouncements as any[]) ?? FALLBACK_SCHOOL_NOTICES;
   const eventUpdates = (apiEvents as any[]) ?? FALLBACK_EVENT_UPDATES;
   const feedbackItems = (apiFeedback as any[]) ?? FALLBACK_FEEDBACK_ITEMS;
-  const emergencyAlerts = FALLBACK_EMERGENCY_ALERTS;
-  const sentMessages = FALLBACK_SENT_MESSAGES;
+  const emergencyAlerts = (apiNotifications as any[])?.filter((n: any) => n.type === 'EMERGENCY' || n.type === 'ALERT') ?? FALLBACK_EMERGENCY_ALERTS;
+  const sentMessages = (apiMessages as any[])?.filter((m: any) => m.direction === 'SENT' || m.sentByMe) ?? FALLBACK_SENT_MESSAGES;
 
   /* ── Teacher Messages (default) ── */
   if (!activeSubNav || activeSubNav === 'c_teacher_messages') {

@@ -21,7 +21,7 @@ function parseCsv(value: unknown): string[] {
 export const providerController = {
   async getHome(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      res.json({ success: true, data: providerConsoleService.getHome() });
+      res.json({ success: true, data: await providerConsoleService.getHome() });
     } catch (error) {
       next(error);
     }
@@ -58,7 +58,7 @@ export const providerController = {
         search: search || undefined,
       };
 
-      res.json({ success: true, data: providerConsoleService.listTenants(filters as never) });
+      res.json({ success: true, data: await providerConsoleService.listTenants(filters as never) });
     } catch (error) {
       next(error);
     }
@@ -68,7 +68,7 @@ export const providerController = {
     try {
       const tenantId = getString(req.params.tenantId);
       if (!tenantId) throw new BadRequestError('tenantId is required');
-      res.json({ success: true, data: providerConsoleService.getTenantDetail(tenantId) });
+      res.json({ success: true, data: await providerConsoleService.getTenantDetail(tenantId) });
     } catch (error) {
       next(error);
     }
@@ -96,7 +96,7 @@ export const providerController = {
   async listOnboarding(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const moduleData = providerConsoleService.listModuleData();
-      const home = providerConsoleService.getHome();
+      const home = await providerConsoleService.getHome();
       res.json({
         success: true,
         data: {
@@ -131,7 +131,7 @@ export const providerController = {
 
   async getBillingOverview(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      res.json({ success: true, data: providerConsoleService.getBillingOverview() });
+      res.json({ success: true, data: await providerConsoleService.getBillingOverview() });
     } catch (error) {
       next(error);
     }
@@ -139,7 +139,7 @@ export const providerController = {
 
   async getBillingExtras(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const overview = providerConsoleService.getBillingOverview();
+      const overview = await providerConsoleService.getBillingOverview();
       res.json({
         success: true,
         data: {
@@ -154,7 +154,7 @@ export const providerController = {
 
   async listPlans(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const overview = providerConsoleService.getBillingOverview();
+      const overview = await providerConsoleService.getBillingOverview();
       res.json({ success: true, data: overview.plans });
     } catch (error) {
       next(error);
@@ -163,7 +163,7 @@ export const providerController = {
 
   async listSubscriptions(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const overview = providerConsoleService.getBillingOverview();
+      const overview = await providerConsoleService.getBillingOverview();
       res.json({ success: true, data: overview.subscriptions });
     } catch (error) {
       next(error);
@@ -172,7 +172,7 @@ export const providerController = {
 
   async listInvoices(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const overview = providerConsoleService.getBillingOverview();
+      const overview = await providerConsoleService.getBillingOverview();
       res.json({ success: true, data: overview.invoices });
     } catch (error) {
       next(error);
@@ -181,7 +181,7 @@ export const providerController = {
 
   async listPayments(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const overview = providerConsoleService.getBillingOverview();
+      const overview = await providerConsoleService.getBillingOverview();
       res.json({ success: true, data: overview.payments });
     } catch (error) {
       next(error);
@@ -190,7 +190,7 @@ export const providerController = {
 
   async listCredits(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const overview = providerConsoleService.getBillingOverview();
+      const overview = await providerConsoleService.getBillingOverview();
       const approvals = Array.isArray(overview.approvals)
         ? overview.approvals.filter((approval) => String((approval as Record<string, unknown>).status) === 'PENDING')
         : [];
@@ -353,7 +353,7 @@ export const providerController = {
 
   async listUsage(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const tenants = providerConsoleService.listTenants({} as never);
+      const tenants = await providerConsoleService.listTenants({} as never);
       const usage = tenants.flatMap((tenant) => {
         const now = new Date();
         const periodStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1)).toISOString();
@@ -376,7 +376,7 @@ export const providerController = {
 
   async listLimits(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const tenants = providerConsoleService.listTenants({} as never);
+      const tenants = await providerConsoleService.listTenants({} as never);
       const limits = tenants.map((tenant) => ({
         id: `limit_${tenant.id}`,
         tenantId: tenant.id,
@@ -880,7 +880,7 @@ export const providerController = {
   async exportTenants(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const format = getString(req.body?.format) || 'CSV';
-      const tenants = providerConsoleService.listTenants({} as never);
+      const tenants = await providerConsoleService.listTenants({} as never);
       res.json({
         success: true,
         data: { downloadUrl: `/downloads/tenants_export_${Date.now()}.${format.toLowerCase()}`, recordCount: tenants.length },

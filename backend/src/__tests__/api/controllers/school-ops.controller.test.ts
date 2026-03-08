@@ -1110,15 +1110,16 @@ describe('schoolOpsReportsController', () => {
   });
 
   describe('report — unknown type', () => {
-    it('returns not-yet-implemented message', async () => {
+    it('returns 400 error for unsupported report type', async () => {
       const req = mockReq({ params: { schoolId: 's1', type: 'xyz' } as any });
       const res = mockRes();
       const next = mockNext();
 
       await schoolOpsReportsController.report(req, res, next);
+      expect(res._status).toBe(400);
       expect(res._json).toMatchObject({
-        success: true,
-        data: { type: 'xyz', message: 'Report type not yet implemented' },
+        success: false,
+        error: { message: 'Unsupported report type: xyz' },
       });
     });
   });

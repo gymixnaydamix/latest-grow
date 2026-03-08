@@ -6,8 +6,8 @@ describe('providerConsoleService', () => {
     providerConsoleService.resetStateForTests();
   });
 
-  it('generates actionable inbox items for billing and blockers', () => {
-    const home = providerConsoleService.getHome();
+  it('generates actionable inbox items for billing and blockers', async () => {
+    const home = await providerConsoleService.getHome();
     const inbox = home.actionInbox as Array<Record<string, unknown>>;
 
     expect(inbox.length).toBeGreaterThan(0);
@@ -42,7 +42,7 @@ describe('providerConsoleService', () => {
     expect(audit.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('blocks onboarding stage when task becomes blocked', () => {
+  it('blocks onboarding stage when task becomes blocked', async () => {
     const tasks = providerConsoleService.listModuleData().onboardingTasks as Array<Record<string, unknown>>;
     const pendingTask = tasks.find((task) => String(task.status) === 'PENDING');
     expect(pendingTask).toBeTruthy();
@@ -56,7 +56,7 @@ describe('providerConsoleService', () => {
     });
 
     const tenantId = String(pendingTask?.tenantId);
-    const detail = providerConsoleService.getTenantDetail(tenantId);
+    const detail = await providerConsoleService.getTenantDetail(tenantId);
     const tenant = detail.tenant as Record<string, unknown>;
     expect(tenant.onboardingStage).toBe('BLOCKED');
   });
@@ -81,8 +81,8 @@ describe('providerConsoleService', () => {
     expect(updated?.pausedByIncidentId).toBe(incident.id);
   });
 
-  it('returns a rich billing overview bundle with analytics and operations data', () => {
-    const overview = providerConsoleService.getBillingOverview();
+  it('returns a rich billing overview bundle with analytics and operations data', async () => {
+    const overview = await providerConsoleService.getBillingOverview();
 
     expect(Array.isArray(overview.plans)).toBe(true);
     expect(Array.isArray(overview.subscriptions)).toBe(true);
@@ -94,8 +94,8 @@ describe('providerConsoleService', () => {
     expect((overview.analytics as Record<string, unknown>).summary).toBeTruthy();
   });
 
-  it('applies billing approval decisions back to the invoice state', () => {
-    const overview = providerConsoleService.getBillingOverview();
+  it('applies billing approval decisions back to the invoice state', async () => {
+    const overview = await providerConsoleService.getBillingOverview();
     const pendingApproval = (overview.approvals as Array<Record<string, unknown>>).find((entry) => entry.status === 'PENDING');
     expect(pendingApproval).toBeTruthy();
 
@@ -109,7 +109,7 @@ describe('providerConsoleService', () => {
       reason: 'Retention exception approved',
     });
 
-    const updatedOverview = providerConsoleService.getBillingOverview();
+    const updatedOverview = await providerConsoleService.getBillingOverview();
     const afterApproval = (updatedOverview.approvals as Array<Record<string, unknown>>).find((entry) => entry.id === pendingApproval?.id);
     const afterInvoice = (updatedOverview.invoices as Array<Record<string, unknown>>).find((entry) => entry.id === pendingApproval?.invoiceId);
 

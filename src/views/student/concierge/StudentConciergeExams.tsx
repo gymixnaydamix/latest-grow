@@ -3,7 +3,7 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeSplitPreviewPanel } from '@/components/concierge/shared';
 import { cn } from '@/lib/utils';
 import { Calendar, Clock, TrendingUp, TrendingDown, Minus, Download, FileText } from 'lucide-react';
-import { useStudentExams, useStudentGradesOverview } from '@/hooks/api/use-student';
+import { useStudentExams, useStudentGradesOverview, useStudentLearningPaths, useStudentPortfolio } from '@/hooks/api/use-student';
 
 /* ── Upcoming exams ── */
 const FALLBACK_UPCOMING_EXAMS = [
@@ -120,13 +120,15 @@ export function StudentConciergeExams() {
 
   const { data: apiExams } = useStudentExams();
   const { data: apiGrades } = useStudentGradesOverview();
+  const { data: apiLearningPaths } = useStudentLearningPaths();
+  const { data: apiPortfolio } = useStudentPortfolio();
 
   const upcomingExams = (apiExams as any[]) ?? FALLBACK_UPCOMING_EXAMS;
-  const examSchedule = FALLBACK_EXAM_SCHEDULE;
+  const examSchedule = (apiExams as any[])?.map((e: any) => ({ date: e.date, subject: e.subject, time: e.time, type: e.type ?? 'Exam', marks: e.marks ?? e.total ?? 0 })) ?? FALLBACK_EXAM_SCHEDULE;
   const examResults = (apiGrades as any[]) ?? FALLBACK_EXAM_RESULTS;
-  const reportCardTerms = FALLBACK_REPORT_CARD_TERMS;
-  const subjectAnalysis = FALLBACK_SUBJECT_ANALYSIS;
-  const studyResources = FALLBACK_STUDY_RESOURCES;
+  const reportCardTerms = (apiGrades as any[])?.length ? (apiGrades as any[]) : FALLBACK_REPORT_CARD_TERMS;
+  const subjectAnalysis = (apiPortfolio as any[])?.length ? (apiPortfolio as any[]) : FALLBACK_SUBJECT_ANALYSIS;
+  const studyResources = (apiLearningPaths as any[])?.length ? (apiLearningPaths as any[]) : FALLBACK_STUDY_RESOURCES;
 
   /* ── Upcoming (default) ── */
   if (!activeSubNav || activeSubNav === 'c_upcoming') {
@@ -274,7 +276,7 @@ export function StudentConciergeExams() {
                   </tr>
                 </thead>
                 <tbody>
-                  {term.subjects.map((s) => (
+                  {term.subjects.map((s: any) => (
                     <tr key={s.subject} className="border-b border-border/10">
                       <td className="py-1.5 pr-3">
                         <span className={cn('rounded-full border px-2 py-0.5 text-[10px] font-medium', subjectColors[s.subject] ?? 'bg-zinc-500/10 text-zinc-500')}>
@@ -335,7 +337,7 @@ export function StudentConciergeExams() {
                   <span className="text-xs font-bold text-foreground">{latest}%</span>
                 </div>
                 <div className="flex items-center gap-1 mb-2">
-                  {a.scores.map((s, i) => (
+                  {a.scores.map((s: any, i: any) => (
                     <div key={i} className="flex-1">
                       <div className="h-1.5 w-full rounded-full bg-muted/50 overflow-hidden">
                         <div className={cn('h-full rounded-full', s >= 80 ? 'bg-emerald-500' : s >= 60 ? 'bg-amber-500' : 'bg-red-500')} style={{ width: `${s}%` }} />
@@ -376,7 +378,7 @@ export function StudentConciergeExams() {
             <div key={sr.id} className="rounded-xl border border-white/20 bg-white/60 p-3 shadow-lg backdrop-blur-xl dark:bg-white/5 dark:border-white/5">
               <h4 className="text-xs font-semibold text-foreground mb-2">{sr.exam}</h4>
               <div className="space-y-1.5">
-                {sr.resources.map((r, i) => (
+                {sr.resources.map((r: any, i: any) => (
                   <div key={i} className="flex items-center justify-between rounded-lg border border-border/20 bg-background/50 px-3 py-2 dark:border-white/5">
                     <div className="flex items-center gap-2">
                       <FileText className="h-3.5 w-3.5 text-muted-foreground" />

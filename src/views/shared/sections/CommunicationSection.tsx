@@ -16,7 +16,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
-import { useMessageThreads, useMessageThread, useCreateThread, useSendMessage, useBroadcasts } from '@/hooks/api';
+import { useMessageThreads, useMessageThread, useCreateThread, useSendMessage, useBroadcasts, useTemplates } from '@/hooks/api';
+import { useStudentCommunity } from '@/hooks/api/use-student';
 import { Skeleton } from '@/components/ui/skeleton';
 
 /* ── Student SubNav → Route mapping (split-page navigation) ───── */
@@ -363,7 +364,13 @@ function ThreadDetailPane({ selectedThreadId, isDetailLoading, selectedThread, s
 function SocialMediaView() {
   const schoolId = useAuthStore((s) => s.schoolId);
   const { data: broadcastsData } = useBroadcasts(schoolId);
-  void broadcastsData;
+  const socialPosts = (broadcastsData as any[])?.map((b: any) => ({
+    platform: b.platform ?? b.audience?.[0] ?? 'School',
+    content: b.body ?? b.title ?? '',
+    likes: b.likes ?? 0,
+    comments: b.comments ?? 0,
+    time: b.publishedAt ? new Date(b.publishedAt).toLocaleDateString() : 'Recently',
+  })) ?? FALLBACK_SOCIAL_POSTS;
 
   return (
     <>
@@ -401,7 +408,7 @@ function SocialMediaView() {
           <CardTitle className="text-base text-white/85">Recent Posts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {FALLBACK_SOCIAL_POSTS.map((post, i) => (
+          {socialPosts.map((post, i) => (
             <div key={i} className="flex items-start gap-3 rounded-xl border border-white/6 bg-white/2 p-3 transition-all hover:bg-white/4 hover:border-white/12">
               <Badge variant="outline" className="shrink-0 text-[10px] border-white/10 text-white/50">{post.platform}</Badge>
               <div className="flex-1 min-w-0">
@@ -421,6 +428,15 @@ function SocialMediaView() {
 }
 
 function CommunityView({ subNav }: { subNav: string }) {
+  const { data: apiCommunity } = useStudentCommunity();
+  const communityChannels = (apiCommunity as any[])?.map((ch: any) => ({
+    name: ch.name ?? ch.title ?? 'Channel',
+    members: ch.members ?? ch.memberCount ?? 0,
+    messages: ch.messages ?? ch.postCount ?? 0,
+    lastActive: ch.lastActive ?? 'recently',
+    icon: Hash,
+  })) ?? FALLBACK_COMMUNITY_CHANNELS;
+
   return (
     <>
       <div className="flex items-center justify-between" data-animate>
@@ -432,7 +448,7 @@ function CommunityView({ subNav }: { subNav: string }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2" data-animate>
-        {FALLBACK_COMMUNITY_CHANNELS.map((ch) => (
+        {communityChannels.map((ch) => (
           <Card key={ch.name} className="border-white/6 bg-white/3 backdrop-blur-xl cursor-pointer hover:border-white/12 hover:bg-white/4 transition-all">
             <CardContent className="flex items-center gap-4 py-4">
               <div className="flex size-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
@@ -452,6 +468,14 @@ function CommunityView({ subNav }: { subNav: string }) {
 }
 
 function TemplatesView() {
+  const schoolId = useAuthStore((s) => s.schoolId);
+  const { data: apiTemplates } = useTemplates(schoolId);
+  const templates = (apiTemplates as any[])?.map((t: any) => ({
+    name: t.name ?? t.title ?? 'Template',
+    category: t.category ?? t.type ?? 'General',
+    lastUsed: t.lastUsed ?? t.updatedAt ?? 'Never',
+  })) ?? FALLBACK_TEMPLATES;
+
   return (
     <>
       <div className="flex items-center justify-between" data-animate>
@@ -463,7 +487,7 @@ function TemplatesView() {
       </div>
 
       <div className="space-y-2" data-animate>
-        {FALLBACK_TEMPLATES.map((t) => (
+        {templates.map((t) => (
           <Card key={t.name} className="border-white/6 bg-white/3 backdrop-blur-xl cursor-pointer hover:border-white/12 hover:bg-white/4 transition-all">
             <CardContent className="flex items-center justify-between py-3">
               <div className="flex items-center gap-3">

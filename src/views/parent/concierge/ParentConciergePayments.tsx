@@ -3,7 +3,7 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { ConciergeSplitPreviewPanel, ConciergePermissionBadge } from '@/components/concierge/shared';
 import { CreditCard, Download, Share2, CheckCircle2, Clock, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useParentV2Invoices, useParentV2Payments, useParentV2Receipts } from '@/hooks/api/use-parent-v2';
+import { useParentV2Invoices, useParentV2Payments, useParentV2Receipts, useParentV2Home } from '@/hooks/api/use-parent-v2';
 import { useAuthStore } from '@/store/auth.store';
 
 /* ── Outstanding fees ── */
@@ -97,11 +97,12 @@ export function ParentConciergePayments() {
   const { data: apiInvoices } = useParentV2Invoices();
   const { data: apiPayments } = useParentV2Payments();
   const { data: apiReceipts } = useParentV2Receipts();
+  const { data: apiHome } = useParentV2Home();
 
   const outstandingFees = (apiInvoices as any[]) ?? FALLBACK_OUTSTANDING_FEES;
   const paymentHistory = (apiPayments as any[]) ?? FALLBACK_PAYMENT_HISTORY;
-  const installmentPlans = FALLBACK_INSTALLMENT_PLANS;
-  const feeBreakdown = FALLBACK_FEE_BREAKDOWN;
+  const installmentPlans = (apiHome as any)?.installmentPlans ?? FALLBACK_INSTALLMENT_PLANS;
+  const feeBreakdown = (apiHome as any)?.feeBreakdown ?? FALLBACK_FEE_BREAKDOWN;
   const receipts = (apiReceipts as any[]) ?? FALLBACK_RECEIPTS;
 
   /* ── Outstanding (default) ── */
@@ -192,7 +193,7 @@ export function ParentConciergePayments() {
       <div className="space-y-3">
         <h3 className="text-sm font-semibold text-foreground">Installment Plans</h3>
         <div className="space-y-3">
-          {installmentPlans.map((plan) => (
+          {installmentPlans.map((plan: any) => (
             <div key={plan.id} className="rounded-xl border border-border/30 bg-background/70 p-4 dark:border-white/5">
               <div className="flex items-center justify-between mb-2">
                 <h5 className="text-xs font-semibold text-foreground">{plan.name}</h5>
@@ -207,7 +208,7 @@ export function ParentConciergePayments() {
                 />
               </div>
               <div className="space-y-1.5">
-                {plan.installments.map((inst) => (
+                {plan.installments.map((inst: any) => (
                   <div key={inst.label} className="flex items-center justify-between text-[10px]">
                     <div className="flex items-center gap-2">
                       {inst.status === 'Paid' ? (
@@ -240,7 +241,7 @@ export function ParentConciergePayments() {
     return (
       <div className="space-y-4">
         <h3 className="text-sm font-semibold text-foreground">Fee Breakdown by Child</h3>
-        {feeBreakdown.map((child) => (
+        {feeBreakdown.map((child: any) => (
           <div key={child.child} className="rounded-xl border border-border/30 bg-background/70 p-4 dark:border-white/5">
             <div className="flex items-center justify-between mb-3">
               <h4 className="text-xs font-semibold text-primary/80">{child.child}</h4>
@@ -261,7 +262,7 @@ export function ParentConciergePayments() {
                   </tr>
                 </thead>
                 <tbody>
-                  {child.fees.map((f) => (
+                  {child.fees.map((f: any) => (
                     <tr key={f.category} className="border-b border-border/10">
                       <td className="py-1.5 pr-3 font-medium text-foreground">{f.category}</td>
                       <td className="py-1.5 px-2 text-right text-muted-foreground">{f.term1 > 0 ? `₹${f.term1.toLocaleString('en-IN')}` : '—'}</td>
