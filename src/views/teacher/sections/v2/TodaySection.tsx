@@ -216,15 +216,31 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
               <Badge variant="outline" className="ml-auto text-[9px] border-amber-500/30 text-amber-400">{actionItems.length}</Badge>
             </div>
             <div className="space-y-2">
-              {actionItems.slice(0, 5).map((a: any) => (
-                <div key={a.id} className="flex items-start gap-3 rounded-lg border border-border/40 bg-card/60 p-3">
-                  <div className={`mt-0.5 size-2 rounded-full shrink-0 ${a.priority === 'HIGH' ? 'bg-rose-400' : a.priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
-                  <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-foreground/70 truncate">{a.title}</p>
-                    <p className="text-[10px] text-muted-foreground/70">{a.dueBy}</p>
+              {actionItems.slice(0, 5).map((a: any) => {
+                // Map action type to navigation target
+                const actionTarget = a.type === 'grading' ? { section: 'gradebook', header: 'grade_entry' }
+                  : a.type === 'attendance' ? { section: 'attendance', header: 'take_attendance' }
+                  : a.type === 'meeting' ? { section: 'meetings', header: 'upcoming_meetings' }
+                  : a.type === 'message' ? { section: 'messages', header: 'inbox' }
+                  : null;
+
+                return (
+                  <div
+                    key={a.id}
+                    className={`flex items-start gap-3 rounded-lg border border-border/40 bg-card/60 p-3 ${actionTarget ? 'cursor-pointer hover:bg-muted/60 transition-colors' : ''}`}
+                    onClick={() => actionTarget && navigateTo(actionTarget.section, actionTarget.header)}
+                  >
+                    <div className={`mt-0.5 size-2 rounded-full shrink-0 ${a.priority === 'HIGH' ? 'bg-rose-400' : a.priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs font-medium text-foreground/70 truncate">{a.title}</p>
+                      <p className="text-[10px] text-muted-foreground/70">{a.dueBy}</p>
+                    </div>
+                    {actionTarget && (
+                      <ChevronRight className="size-3.5 text-muted-foreground/50 shrink-0 mt-0.5" />
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </GlassCard>
 
@@ -236,7 +252,7 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
             </div>
             <div className="space-y-2">
               {studentAlerts.slice(0, 4).map(al => (
-                <div key={al.id} className="flex items-start gap-3 rounded-lg border border-border/40 bg-card/60 p-3">
+                <div key={al.id} className="flex items-start gap-3 rounded-lg border border-border/40 bg-card/60 p-3 group">
                   <Avatar className="size-7 border border-border/70 shrink-0">
                     <AvatarFallback className={`text-[9px] ${al.severity === 'high' ? 'bg-rose-500/10 text-rose-400' : al.severity === 'medium' ? 'bg-amber-500/10 text-amber-400' : 'bg-sky-500/10 text-sky-400'}`}>
                       {al.studentInitials}
@@ -245,6 +261,24 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs font-medium text-foreground/70">{al.studentName}</p>
                     <p className="text-[10px] text-muted-foreground/70 line-clamp-1">{al.alert}</p>
+                  </div>
+                  <div className="flex gap-1 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[9px] text-muted-foreground hover:text-foreground"
+                      onClick={() => navigateTo('behavior', 'add_note')}
+                    >
+                      Log Note
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 px-2 text-[9px] text-muted-foreground hover:text-foreground"
+                      onClick={() => navigateTo('messages', 'compose')}
+                    >
+                      Message
+                    </Button>
                   </div>
                   <span className="text-[9px] text-muted-foreground/50 shrink-0">{al.timestamp}</span>
                 </div>
@@ -284,6 +318,14 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
               </div>
               <Progress value={(g.submitted / g.total) * 100} className="w-20 h-1.5" />
               <Badge variant="outline" className="text-[9px] border-border/70 text-muted-foreground">{g.type}</Badge>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="text-[10px] text-indigo-400 hover:text-indigo-300 shrink-0"
+                onClick={() => navigateTo('assignments', 'submissions')}
+              >
+                Grade Now <ArrowRight className="ml-1 size-3" />
+              </Button>
             </div>
           ))}
         </div>

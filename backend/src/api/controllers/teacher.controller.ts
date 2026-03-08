@@ -167,6 +167,28 @@ const messages = [
   { id: 'mt4', subject: 'Maria Garcia grade concern', participants: ['Ms. Johnson (Counselor)'], lastMessage: "I spoke with Maria today. There may be issues at home. Let's coordinate.", lastSender: 'Ms. Johnson', timestamp: '1d ago', unread: false, category: 'staff' },
 ];
 
+// ── Thread message history ──
+const threadMessages: Record<string, Array<{ id: string; sender: string; body: string; time: string }>> = {
+  mt1: [
+    { id: 'tm1', sender: 'You', body: "Hi Mrs. Kim, I wanted to reach out about Jordan's missing assignments in Pre-Algebra. He has 3 outstanding this month.", time: 'Mar 4, 2:30 PM' },
+    { id: 'tm2', sender: 'Mrs. Kim', body: 'Thank you for letting me know, Ms. Chen. We were not aware of this. Can you send the list of assignments?', time: 'Mar 4, 4:15 PM' },
+    { id: 'tm3', sender: 'You', body: 'Of course — HW Set 5, Chapter 4 Practice, and the Fraction Review worksheet. All were due within the past 2 weeks.', time: 'Mar 4, 4:45 PM' },
+    { id: 'tm4', sender: 'Mrs. Kim', body: 'Thank you, Ms. Chen. We will make sure Jordan completes the work this weekend.', time: 'Mar 5, 9:20 AM' },
+  ],
+  mt2: [
+    { id: 'tm5', sender: 'You', body: 'Hi Mr. Davis, is there a room available Saturday for an AP Calculus study session? About 15 students.', time: 'Mar 3, 10:00 AM' },
+    { id: 'tm6', sender: 'Mr. Davis', body: "Room 108 is available Saturday 10am-1pm. I've reserved it for your students.", time: 'Mar 3, 11:30 AM' },
+  ],
+  mt3: [
+    { id: 'tm7', sender: 'Chen Wei', body: 'Ms. Chen, can I do the advanced projectile problem for extra credit?', time: 'Mar 4, 3:10 PM' },
+  ],
+  mt4: [
+    { id: 'tm8', sender: 'Ms. Johnson', body: "Hi Sarah, I noticed Maria Garcia's grades are slipping. Have you seen anything in class?", time: 'Mar 3, 11:00 AM' },
+    { id: 'tm9', sender: 'You', body: "Yes, she's been very withdrawn the past two weeks. Not participating at all.", time: 'Mar 3, 12:15 PM' },
+    { id: 'tm10', sender: 'Ms. Johnson', body: "I spoke with Maria today. There may be issues at home. Let's coordinate.", time: 'Mar 4, 10:30 AM' },
+  ],
+};
+
 // ── Announcements ──
 const announcements = [
   { id: 'an1', title: 'Spring Break Schedule Change', body: 'Spring break will now run March 23–30.', author: 'Principal Martinez', audience: 'All Staff', publishedAt: '2026-03-04', priority: 'HIGH', read: false },
@@ -412,6 +434,14 @@ export const saveExamMarks = (req: Request, res: Response) => {
 
 export const getMessages = (_req: Request, res: Response) => ok(res, messages);
 
+export const getThreadMessages = (req: Request, res: Response): void => {
+  const threadId = req.params.threadId;
+  const thread = messages.find((m) => m.id === threadId);
+  if (!thread) { res.status(404).json({ success: false, error: 'Thread not found' }); return; }
+  const history = threadMessages[threadId] ?? [];
+  ok(res, { threadId, subject: thread.subject, messages: history });
+};
+
 export const replyToMessage = (req: Request, res: Response) => {
   const thread = messages.find((m) => m.id === req.body.threadId);
   if (thread) {
@@ -419,6 +449,14 @@ export const replyToMessage = (req: Request, res: Response) => {
     thread.lastSender = 'You';
     thread.timestamp = 'Just now';
     thread.unread = false;
+    // Store in thread history
+    if (!threadMessages[req.body.threadId]) threadMessages[req.body.threadId] = [];
+    threadMessages[req.body.threadId].push({
+      id: nextId('tm'),
+      sender: 'You',
+      body: req.body.body,
+      time: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+    });
   }
   ok(res, { threadId: req.body.threadId, sent: true });
 };

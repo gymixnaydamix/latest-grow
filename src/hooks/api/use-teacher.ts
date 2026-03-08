@@ -53,6 +53,7 @@ export const teacherKeys = {
   exams: ['teacher', 'exams'] as const,
   // Messages
   messages: ['teacher', 'messages'] as const,
+  threadMessages: (threadId: string) => ['teacher', 'thread-messages', threadId] as const,
   // Announcements
   announcements: ['teacher', 'announcements'] as const,
   // Behavior
@@ -180,6 +181,14 @@ export function useTeacherMessages() {
   return useQuery({
     queryKey: teacherKeys.messages,
     queryFn: () => api.get<ApiSuccessResponse<TeacherMessageThread[]>>('/teacher/messages').then((r) => r.data),
+  });
+}
+
+export function useTeacherThreadMessages(threadId: string | null) {
+  return useQuery({
+    queryKey: teacherKeys.threadMessages(threadId ?? ''),
+    queryFn: () => api.get<ApiSuccessResponse<{ threadId: string; subject: string; messages: Array<{ id: string; sender: string; body: string; time: string }> }>>(`/teacher/messages/${threadId}`).then((r) => r.data),
+    enabled: !!threadId,
   });
 }
 

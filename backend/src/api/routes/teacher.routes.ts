@@ -52,6 +52,7 @@ router.post('/exams/marks', tc.saveExamMarks);
 
 // Messages
 router.get('/messages', tc.getMessages);
+router.get('/messages/:threadId', tc.getThreadMessages);
 router.post('/messages', tc.createThread);
 router.post('/messages/reply', tc.replyToMessage);
 

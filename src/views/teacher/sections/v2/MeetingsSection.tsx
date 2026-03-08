@@ -3,8 +3,8 @@
  * ──────────────────────────────────────────────────────────────────── */
 import { useState, useMemo } from 'react';
 import {
-  Calendar, CalendarPlus, Clock, MapPin,
-  Search, Users,
+  Calendar, CalendarPlus, Clock, Edit3, ExternalLink, MapPin,
+  Search, Trash2, Users, XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -246,6 +246,46 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                       {mtg.notes && (
                         <p className="mt-2 text-xs text-muted-foreground italic">{mtg.notes}</p>
                       )}
+
+                      {/* Action Buttons */}
+                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-border/30">
+                        {mtg.location.startsWith('http') || mtg.location.includes('zoom') || mtg.location.includes('meet') ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-[10px] text-sky-400 hover:text-sky-300 hover:bg-sky-500/10"
+                            onClick={() => notifySuccess('Opening meeting link', mtg.location)}
+                          >
+                            <ExternalLink className="size-3 mr-1" /> Join
+                          </Button>
+                        ) : null}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-[10px] text-muted-foreground hover:text-foreground"
+                          onClick={() => {
+                            setFormTitle(mtg.title);
+                            setFormType(mtg.type);
+                            setFormDate(mtg.date);
+                            setFormTime(mtg.startTime);
+                            setFormEndTime(mtg.endTime);
+                            setFormLocation(mtg.location);
+                            setFormAttendees(mtg.attendees.join(', '));
+                            setFormNotes(mtg.notes ?? '');
+                            setHeader('schedule_meeting');
+                          }}
+                        >
+                          <Edit3 className="size-3 mr-1" /> Edit
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                          onClick={() => notifySuccess('Meeting cancelled', `"${mtg.title}" has been cancelled`)}
+                        >
+                          <XCircle className="size-3 mr-1" /> Cancel
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -431,6 +471,36 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                   <div className="mt-2 pt-2 border-t border-border/50">
                     <p className="text-xs text-muted-foreground font-medium">{slot.bookedBy}</p>
                     {slot.topic && <p className="text-[11px] text-muted-foreground/70 mt-0.5">{slot.topic}</p>}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 mt-1.5 text-[9px] text-amber-400 hover:text-amber-300 hover:bg-amber-500/10 p-0 px-1.5"
+                      onClick={() => {
+                        setFormTitle(`Office Hours: ${slot.bookedBy}`);
+                        setFormType('office-hours');
+                        setFormDate('');
+                        setFormTime(slot.time.split(' – ')[0] || '');
+                        setFormEndTime(slot.time.split(' – ')[1]?.replace(' PM', '') || '');
+                        setFormLocation('Room 204');
+                        setFormAttendees(slot.bookedBy ?? '');
+                        setFormNotes(slot.topic ?? '');
+                        setHeader('schedule_meeting');
+                      }}
+                    >
+                      <Edit3 className="size-2.5 mr-0.5" /> Edit Booking
+                    </Button>
+                  </div>
+                )}
+                {slot.status === 'open' && (
+                  <div className="mt-2 pt-2 border-t border-border/50">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 text-[9px] text-muted-foreground/70 hover:text-rose-400 hover:bg-rose-500/10 p-0 px-1.5"
+                      onClick={() => notifySuccess('Slot blocked', `${slot.day} office hours blocked`)}
+                    >
+                      <XCircle className="size-2.5 mr-0.5" /> Block Slot
+                    </Button>
                   </div>
                 )}
               </div>

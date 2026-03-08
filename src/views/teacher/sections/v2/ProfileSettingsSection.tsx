@@ -16,7 +16,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
 import { useUpdateTeacherProfile, useUpdateTeacherAvatar, useSaveTeacherPreferences, useTeacherProfile, useChangeTeacherPassword } from '@/hooks/api/use-teacher';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import {
   TeacherSectionShell, GlassCard, StatusBadge,
 } from './shared';
@@ -119,11 +119,11 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
   const handleChangePassword = () => {
     if (!currentPassword || !newPassword) return;
     if (newPassword !== confirmPassword) {
-      notifySuccess('Error', 'Passwords do not match');
+      notifyError('Error', 'Passwords do not match');
       return;
     }
     if (newPassword.length < 8) {
-      notifySuccess('Error', 'Password must be at least 8 characters');
+      notifyError('Error', 'Password must be at least 8 characters');
       return;
     }
     changePasswordMut.mutate({ currentPassword, newPassword }, {

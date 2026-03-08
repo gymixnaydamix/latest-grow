@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
 import { useMessageThreads } from '@/hooks/api';
-import { useSendTeacherMessage, useCreateTeacherThread, useTeacherMessages } from '@/hooks/api/use-teacher';
+import { useSendTeacherMessage, useCreateTeacherThread, useTeacherMessages, useTeacherThreadMessages } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';

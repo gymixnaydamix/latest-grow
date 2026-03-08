@@ -3,7 +3,7 @@
  * ──────────────────────────────────────────────────────────────────── */
 import { useState, useMemo } from 'react';
 import {
-  BookOpen, ChevronLeft, ChevronRight,
+  BookOpen, ChevronLeft, ChevronRight, Edit3, Eye, Trash2,
   FileText, FolderOpen, Link2, Plus, Search, Target, Upload,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -117,6 +117,10 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
     return matchSearch && matchCat;
   });
 
+  /* ── Selected lesson & resource state ── */
+  const [selectedLesson, setSelectedLesson] = useState<typeof FALLBACK_lessonPlansDemo[0] | null>(null);
+  const [selectedResource, setSelectedResource] = useState<typeof resourceItems[0] | null>(null);
+
   const toneMap: Record<string, 'good' | 'warn' | 'neutral' | 'info'> = {
     draft: 'warn', ready: 'good', taught: 'info', reviewed: 'neutral',
   };
@@ -149,7 +153,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
                 <div
                   key={lp.id}
                   className="mb-1.5 rounded-lg border border-border/60 bg-muted/60 p-2 cursor-pointer hover:bg-muted/80 transition-colors"
-                  onClick={() => notifySuccess('Lesson plan', `Viewing: ${lp.title}`)}
+                  onClick={() => setSelectedLesson(lp)}
                 >
                   <p className="text-[11px] font-medium text-foreground/70 truncate">{lp.title}</p>
                   <p className="text-[9px] text-muted-foreground/70">{lp.className}</p>
@@ -261,7 +265,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
       ) : (
         <div className="space-y-2">
           {filteredLessons.map(lp => (
-            <GlassCard key={lp.id} className="flex items-start gap-4 hover:bg-muted/60 transition-colors cursor-pointer" onClick={() => notifySuccess('Lesson plan', `Viewing: ${lp.title}`)}>
+            <GlassCard key={lp.id} className="flex items-start gap-4 hover:bg-muted/60 transition-colors cursor-pointer" onClick={() => setSelectedLesson(lp)}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
                   <p className="text-sm font-medium text-foreground/80 truncate">{lp.title}</p>
@@ -327,7 +331,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
 
       <div className="space-y-2">
         {filteredResources.map(r => (
-          <div key={r.id} className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/80 px-4 py-3 hover:bg-muted/70 transition-colors cursor-pointer" onClick={() => notifySuccess('Resource', `Opening: ${r.name}`)}>
+          <div key={r.id} className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/80 px-4 py-3 hover:bg-muted/70 transition-colors cursor-pointer" onClick={() => setSelectedResource(selectedResource?.id === r.id ? null : r)}>
             <FileText className="size-4 text-muted-foreground/60 shrink-0" />
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium text-foreground/70 truncate">{r.name}</p>
@@ -432,6 +436,108 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
       {view === 'my_lessons' && renderMyLessons()}
       {view === 'resource_library' && renderResourceLibrary()}
       {view === 'curriculum_map' && renderCurriculumMap()}
+
+      {/* ── Lesson Detail Panel (overlay) ── */}
+      {selectedLesson && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedLesson(null)}>
+          <div className="w-full max-w-lg mx-4 rounded-2xl border border-border/60 bg-card shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-6 space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-foreground/90">{selectedLesson.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{selectedLesson.className} · {formatDateLabel(selectedLesson.date)} · {selectedLesson.duration}</p>
+                </div>
+                <StatusBadge status={selectedLesson.status} tone={toneMap[selectedLesson.status] ?? 'neutral'} />
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Learning Objectives</h4>
+                <ul className="space-y-1">
+                  {selectedLesson.objectives.map((obj, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-foreground/70">
+                      <span className="mt-1.5 size-1.5 rounded-full bg-indigo-400 shrink-0" />
+                      {obj}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h4 className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mb-1.5">Resources</h4>
+                <div className="flex flex-wrap gap-1.5">
+                  {selectedLesson.resources.map((r, i) => (
+                    <Badge key={i} variant="outline" className="text-[10px] border-border/70 text-muted-foreground">{r}</Badge>
+                  ))}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2 border-t border-border/40">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setSelectedLesson(null)}>
+                  Close
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
+                  onClick={() => { notifySuccess('Deleted', `"${selectedLesson.title}" deleted`); setSelectedLesson(null); }}
+                >
+                  <Trash2 className="size-3 mr-1" /> Delete
+                </Button>
+                <Button
+                  size="sm"
+                  className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30"
+                  onClick={() => {
+                    setFormTitle(selectedLesson.title);
+                    setFormClass(selectedLesson.classId);
+                    setFormObjectives(selectedLesson.objectives.join('\n'));
+                    setFormResources(selectedLesson.resources.join(', '));
+                    setFormDuration(selectedLesson.duration.replace(/\D/g, '') || '50');
+                    setSelectedLesson(null);
+                    setHeader('create_lesson');
+                  }}
+                >
+                  <Edit3 className="size-3 mr-1" /> Edit
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Resource Detail Panel ── */}
+      {selectedResource && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm" onClick={() => setSelectedResource(null)}>
+          <div className="w-full max-w-md mx-4 rounded-2xl border border-border/60 bg-card shadow-2xl" onClick={e => e.stopPropagation()}>
+            <div className="p-6 space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <h3 className="text-base font-semibold text-foreground/90">{selectedResource.name}</h3>
+                  <p className="text-xs text-muted-foreground mt-0.5">{selectedResource.subject} · {formatDateLabel(selectedResource.date)}</p>
+                </div>
+                <Badge variant="outline" className="text-[10px] border-border/70 text-muted-foreground">{selectedResource.format}</Badge>
+              </div>
+              <div className="rounded-lg border border-border/40 bg-muted/40 p-4 text-center">
+                <Eye className="size-8 text-muted-foreground/40 mx-auto mb-2" />
+                <p className="text-xs text-muted-foreground/70">
+                  {selectedResource.format === 'Link' ? 'External link resource — opens in a new tab' : `${selectedResource.format} file — click to download`}
+                </p>
+              </div>
+              <div className="flex justify-end gap-2 pt-1">
+                <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setSelectedResource(null)}>
+                  Close
+                </Button>
+                <Button
+                  size="sm"
+                  className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30"
+                  onClick={() => { notifySuccess('Opening resource', selectedResource.name); setSelectedResource(null); }}
+                >
+                  {selectedResource.format === 'Link' ? 'Open Link' : 'Download'}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </TeacherSectionShell>
   );
 }

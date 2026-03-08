@@ -152,6 +152,11 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
   const [selectedAssignment, setSelectedAssignment] = useState<string>(assignments[0]?.id ?? '');
   const currentAssignment = assignments.find(a => a.id === selectedAssignment);
 
+  /* ── Inline grading state ── */
+  const [gradingStudentId, setGradingStudentId] = useState<string | null>(null);
+  const [gradeScore, setGradeScore] = useState('');
+  const [gradeFeedback, setGradeFeedback] = useState('');
+
   // Wire submissions from API with demo fallback
   const { data: apiSubmissionsData } = useTeacherSubmissions(selectedAssignment || null);
   const apiSubs = (apiSubmissionsData as any)?.data as SubmissionStudent[] | undefined;
@@ -415,17 +420,61 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
                         )}
                       </td>
                       <td className="py-3">
-                        {(s.status === 'submitted' || s.status === 'late') && (
-                          <Button variant="ghost" size="sm" className="text-[10px] text-indigo-400 hover:text-indigo-300" onClick={() => {
-                            const scoreInput = prompt(`Enter score for ${s.name} (max ${s.maxScore}):`);
-                            if (scoreInput == null) return;
-                            const numScore = Number(scoreInput);
-                            if (isNaN(numScore) || numScore < 0 || numScore > s.maxScore) return;
-                            gradeSubmission.mutate({ assignmentId: selectedAssignment ?? '', studentId: s.id, score: numScore }, { onSuccess: () => notifySuccess('Graded', `${s.name} scored ${numScore}/${s.maxScore}`) });
-                          }}>
+                        {gradingStudentId === s.id ? (
+                          /* ── Inline Grading Form ── */
+                          <div className="flex flex-col gap-2 min-w-[220px]">
+                            <div className="flex items-center gap-2">
+                              <Input
+                                type="number"
+                                placeholder="Score"
+                                value={gradeScore}
+                                onChange={e => setGradeScore(e.target.value)}
+                                min={0}
+                                max={s.maxScore}
+                                className="w-20 h-7 text-xs border-border/60 bg-muted/60 text-foreground/80"
+                                autoFocus
+                              />
+                              <span className="text-[10px] text-muted-foreground/70">/ {s.maxScore}</span>
+                            </div>
+                            <Input
+                              placeholder="Feedback (optional)"
+                              value={gradeFeedback}
+                              onChange={e => setGradeFeedback(e.target.value)}
+                              className="h-7 text-xs border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/50"
+                            />
+                            <div className="flex gap-1.5">
+                              <Button
+                                size="sm"
+                                className="h-6 px-2.5 text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 hover:bg-emerald-500/30"
+                                disabled={!gradeScore || isNaN(Number(gradeScore)) || Number(gradeScore) < 0 || Number(gradeScore) > s.maxScore}
+                                onClick={() => {
+                                  gradeSubmission.mutate(
+                                    { assignmentId: selectedAssignment ?? '', studentId: s.id, score: Number(gradeScore), feedback: gradeFeedback || undefined },
+                                    { onSuccess: () => { notifySuccess('Graded', `${s.name} scored ${gradeScore}/${s.maxScore}`); setGradingStudentId(null); setGradeScore(''); setGradeFeedback(''); } },
+                                  );
+                                }}
+                              >
+                                Save
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-[10px] text-muted-foreground"
+                                onClick={() => { setGradingStudentId(null); setGradeScore(''); setGradeFeedback(''); }}
+                              >
+                                Cancel
+                              </Button>
+                            </div>
+                          </div>
+                        ) : (s.status === 'submitted' || s.status === 'late') ? (
+                          <Button variant="ghost" size="sm" className="text-[10px] text-indigo-400 hover:text-indigo-300" onClick={() => { setGradingStudentId(s.id); setGradeScore(''); setGradeFeedback(''); }}>
                             Grade
                           </Button>
-                        )}
+                        ) : s.status === 'graded' ? (
+                          <Button variant="ghost" size="sm" className="text-[10px] text-muted-foreground/70 hover:text-indigo-300" onClick={() => { setGradingStudentId(s.id); setGradeScore(String(s.score ?? '')); setGradeFeedback(''); }}>
+                            Re-grade
+                          </Button>
+                        ) : null}
                       </td>
                     </tr>
                   );
