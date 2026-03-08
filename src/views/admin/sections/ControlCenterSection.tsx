@@ -1,8 +1,9 @@
 /* ─── ControlCenterSection ─── Operations hub for school admin ─── */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
+import { useAdminStore } from '@/store/admin-data.store';
 import {
   useApprovalHistory,
   useLeaveRequests,
@@ -157,30 +158,24 @@ function ActionInboxView() {
 /* ─────────────── Today's Snapshot View ─────────────── */
 function TodaySnapshotView() {
   const { schoolId } = useAuthStore();
-  /* KPI data loaded for future widget integration */
-  useDashboardKPIs(schoolId);
-  const snap = {
-    classesRunning: 28,
-    totalClasses: 32,
-    absentTeachers: [
-      { name: 'Mr. Singh', subject: 'Mathematics', substitute: 'Mrs. Rao' },
-      { name: 'Mrs. Patel', subject: 'English', substitute: 'Unassigned' },
-    ],
-    transportTrips: { completed: 4, inProgress: 2, pending: 2, issues: 0 },
-    paymentsDue: { count: 12, total: '$15,400' },
-    examsToday: [
-      { subject: 'Math — Grade 10', room: 'Hall B', invigilator: 'Mrs. Chen', time: '9:00 AM' },
-      { subject: 'English — Grade 8', room: 'Room 204', invigilator: 'Mr. Davis', time: '11:00 AM' },
-    ],
-    announcements: [
-      { text: 'Parent-teacher meetings rescheduled to March 25', priority: 'info' },
-      { text: 'Water supply interruption expected from 2-4 PM', priority: 'warning' },
-    ],
-    complianceAlerts: [
-      { text: 'Fire drill certification expires in 5 days', level: 'warning' },
-      { text: 'Background check pending for 2 staff members', level: 'critical' },
-    ],
-  };
+  const kpiQuery = useDashboardKPIs(schoolId);
+  const { todaySnapshot: snap, updateSnapshot } = useAdminStore();
+
+  // Sync API KPI data into the admin store when available
+  useEffect(() => {
+    if (kpiQuery.data) {
+      const kpis = kpiQuery.data as Array<{ label: string; value: number | string }>;
+      const findKpi = (label: string) => kpis.find((k) => k.label.toLowerCase().includes(label.toLowerCase()));
+      const classes = findKpi('classes');
+      const payments = findKpi('payment');
+      if (classes || payments) {
+        updateSnapshot({
+          ...(classes ? { totalClasses: Number(classes.value) || snap.totalClasses } : {}),
+          ...(payments ? { paymentsDue: { ...snap.paymentsDue, count: Number(payments.value) || snap.paymentsDue.count } } : {}),
+        });
+      }
+    }
+  }, [kpiQuery.data, updateSnapshot, snap.totalClasses, snap.paymentsDue]);
 
   return (
     <div className="space-y-4">

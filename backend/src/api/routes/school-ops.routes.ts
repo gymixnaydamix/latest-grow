@@ -106,6 +106,7 @@ router.get('/:schoolId/communication/logs', schoolOpsCommController.logs);
 router.post('/:schoolId/communication/announcements', validateCsrf, validate({ body: createAnnouncementSchema }), schoolOpsCommController.createAnnouncement);
 router.post('/:schoolId/communication/broadcasts', validateCsrf, validate({ body: sendBroadcastSchema }), schoolOpsCommController.sendBroadcast);
 router.delete('/:schoolId/communication/announcements/:id', validateCsrf, schoolOpsCommController.deleteAnnouncement);
+router.put('/:schoolId/communication/messages/:messageId/read', validateCsrf, schoolOpsCommController.markMessageRead);
 
 // ─────────────────── Settings ──────────────────────
 router.get('/:schoolId/settings/profile', schoolOpsSettingsController.profile);

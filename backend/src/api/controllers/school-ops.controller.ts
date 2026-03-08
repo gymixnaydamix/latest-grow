@@ -954,6 +954,20 @@ export const schoolOpsCommController = {
       next(error);
     }
   },
+
+  /** PUT /admin/schools/:schoolId/communication/messages/:messageId/read */
+  async markMessageRead(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const messageId = p(req.params.messageId);
+      const message = await prisma.message.update({
+        where: { id: messageId },
+        data: { readAt: new Date() },
+      });
+      res.json({ success: true, data: message });
+    } catch (error) {
+      next(error);
+    }
+  },
 };
 
 // ═══════════════════════════════════════════════════════════════════════
