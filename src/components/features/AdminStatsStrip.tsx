@@ -1,9 +1,9 @@
 /* ─── AdminStatsStrip ─── Real-time KPI stat cards for the admin dashboard ─── */
-import type { ReactNode } from 'react';
+import { useCallback, useMemo, type ReactNode } from 'react';
 import {
   Users, UserCheck, BookOpen, CalendarDays,
   ClipboardCheck, CreditCard, UserPlus, AlertCircle,
-  Loader2,
+  Loader2, RefreshCw, ShieldAlert,
 } from 'lucide-react';
 import { StatCard } from '@/components/features/StatCard';
 import { PermissionGate } from '@/components/guards/PermissionGate';
@@ -15,72 +15,75 @@ import { Button } from '@/components/ui/button';
 import type { DashboardKPI } from '@root/types';
 import type { Permission } from '@/constants/permissions';
 
-/* ── Stat configuration — maps KPI label → presentation & action ── */
+/* ══════════════════════════════════════════════════════════════════════
+ * Stat mapping — maps KPI label → visual presentation & navigation
+ * ══════════════════════════════════════════════════════════════════════ */
 interface StatMapping {
   icon: ReactNode;
   accentColor: string;
   suffix?: string;
-  /** Navigation target when the card is clicked */
   navigateTo: { section: string; header?: string };
-  /** If set, the card is only visible to roles with this permission */
   requiredPermission?: Permission;
 }
 
-const ICON_SIZE = 'size-5 text-white/80';
+const IC = 'size-5 text-white/80';
 
+/** Each key corresponds to the KPI `label` returned by the backend */
 const STAT_MAP: Record<string, StatMapping> = {
   'Total Students': {
-    icon: <Users className={ICON_SIZE} />,
+    icon: <Users className={IC} />,
     accentColor: '#818cf8',
     navigateTo: { section: 'students' },
     requiredPermission: 'students.read',
   },
   'Staff Members': {
-    icon: <UserCheck className={ICON_SIZE} />,
+    icon: <UserCheck className={IC} />,
     accentColor: '#34d399',
     navigateTo: { section: 'staff' },
     requiredPermission: 'staff.read',
   },
   'Active Courses': {
-    icon: <BookOpen className={ICON_SIZE} />,
+    icon: <BookOpen className={IC} />,
     accentColor: '#f59e0b',
     navigateTo: { section: 'academics' },
     requiredPermission: 'academics.read',
   },
   'Attendance Today': {
-    icon: <ClipboardCheck className={ICON_SIZE} />,
+    icon: <ClipboardCheck className={IC} />,
     accentColor: '#06b6d4',
     suffix: '%',
     navigateTo: { section: 'students', header: 'attendance' },
     requiredPermission: 'attendance.read',
   },
   'Fee Collection': {
-    icon: <CreditCard className={ICON_SIZE} />,
+    icon: <CreditCard className={IC} />,
     accentColor: '#10b981',
     suffix: '%',
     navigateTo: { section: 'finance' },
     requiredPermission: 'finance.read',
   },
   'Pending Approvals': {
-    icon: <ClipboardCheck className={ICON_SIZE} />,
+    icon: <ShieldAlert className={IC} />,
     accentColor: '#f97316',
     navigateTo: { section: 'control_center', header: 'approvals' },
     requiredPermission: 'approvals.view',
   },
   'Applicants': {
-    icon: <UserPlus className={ICON_SIZE} />,
+    icon: <UserPlus className={IC} />,
     accentColor: '#a78bfa',
     navigateTo: { section: 'admissions' },
     requiredPermission: 'admissions.read',
   },
   'Upcoming Events': {
-    icon: <CalendarDays className={ICON_SIZE} />,
+    icon: <CalendarDays className={IC} />,
     accentColor: '#ec4899',
     navigateTo: { section: 'control_center', header: 'calendar' },
   },
 };
 
-/* ── Skeleton loader for loading state ── */
+/* ══════════════════════════════════════════════════════════════════════
+ * Skeleton loader
+ * ══════════════════════════════════════════════════════════════════════ */
 function StatCardSkeleton() {
   return (
     <Card className="relative overflow-hidden border-white/6 bg-white/3 backdrop-blur-xl animate-pulse">
@@ -93,21 +96,65 @@ function StatCardSkeleton() {
   );
 }
 
-/* ── Main component ── */
+/* ══════════════════════════════════════════════════════════════════════
+ * Safely extract KPI array from various API response shapes
+ * ══════════════════════════════════════════════════════════════════════ */
+function extractKpis(data: unknown): DashboardKPI[] {
+  if (Array.isArray(data)) return data as DashboardKPI[];
+  if (data && typeof data === 'object') {
+    const obj = data as Record<string, unknown>;
+    if (Array.isArray(obj.data)) return obj.data as DashboardKPI[];
+    if (Array.isArray(obj.items)) return obj.items as DashboardKPI[];
+  }
+  return [];
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * Time-ago formatter
+ * ══════════════════════════════════════════════════════════════════════ */
+function formatTimeAgo(ts: number): string {
+  const diff = Math.floor((Date.now() - ts) / 1000);
+  if (diff < 5) return 'just now';
+  if (diff < 60) return `${diff}s ago`;
+  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
+  return `${Math.floor(diff / 3600)}h ago`;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+ * Main Component
+ * ══════════════════════════════════════════════════════════════════════ */
 export function AdminStatsStrip() {
   const { schoolId } = useAuthStore();
   const navigate = useNavigationStore(s => s.navigate);
-  const { data, isLoading, isError, error, refetch } = useDashboardKPIs(schoolId);
 
-  const kpis: DashboardKPI[] = Array.isArray(data) ? data : (data as any)?.data ?? (data as any)?.items ?? [];
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    refetch,
+    isFetching,
+    dataUpdatedAt,
+  } = useDashboardKPIs(schoolId);
+
+  const kpis = useMemo(() => extractKpis(data), [data]);
+
+  const handleRefresh = useCallback(() => { refetch(); }, [refetch]);
+
+  const handleCardClick = useCallback(
+    (section: string, header?: string) => { navigate(section, header); },
+    [navigate],
+  );
 
   /* ── Loading state ── */
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3" aria-label="Loading statistics">
-        {Array.from({ length: 8 }).map((_, i) => (
-          <StatCardSkeleton key={i} />
-        ))}
+      <div className="space-y-2">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3" aria-label="Loading statistics">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <StatCardSkeleton key={i} />
+          ))}
+        </div>
       </div>
     );
   }
@@ -120,9 +167,16 @@ export function AdminStatsStrip() {
           <AlertCircle className="size-5 text-red-400 shrink-0" />
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-red-300">Failed to load dashboard statistics</p>
-            <p className="text-xs text-red-400/60 truncate">{(error as Error)?.message ?? 'Unknown error'}</p>
+            <p className="text-xs text-red-400/60 truncate">
+              {error instanceof Error ? error.message : 'Unknown error'}
+            </p>
           </div>
-          <Button size="sm" variant="outline" onClick={() => refetch()} className="shrink-0 border-red-500/30 text-red-300 hover:bg-red-500/10">
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleRefresh}
+            className="shrink-0 border-red-500/30 text-red-300 hover:bg-red-500/10"
+          >
             Retry
           </Button>
         </CardContent>
@@ -142,46 +196,76 @@ export function AdminStatsStrip() {
     );
   }
 
-  /* ── Render stat cards ── */
+  /* ── Render stat cards + refresh bar ── */
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3" role="region" aria-label="Dashboard statistics">
-      {kpis.map((kpi) => {
-        const mapping = STAT_MAP[kpi.label];
-        if (!mapping) return null;
+    <div className="space-y-2">
+      {/* Stats grid */}
+      <div
+        className="grid grid-cols-2 md:grid-cols-4 gap-3"
+        role="region"
+        aria-label="Dashboard statistics"
+      >
+        {kpis.map((kpi) => {
+          const mapping = STAT_MAP[kpi.label];
+          if (!mapping) return null;
 
-        const numericValue = typeof kpi.value === 'string' ? parseFloat(kpi.value) || 0 : kpi.value;
+          const numericValue = typeof kpi.value === 'string'
+            ? parseFloat(kpi.value) || 0
+            : kpi.value;
 
-        const card = (
-          <button
-            key={kpi.label}
-            type="button"
-            className="text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl"
-            onClick={() => navigate(mapping.navigateTo.section, mapping.navigateTo.header)}
-            aria-label={`${kpi.label}: ${kpi.value}${mapping.suffix ?? ''}. Click to view details.`}
-          >
-            <StatCard
-              label={kpi.label}
-              value={numericValue}
-              suffix={mapping.suffix}
-              trend={kpi.trend}
-              trendLabel={kpi.changeLabel || undefined}
-              icon={mapping.icon}
-              accentColor={mapping.accentColor}
-            />
-          </button>
-        );
+          const sparkline = Array.isArray(kpi.sparklineData) && kpi.sparklineData.length > 1
+            ? kpi.sparklineData
+            : undefined;
 
-        // Wrap with permission gate if required
-        if (mapping.requiredPermission) {
-          return (
-            <PermissionGate key={kpi.label} requires={mapping.requiredPermission}>
-              {card}
-            </PermissionGate>
+          const card = (
+            <button
+              key={kpi.label}
+              type="button"
+              className="text-left w-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50 rounded-xl transition-transform active:scale-[0.98]"
+              onClick={() => handleCardClick(mapping.navigateTo.section, mapping.navigateTo.header)}
+              aria-label={`${kpi.label}: ${kpi.value}${mapping.suffix ?? ''}. ${kpi.changeLabel || ''}. Click to view details.`}
+            >
+              <StatCard
+                label={kpi.label}
+                value={numericValue}
+                suffix={mapping.suffix}
+                trend={kpi.trend}
+                trendLabel={kpi.changeLabel || undefined}
+                icon={mapping.icon}
+                accentColor={mapping.accentColor}
+                sparklineData={sparkline}
+              />
+            </button>
           );
-        }
 
-        return card;
-      })}
+          if (mapping.requiredPermission) {
+            return (
+              <PermissionGate key={kpi.label} requires={mapping.requiredPermission}>
+                {card}
+              </PermissionGate>
+            );
+          }
+
+          return card;
+        })}
+      </div>
+
+      {/* Refresh bar */}
+      <div className="flex items-center justify-end gap-2 px-1">
+        <span className="text-[10px] text-muted-foreground/40 tabular-nums">
+          {dataUpdatedAt > 0 ? `Updated ${formatTimeAgo(dataUpdatedAt)}` : ''}
+        </span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-5 w-5 p-0 text-muted-foreground/40 hover:text-muted-foreground"
+          onClick={handleRefresh}
+          disabled={isFetching}
+          aria-label="Refresh statistics"
+        >
+          <RefreshCw className={`size-3 ${isFetching ? 'animate-spin' : ''}`} />
+        </Button>
+      </div>
     </div>
   );
 }

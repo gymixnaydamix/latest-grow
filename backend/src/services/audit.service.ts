@@ -33,7 +33,7 @@ export const auditService = {
     return prisma.auditLog.findMany({
       where: { userId },
       orderBy: { timestamp: 'desc' },
-      take: limit,
+      take: Math.min(limit, 500),
     });
   },
 
@@ -41,7 +41,7 @@ export const auditService = {
     return prisma.auditLog.findMany({
       include: { user: { select: { id: true, firstName: true, lastName: true, email: true } } },
       orderBy: { timestamp: 'desc' },
-      take: limit,
+      take: Math.min(limit, 500),
     });
   },
 };

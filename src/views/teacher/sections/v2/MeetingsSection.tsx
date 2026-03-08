@@ -15,8 +15,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useNavigationStore } from '@/store/navigation.store';
-import { useScheduleMeeting, useTeacherMeetings } from '@/hooks/api/use-teacher';
-import { notifySuccess } from '@/lib/notify';
+import { useScheduleMeeting, useCancelMeeting, useTeacherMeetings } from '@/hooks/api/use-teacher';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import {
   TeacherSectionShell, GlassCard, MetricCard, StatusBadge, EmptyState,
 } from './shared';
@@ -59,6 +59,7 @@ export function MeetingsSection(_props: TeacherSectionProps) {
   const { activeHeader, setHeader } = useNavigationStore();
   const header = activeHeader || 'upcoming_meetings';
   const scheduleMeetingMut = useScheduleMeeting();
+  const cancelMeetingMut = useCancelMeeting();
   const { data: apiMeetings } = useTeacherMeetings();
 
   const meetings: MeetingDemo[] = (apiMeetings as unknown as MeetingDemo[]) ?? FALLBACK_meetingsDemo;
@@ -254,7 +255,7 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                             variant="ghost"
                             size="sm"
                             className="h-7 text-[10px] text-sky-400 hover:text-sky-300 hover:bg-sky-500/10"
-                            onClick={() => notifySuccess('Opening meeting link', mtg.location)}
+                            onClick={() => window.open(mtg.location, '_blank', 'noopener,noreferrer')}
                           >
                             <ExternalLink className="size-3 mr-1" /> Join
                           </Button>
@@ -281,7 +282,10 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                           variant="ghost"
                           size="sm"
                           className="h-7 text-[10px] text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                          onClick={() => notifySuccess('Meeting cancelled', `"${mtg.title}" has been cancelled`)}
+                          onClick={() => cancelMeetingMut.mutate(mtg.id, {
+                            onSuccess: () => notifySuccess('Meeting cancelled', `"${mtg.title}" has been cancelled`),
+                            onError: () => notifyError('Error', 'Failed to cancel meeting'),
+                          })}
                         >
                           <XCircle className="size-3 mr-1" /> Cancel
                         </Button>

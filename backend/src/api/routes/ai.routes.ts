@@ -7,6 +7,12 @@ import { validate } from '../middlewares/validation.middleware.js';
 import {
   aiGenerateSchema,
   aiChatSchema,
+  aiPolicyGeneratorSchema,
+  aiFeedbackAnalysisSchema,
+  aiGradeAssistSchema,
+  aiContentGeneratorSchema,
+  aiGapDetectorSchema,
+  aiCrisisDraftSchema,
   schoolIdParamSchema,
 } from '../schemas/validation.schemas.js';
 
@@ -18,12 +24,12 @@ router.post('/generate', validateCsrf, validate({ body: aiGenerateSchema }), aiC
 router.post('/chat', validateCsrf, validate({ body: aiChatSchema }), aiController.chat);
 
 // Specialized AI tools
-router.post('/policy-generator', authorize('PROVIDER', 'ADMIN'), validateCsrf, aiController.generatePolicy);
-router.post('/feedback-analysis', authorize('PROVIDER', 'ADMIN'), validateCsrf, aiController.analyzeFeedback);
-router.post('/grade-assist', authorize('TEACHER'), validateCsrf, aiController.gradeAssist);
-router.post('/content-generator', authorize('TEACHER'), validateCsrf, aiController.generateContent);
-router.post('/gap-detector', authorize('TEACHER'), validateCsrf, aiController.detectGaps);
-router.post('/crisis-draft', authorize('PROVIDER', 'ADMIN'), validateCsrf, aiController.crisisDraft);
+router.post('/policy-generator', authorize('PROVIDER', 'ADMIN'), validateCsrf, validate({ body: aiPolicyGeneratorSchema }), aiController.generatePolicy);
+router.post('/feedback-analysis', authorize('PROVIDER', 'ADMIN'), validateCsrf, validate({ body: aiFeedbackAnalysisSchema }), aiController.analyzeFeedback);
+router.post('/grade-assist', authorize('TEACHER'), validateCsrf, validate({ body: aiGradeAssistSchema }), aiController.gradeAssist);
+router.post('/content-generator', authorize('TEACHER'), validateCsrf, validate({ body: aiContentGeneratorSchema }), aiController.generateContent);
+router.post('/gap-detector', authorize('TEACHER'), validateCsrf, validate({ body: aiGapDetectorSchema }), aiController.detectGaps);
+router.post('/crisis-draft', authorize('PROVIDER', 'ADMIN'), validateCsrf, validate({ body: aiCrisisDraftSchema }), aiController.crisisDraft);
 router.get(
   '/schools/:schoolId/predict-budget',
   authorize('PROVIDER', 'ADMIN', 'FINANCE'),

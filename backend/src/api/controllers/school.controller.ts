@@ -145,7 +145,7 @@ export const schoolController = {
         }),
         // Previous 30-day period comparisons
         prisma.schoolMember.count({
-          where: { schoolId, role: 'STUDENT', createdAt: { lt: thirtyDaysAgo } },
+          where: { schoolId, role: 'STUDENT', joinedAt: { lt: thirtyDaysAgo } },
         }),
         prisma.course.count({
           where: { schoolId, createdAt: { lt: thirtyDaysAgo } },

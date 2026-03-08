@@ -3,7 +3,13 @@ import { messageController } from '../controllers/index.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
 import { validateCsrf } from '../middlewares/csrf.middleware.js';
 import { validate } from '../middlewares/validation.middleware.js';
-import { idParamSchema, schoolIdParamSchema } from '../schemas/validation.schemas.js';
+import {
+  idParamSchema,
+  schoolIdParamSchema,
+  createMessageThreadSchema,
+  sendThreadMessageSchema,
+  threadIdParamSchema,
+} from '../schemas/validation.schemas.js';
 
 const router: IRouter = Router();
 router.use(authenticate);
@@ -11,6 +17,7 @@ router.use(authenticate);
 router.post(
   '/schools/:schoolId/threads',
   validateCsrf,
+  validate({ params: schoolIdParamSchema, body: createMessageThreadSchema }),
   messageController.createThread,
 );
 router.get(
@@ -26,6 +33,7 @@ router.get(
 router.post(
   '/threads/:threadId/messages',
   validateCsrf,
+  validate({ params: threadIdParamSchema, body: sendThreadMessageSchema }),
   messageController.sendMessage,
 );
 

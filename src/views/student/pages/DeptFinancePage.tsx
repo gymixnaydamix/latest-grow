@@ -5,7 +5,7 @@ import {
   CheckCircle2, XCircle, AlertTriangle, Send, Plus,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,7 +13,7 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { useStudentDeptRequests } from '@/hooks/api/use-student';
+import { useStudentDeptRequests, useSubmitDeptRequest } from '@/hooks/api/use-student';
 
 type ReqStatus = 'pending' | 'approved' | 'denied' | 'in-review';
 
@@ -61,9 +61,37 @@ export default function DeptFinancePage() {
   const [showNew, setShowNew] = useState(false);
   const [search, setSearch] = useState('');
 
+  /* ── Form state ── */
+  const [formTitle, setFormTitle] = useState('');
+  const [formType, setFormType] = useState<FinanceRequest['type']>('fee_inquiry');
+  const [formAmount, setFormAmount] = useState('');
+  const [formDesc, setFormDesc] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   /* ── API data ── */
-  const { data: apiDeptReqs } = useStudentDeptRequests();
+  const { data: apiDeptReqs, isLoading, isError } = useStudentDeptRequests();
+  const submitMut = useSubmitDeptRequest();
   const financeReqs = ((apiDeptReqs as any[]) ?? []).filter((r: any) => r.department?.toLowerCase() === 'finance');
+
+  const handleSubmit = () => {
+    const errors: Record<string, string> = {};
+    if (!formTitle.trim()) errors.title = 'Title is required';
+    if (!formDesc.trim()) errors.description = 'Description is required';
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+    const desc = formAmount ? `[Amount: $${formAmount}] ${formDesc.trim()}` : formDesc.trim();
+    submitMut.mutate(
+      { title: formTitle.trim(), category: formType, description: desc },
+      {
+        onSuccess: () => {
+          notifySuccess('Request', 'Finance request submitted');
+          setFormTitle(''); setFormType('fee_inquiry'); setFormAmount(''); setFormDesc('');
+          setFormErrors({}); setShowNew(false);
+        },
+        onError: () => notifyError('Error', 'Failed to submit finance request'),
+      },
+    );
+  };
 
   const filtered = (financeReqs.length > 0 ? financeReqs : FALLBACK_FINANCE_REQUESTS)
     .filter((r) => filter === 'all' || r.status === filter)
@@ -148,26 +176,28 @@ export default function DeptFinancePage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] text-white/40 font-medium">Title</label>
-                <Input placeholder="Request title…" className="bg-white/4 border-white/8 text-white/80 text-xs h-8" />
+                <Input value={formTitle} onChange={(e) => { setFormTitle(e.target.value); setFormErrors((p) => ({ ...p, title: '' })); }} placeholder="Request title…" className={cn('bg-white/4 border-white/8 text-white/80 text-xs h-8', formErrors.title && 'border-red-400/50')} />
+                {formErrors.title && <span className="text-[9px] text-red-400">{formErrors.title}</span>}
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] text-white/40 font-medium">Type</label>
-                <select className="h-8 rounded-md border border-white/8 bg-white/4 px-3 text-xs text-white/60 outline-none">
+                <select value={formType} onChange={(e) => setFormType(e.target.value as FinanceRequest['type'])} className="h-8 rounded-md border border-white/8 bg-white/4 px-3 text-xs text-white/60 outline-none">
                   {Object.entries(TYPE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
                 </select>
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] text-white/40 font-medium">Amount (optional)</label>
-                <Input type="number" placeholder="$0.00" className="bg-white/4 border-white/8 text-white/80 text-xs h-8" />
+                <Input value={formAmount} onChange={(e) => setFormAmount(e.target.value)} type="number" placeholder="$0.00" className="bg-white/4 border-white/8 text-white/80 text-xs h-8" />
               </div>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] text-white/40 font-medium">Description</label>
-              <textarea rows={3} placeholder="Describe your finance request…" className="rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-xs text-white/80 placeholder:text-white/25 outline-none resize-none focus:border-emerald-400/40" />
+              <textarea value={formDesc} onChange={(e) => { setFormDesc(e.target.value); setFormErrors((p) => ({ ...p, description: '' })); }} rows={3} placeholder="Describe your finance request…" className={cn('rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-xs text-white/80 placeholder:text-white/25 outline-none resize-none focus:border-emerald-400/40', formErrors.description && 'border-red-400/50')} />
+            {formErrors.description && <span className="text-[9px] text-red-400">{formErrors.description}</span>}
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowNew(false)} className="text-xs border-white/10 text-white/50">Cancel</Button>
-              <Button size="sm" onClick={() => notifySuccess('Request', 'Finance request submitted')} className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 gap-1"><Send className="size-3" />Submit</Button>
+              <Button size="sm" onClick={handleSubmit} disabled={submitMut.isPending} className="text-xs bg-emerald-500/20 text-emerald-300 border border-emerald-400/20 gap-1"><Send className="size-3" />{submitMut.isPending ? 'Submitting…' : 'Submit'}</Button>
             </div>
           </CardContent>
         </Card>
@@ -175,7 +205,17 @@ export default function DeptFinancePage() {
 
       {/* Requests list */}
       <div data-animate className="flex flex-col gap-3">
-        {!filtered.length && (
+        {isLoading && (
+          <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
+            <CardContent className="py-10 text-center text-white/30 text-sm">Loading requests…</CardContent>
+          </Card>
+        )}
+        {isError && (
+          <Card className="border-red-400/10 bg-red-500/5 backdrop-blur-xl">
+            <CardContent className="py-10 text-center text-red-300 text-sm">Failed to load requests. Showing sample data.</CardContent>
+          </Card>
+        )}
+        {!isLoading && !filtered.length && (
           <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="py-10 text-center text-white/30 text-sm">No requests match your filters.</CardContent>
           </Card>

@@ -1,4 +1,12 @@
-import type { Request, Response } from 'express';
+import type { Request, Response, NextFunction } from 'express';
+import { NotFoundError } from '../../utils/errors.js';
+
+// ---------------------------------------------------------------------------
+// Wrap: catches synchronous & async errors and forwards to Express error handler
+// ---------------------------------------------------------------------------
+type Handler = (req: Request, res: Response, next: NextFunction) => void | Promise<void>;
+const wrap = (fn: (req: Request, res: Response) => void): Handler =>
+  (req, res, next) => { try { fn(req, res); } catch (e) { next(e); } };
 
 // ---------------------------------------------------------------------------
 // In-memory teacher stores — production would use Prisma models
@@ -228,30 +236,34 @@ const classPerformance = [
 
 const ok = (res: Response, data: unknown) => res.json({ success: true, data });
 
-export const getProfile = (_req: Request, res: Response) => ok(res, teacherProfile);
+export const getProfile: Handler = wrap((_req, res) => ok(res, teacherProfile));
 
-export const updateProfile = (req: Request, res: Response) => {
+export const updateProfile: Handler = wrap((req, res) => {
   Object.assign(teacherProfile, req.body);
   ok(res, teacherProfile);
+});
+
+export const changePassword: Handler = (_req, _res, next) => {
+  // TODO: implement real password change against auth service
+  next(new NotFoundError('Password change not yet implemented for in-memory teacher store'));
 };
 
-export const changePassword = (_req: Request, res: Response) => ok(res, { message: 'Password changed successfully' });
-
-export const updateAvatar = (_req: Request, res: Response) => {
+export const updateAvatar: Handler = wrap((_req, res) => {
   teacherProfile.avatar = '/avatars/teacher-001-new.png';
   ok(res, { avatar: teacherProfile.avatar });
-};
+});
 
-export const getSchedule = (_req: Request, res: Response) => ok(res, schedule);
-export const getActionItems = (_req: Request, res: Response) => ok(res, actionItems);
-export const getStudentAlerts = (_req: Request, res: Response) => ok(res, studentAlerts);
-export const getGradingQueue = (_req: Request, res: Response) => ok(res, gradingQueue);
+export const getSchedule: Handler = wrap((_req, res) => ok(res, schedule));
+export const getActionItems: Handler = wrap((_req, res) => ok(res, actionItems));
+export const getStudentAlerts: Handler = wrap((_req, res) => ok(res, studentAlerts));
+export const getGradingQueue: Handler = wrap((_req, res) => ok(res, gradingQueue));
 
-export const getClasses = (_req: Request, res: Response) => ok(res, classes);
+export const getClasses: Handler = wrap((_req, res) => ok(res, classes));
 
-export const getClassDetail = (req: Request, res: Response): void => {
+export const getClassDetail: Handler = (req, res, next) => {
+  try {
   const cls = classes.find((c) => c.id === req.params.classId);
-  if (!cls) { res.status(404).json({ success: false, error: 'Class not found' }); return; }
+  if (!cls) { throw new NotFoundError('Class not found'); }
 
   const classAssignments = assignments.filter((a) => a.classId === cls.id);
   const classStudents = attendanceStudents[cls.id] ?? [];
@@ -330,16 +342,17 @@ export const getClassDetail = (req: Request, res: Response): void => {
     students,
   };
   ok(res, detail);
+  } catch (e) { next(e); }
 };
 
-export const getAttendanceByClass = (req: Request, res: Response) => {
+export const getAttendanceByClass: Handler = wrap((req, res) => {
   const students = attendanceStudents[req.params.classId as string] ?? [];
   ok(res, students.map((s: Record<string, unknown>) => ({ ...s, status: null })));
-};
+});
 
-export const getAttendanceHistory = (_req: Request, res: Response) => ok(res, attendanceHistory);
+export const getAttendanceHistory: Handler = wrap((_req, res) => ok(res, attendanceHistory));
 
-export const submitAttendance = (req: Request, res: Response) => {
+export const submitAttendance: Handler = wrap((req, res) => {
   const { classId, date, records } = req.body;
   const present = records.filter((r: any) => r.status === 'PRESENT').length;
   const absent = records.filter((r: any) => r.status === 'ABSENT').length;
@@ -349,11 +362,11 @@ export const submitAttendance = (req: Request, res: Response) => {
   const entry = { id: nextId('ah'), classId, className: cn, date, present, absent, late, excused, total: records.length };
   attendanceHistory.unshift(entry);
   ok(res, entry);
-};
+});
 
-export const getLessonPlans = (_req: Request, res: Response) => ok(res, lessonPlans);
+export const getLessonPlans: Handler = wrap((_req, res) => ok(res, lessonPlans));
 
-export const createLessonPlan = (req: Request, res: Response) => {
+export const createLessonPlan: Handler = wrap((req, res) => {
   const { title, classId, objectives, resources, duration, status } = req.body;
   const cn = classes.find((c) => c.id === classId)?.name ?? classId;
   const plan = {
@@ -369,11 +382,11 @@ export const createLessonPlan = (req: Request, res: Response) => {
   };
   lessonPlans.unshift(plan);
   ok(res, plan);
-};
+});
 
-export const getAssignments = (_req: Request, res: Response) => ok(res, assignments);
+export const getAssignments: Handler = wrap((_req, res) => ok(res, assignments));
 
-export const createAssignment = (req: Request, res: Response) => {
+export const createAssignment: Handler = wrap((req, res) => {
   const { title, classId, type, dueDate, totalPoints, instructions, status } = req.body;
   const cn = classes.find((c) => c.id === classId)?.name ?? classId;
   const assignment = {
@@ -393,75 +406,79 @@ export const createAssignment = (req: Request, res: Response) => {
   };
   assignments.unshift(assignment);
   ok(res, assignment);
-};
+});
 
-export const gradeSubmission = (req: Request, res: Response) => {
+export const gradeSubmission: Handler = wrap((req, res) => {
   ok(res, { ...req.body, gradedAt: new Date().toISOString() });
-};
+});
 
-export const getGradebook = (req: Request, res: Response) => {
+export const getGradebook: Handler = wrap((req, res) => {
   const data = gradebookData[req.params.classId as string] ?? { students: [], assignments: [] };
   ok(res, data);
-};
+});
 
-export const saveGrades = (req: Request, res: Response) => {
+export const saveGrades: Handler = wrap((req, res) => {
   ok(res, { saved: req.body.grades?.length ?? 0 });
-};
+});
 
-export const exportGrades = (req: Request, res: Response) => {
+export const exportGrades: Handler = wrap((req, res) => {
   ok(res, { url: `/exports/gradebook-${req.body.classId}.csv`, format: req.body.format || 'csv' });
-};
+});
 
-export const getCommentBank = (_req: Request, res: Response) => ok(res, commentBank);
+export const getCommentBank: Handler = wrap((_req, res) => ok(res, commentBank));
 
-export const addComment = (req: Request, res: Response) => {
+export const addComment: Handler = wrap((req, res) => {
   const comment = { id: nextId('cb'), category: req.body.category, text: req.body.text, uses: 0 };
   commentBank.push(comment);
   ok(res, comment);
-};
+});
 
-export const getExams = (_req: Request, res: Response) => ok(res, exams);
+export const getExams: Handler = wrap((_req, res) => ok(res, exams));
 
-export const saveExamMarks = (req: Request, res: Response) => {
-  const exam = exams.find((e) => e.id === req.body.examId);
-  if (exam) {
+export const saveExamMarks: Handler = (req, res, next) => {
+  try {
+    const exam = exams.find((e) => e.id === req.body.examId);
+    if (!exam) { throw new NotFoundError('Exam not found'); }
     (exam as any).status = 'graded';
     const marks = req.body.marks as Array<{ score: number }>;
     (exam as any).avgScore = marks.reduce((s, m) => s + m.score, 0) / marks.length;
-  }
-  ok(res, { saved: req.body.marks?.length ?? 0 });
+    ok(res, { saved: marks.length });
+  } catch (e) { next(e); }
 };
 
-export const getMessages = (_req: Request, res: Response) => ok(res, messages);
+export const getMessages: Handler = wrap((_req, res) => ok(res, messages));
 
-export const getThreadMessages = (req: Request, res: Response): void => {
-  const threadId = String(req.params.threadId);
-  const thread = messages.find((m) => m.id === threadId);
-  if (!thread) { res.status(404).json({ success: false, error: 'Thread not found' }); return; }
-  const history = threadMessages[threadId] ?? [];
-  ok(res, { threadId, subject: thread.subject, messages: history });
+export const getThreadMessages: Handler = (req, res, next) => {
+  try {
+    const threadId = String(req.params.threadId);
+    const thread = messages.find((m) => m.id === threadId);
+    if (!thread) { throw new NotFoundError('Thread not found'); }
+    const history = threadMessages[threadId] ?? [];
+    ok(res, { threadId, subject: thread.subject, messages: history });
+  } catch (e) { next(e); }
 };
 
-export const replyToMessage = (req: Request, res: Response) => {
+export const replyToMessage: Handler = (req, res, next) => {
+  try {
   const thread = messages.find((m) => m.id === req.body.threadId);
-  if (thread) {
-    thread.lastMessage = req.body.body;
-    thread.lastSender = 'You';
-    thread.timestamp = 'Just now';
-    thread.unread = false;
-    // Store in thread history
-    if (!threadMessages[req.body.threadId]) threadMessages[req.body.threadId] = [];
-    threadMessages[req.body.threadId].push({
-      id: nextId('tm'),
-      sender: 'You',
-      body: req.body.body,
-      time: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
-    });
-  }
+  if (!thread) { throw new NotFoundError('Message thread not found'); }
+  thread.lastMessage = req.body.body;
+  thread.lastSender = 'You';
+  thread.timestamp = 'Just now';
+  thread.unread = false;
+  // Store in thread history
+  if (!threadMessages[req.body.threadId]) threadMessages[req.body.threadId] = [];
+  threadMessages[req.body.threadId].push({
+    id: nextId('tm'),
+    sender: 'You',
+    body: req.body.body,
+    time: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }),
+  });
   ok(res, { threadId: req.body.threadId, sent: true });
+  } catch (e) { next(e); }
 };
 
-export const createThread = (req: Request, res: Response) => {
+export const createThread: Handler = wrap((req, res) => {
   const thread = {
     id: nextId('mt'),
     subject: req.body.subject,
@@ -474,11 +491,11 @@ export const createThread = (req: Request, res: Response) => {
   };
   messages.unshift(thread);
   ok(res, thread);
-};
+});
 
-export const getAnnouncements = (_req: Request, res: Response) => ok(res, announcements);
+export const getAnnouncements: Handler = wrap((_req, res) => ok(res, announcements));
 
-export const createAnnouncement = (req: Request, res: Response) => {
+export const createAnnouncement: Handler = wrap((req, res) => {
   const ann = {
     id: nextId('an'),
     title: req.body.title,
@@ -491,11 +508,11 @@ export const createAnnouncement = (req: Request, res: Response) => {
   };
   announcements.unshift(ann);
   ok(res, ann);
-};
+});
 
-export const getBehaviorNotes = (_req: Request, res: Response) => ok(res, behaviorNotes);
+export const getBehaviorNotes: Handler = wrap((_req, res) => ok(res, behaviorNotes));
 
-export const saveBehaviorNote = (req: Request, res: Response) => {
+export const saveBehaviorNote: Handler = wrap((req, res) => {
   const { studentName, className, classId, type, note, followUp } = req.body;
   const initials = studentName.split(' ').map((w: string) => w[0]).join('').toUpperCase();
   const entry = {
@@ -511,11 +528,25 @@ export const saveBehaviorNote = (req: Request, res: Response) => {
   };
   behaviorNotes.unshift(entry);
   ok(res, entry);
-};
+});
 
-export const getMeetings = (_req: Request, res: Response) => ok(res, meetings);
+export const getMeetings: Handler = wrap((_req, res) => ok(res, meetings));
 
-export const scheduleMeeting = (req: Request, res: Response) => {
+export const deleteLessonPlan: Handler = wrap((req, res) => {
+  const idx = lessonPlans.findIndex((lp) => lp.id === req.params.id);
+  if (idx === -1) throw new NotFoundError('Lesson plan not found');
+  const [removed] = lessonPlans.splice(idx, 1);
+  ok(res, removed);
+});
+
+export const cancelMeeting: Handler = wrap((req, res) => {
+  const mtg = meetings.find((m) => m.id === req.params.id);
+  if (!mtg) throw new NotFoundError('Meeting not found');
+  mtg.status = 'cancelled';
+  ok(res, mtg);
+});
+
+export const scheduleMeeting: Handler = wrap((req, res) => {
   const { title, type, date, startTime, endTime, location, attendees, notes } = req.body;
   const meeting = {
     id: nextId('me'),
@@ -531,18 +562,18 @@ export const scheduleMeeting = (req: Request, res: Response) => {
   };
   meetings.unshift(meeting);
   ok(res, meeting);
-};
+});
 
-export const getClassPerformance = (_req: Request, res: Response) => ok(res, classPerformance);
+export const getClassPerformance: Handler = wrap((_req, res) => ok(res, classPerformance));
 
-export const submitTicket = (req: Request, res: Response) => {
+export const submitTicket: Handler = wrap((req, res) => {
   ok(res, { id: nextId('tkt'), ...req.body, status: 'open', createdAt: new Date().toISOString() });
-};
+});
 
-export const savePreferences = (req: Request, res: Response) => {
+export const savePreferences: Handler = wrap((req, res) => {
   ok(res, { ...req.body, saved: true });
-};
+});
 
-export const uploadResource = (req: Request, res: Response) => {
+export const uploadResource: Handler = wrap((req, res) => {
   ok(res, { id: nextId('res'), ...req.body, uploadedAt: new Date().toISOString() });
-};
+});

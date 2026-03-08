@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { NotFoundError } from '../../utils/errors.js';
 
 // ---------------------------------------------------------------------------
 // In-memory wellness store (per user, keyed by userId)
@@ -127,7 +128,7 @@ export const wellnessController = {
   async updateGoal(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const goal = goalsStore.find((g) => g.id === req.params.id);
-      if (!goal) { res.status(404).json({ success: false, message: 'Goal not found' }); return; }
+      if (!goal) { throw new NotFoundError('Goal not found'); }
       if (req.body.progress !== undefined) goal.progress = req.body.progress;
       if (req.body.current !== undefined) goal.current = req.body.current;
       if (req.body.title !== undefined) goal.title = req.body.title;

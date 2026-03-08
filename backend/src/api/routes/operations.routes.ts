@@ -15,10 +15,14 @@ import { validateCsrf } from '../middlewares/csrf.middleware.js';
 import { validate } from '../middlewares/validation.middleware.js';
 import {
   createFacilitySchema,
+  updateFacilitySchema,
   createBookingSchema,
   createPolicySchema,
+  updatePolicySchema,
   createEventSchema,
+  updateEventSchema,
   createGoalSchema,
+  updateGoalSchema,
   createComplianceReportSchema,
   createSystemPromptSchema,
   idParamSchema,
@@ -41,8 +45,8 @@ router.post(
   facilityController.create,
 );
 router.get('/schools/:schoolId/facilities', validate({ params: schoolIdParamSchema }), facilityController.list);
-router.patch('/facilities/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, facilityController.update);
-router.delete('/facilities/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, facilityController.delete);
+router.patch('/facilities/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, validate({ params: idParamSchema, body: updateFacilitySchema }), facilityController.update);
+router.delete('/facilities/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, validate({ params: idParamSchema }), facilityController.delete);
 
 // Bookings
 router.post('/bookings', validateCsrf, validate({ body: createBookingSchema }), bookingController.create);
@@ -93,7 +97,7 @@ router.post(
 );
 router.get('/schools/:schoolId/policies', validate({ params: schoolIdParamSchema }), policyController.list);
 router.get('/policies/:id', validate({ params: idParamSchema }), policyController.getById);
-router.patch('/policies/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, policyController.update);
+router.patch('/policies/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, validate({ params: idParamSchema, body: updatePolicySchema }), policyController.update);
 
 // Events
 router.post(
@@ -105,8 +109,8 @@ router.post(
 );
 router.get('/schools/:schoolId/events', validate({ params: schoolIdParamSchema }), eventController.list);
 router.get('/events/:id', validate({ params: idParamSchema }), eventController.getById);
-router.patch('/events/:id', authorize('PROVIDER', 'ADMIN', 'TEACHER'), validateCsrf, eventController.update);
-router.delete('/events/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, eventController.delete);
+router.patch('/events/:id', authorize('PROVIDER', 'ADMIN', 'TEACHER'), validateCsrf, validate({ params: idParamSchema, body: updateEventSchema }), eventController.update);
+router.delete('/events/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, validate({ params: idParamSchema }), eventController.delete);
 
 // Strategic Goals
 router.post(
@@ -117,7 +121,7 @@ router.post(
   goalController.create,
 );
 router.get('/schools/:schoolId/goals', validate({ params: schoolIdParamSchema }), goalController.list);
-router.patch('/goals/:id', authorize('PROVIDER', 'ADMIN', 'SCHOOL'), validateCsrf, goalController.update);
+router.patch('/goals/:id', authorize('PROVIDER', 'ADMIN', 'SCHOOL'), validateCsrf, validate({ params: idParamSchema, body: updateGoalSchema }), goalController.update);
 
 // Compliance Reports
 router.post(

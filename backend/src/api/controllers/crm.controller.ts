@@ -125,7 +125,7 @@ export const crmDealController = {
     try {
       const id = param(req.params.id);
       await prisma.crmDeal.delete({ where: { id } });
-      res.json({ success: true, message: 'Deal deleted' });
+      res.json({ success: true, data: null });
     } catch (error) {
       next(error);
     }
@@ -287,7 +287,7 @@ export const crmAccountController = {
     try {
       const id = param(req.params.id);
       await prisma.crmAccount.delete({ where: { id } });
-      res.json({ success: true, message: 'Account deleted' });
+      res.json({ success: true, data: null });
     } catch (error) {
       next(error);
     }

@@ -267,6 +267,15 @@ export function useCreateLessonPlan() {
   });
 }
 
+export function useDeleteLessonPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.del<ApiSuccessResponse<TeacherLessonPlan>>(`/teacher/lesson-plans/${id}`).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.lessonPlans }); },
+  });
+}
+
 export function useCreateAssignment() {
   const qc = useQueryClient();
   return useMutation({
@@ -360,6 +369,15 @@ export function useScheduleMeeting() {
   return useMutation({
     mutationFn: (data: { title: string; type: string; date: string; startTime: string; endTime: string; location: string; attendees: string; notes?: string }) =>
       api.post<ApiSuccessResponse<TeacherMeeting>>('/teacher/meetings', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.meetings }); },
+  });
+}
+
+export function useCancelMeeting() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.del<ApiSuccessResponse<TeacherMeeting>>(`/teacher/meetings/${id}`).then((r) => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.meetings }); },
   });
 }

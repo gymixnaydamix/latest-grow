@@ -55,6 +55,8 @@ export function useDashboardKPIs(schoolId: string | null) {
     queryFn: () =>
       api.get<ApiSuccessResponse<DashboardKPI[]>>(`/schools/${schoolId}/dashboard`).then(r => r.data),
     enabled: !!schoolId,
+    refetchInterval: 30_000, // Auto-refresh every 30 seconds
+    staleTime: 15_000,       // Consider data stale after 15 seconds
   });
 }
 

@@ -56,9 +56,13 @@ export const authController = {
     }
   },
 
-  async logout(_req: Request, res: Response): Promise<void> {
-    res.clearCookie('token', { path: '/' });
-    res.json({ success: true, data: null, message: 'Logout successful' });
+  async logout(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.clearCookie('token', { path: '/' });
+      res.json({ success: true, data: null, message: 'Logout successful' });
+    } catch (error) {
+      next(error);
+    }
   },
 
   async me(req: Request, res: Response, next: NextFunction): Promise<void> {

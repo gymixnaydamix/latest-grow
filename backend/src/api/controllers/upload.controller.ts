@@ -10,6 +10,7 @@ import fs from 'node:fs';
 import crypto from 'node:crypto';
 import { prisma } from '../../db/prisma.service.js';
 import { logger } from '../../utils/logger.js';
+import { BadRequestError } from '../../utils/errors.js';
 
 // ---------------------------------------------------------------------------
 // Multer config — local disk storage
@@ -67,8 +68,7 @@ export const uploadController = {
   async uploadAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) {
-        res.status(400).json({ success: false, message: 'No file uploaded' });
-        return;
+        throw new BadRequestError('No file uploaded');
       }
 
       // Move to avatars subfolder
@@ -103,8 +103,7 @@ export const uploadController = {
   async uploadDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       if (!req.file) {
-        res.status(400).json({ success: false, message: 'No file uploaded' });
-        return;
+        throw new BadRequestError('No file uploaded');
       }
 
       const subfolder = req.body.category || 'documents';

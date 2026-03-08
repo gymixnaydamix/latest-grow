@@ -1,5 +1,6 @@
 import { config } from '../config/index.js';
 import { logger } from '../utils/logger.js';
+import { AppError } from '../utils/errors.js';
 
 // ---------------------------------------------------------------------------
 // AI Service Abstraction
@@ -95,25 +96,33 @@ class GeminiAIProvider implements AIProvider {
     if (!response.ok) {
       const errorBody = await response.text();
       logger.error('Gemini API error', { status: response.status, body: errorBody });
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new AppError(`Gemini API error: ${response.status}`, response.status >= 400 && response.status < 500 ? response.status : 502);
     }
 
     const data = (await response.json()) as {
       candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
     };
 
-    return data.candidates[0]?.content.parts[0]?.text ?? '';
+    const text = data.candidates[0]?.content.parts[0]?.text;
+    if (!text) {
+      throw new AppError('AI returned no content', 502);
+    }
+    return text;
   }
 
   async generateJSON<T>(prompt: string, options?: AIGenerateOptions): Promise<T> {
     const jsonPrompt = `${prompt}\n\nRespond ONLY with valid JSON. No markdown, no explanation.`;
-    const text = await this.generateText(jsonPrompt, options);
+    const rawText = await this.generateText(jsonPrompt, options);
 
     // Extract JSON from possible markdown code block
-    const jsonMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/) ?? [null, text];
-    const jsonStr = (jsonMatch[1] ?? text).trim();
+    const jsonMatch = rawText.match(/```(?:json)?\s*([\s\S]*?)```/) ?? [null, rawText];
+    const jsonStr = (jsonMatch[1] ?? rawText).trim();
 
-    return JSON.parse(jsonStr) as T;
+    try {
+      return JSON.parse(jsonStr) as T;
+    } catch {
+      throw new AppError('AI returned invalid JSON', 502);
+    }
   }
 
   async chat(messages: AIChatMessage[], options?: AIGenerateOptions): Promise<string> {
@@ -148,14 +157,18 @@ class GeminiAIProvider implements AIProvider {
     if (!response.ok) {
       const errorBody = await response.text();
       logger.error('Gemini chat API error', { status: response.status, body: errorBody });
-      throw new Error(`Gemini API error: ${response.status}`);
+      throw new AppError(`Gemini API error: ${response.status}`, response.status >= 400 && response.status < 500 ? response.status : 502);
     }
 
     const data = (await response.json()) as {
       candidates: Array<{ content: { parts: Array<{ text: string }> } }>;
     };
 
-    return data.candidates[0]?.content.parts[0]?.text ?? '';
+    const chatText = data.candidates[0]?.content.parts[0]?.text;
+    if (!chatText) {
+      throw new AppError('AI returned no content', 502);
+    }
+    return chatText;
   }
 }
 

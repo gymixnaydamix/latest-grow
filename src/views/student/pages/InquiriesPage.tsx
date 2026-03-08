@@ -6,7 +6,7 @@ import {
   Tag, ChevronDown, ChevronUp, FileText, ThumbsUp,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -14,7 +14,7 @@ import { Input } from '@/components/ui/input';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { useStudentDeptRequests } from '@/hooks/api/use-student';
+import { useStudentDeptRequests, useSubmitDeptRequest } from '@/hooks/api/use-student';
 
 type InqStatus = 'open' | 'answered' | 'closed' | 'escalated';
 
@@ -96,9 +96,36 @@ export default function InquiriesPage() {
   const [showNew, setShowNew] = useState(false);
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
+  /* ── Form state ── */
+  const [formTitle, setFormTitle] = useState('');
+  const [formDept, setFormDept] = useState('');
+  const [formTopic, setFormTopic] = useState<Inquiry['topic']>('general');
+  const [formQuestion, setFormQuestion] = useState('');
+  const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+
   /* ── API data ── */
-  const { data: apiDeptRequests } = useStudentDeptRequests();
+  const { data: apiDeptRequests, isLoading, isError } = useStudentDeptRequests();
+  const submitMut = useSubmitDeptRequest();
   const inquiries: Inquiry[] = (apiDeptRequests as unknown as Inquiry[]) ?? FALLBACK_INQUIRIES;
+
+  const handleSubmit = () => {
+    const errors: Record<string, string> = {};
+    if (!formTitle.trim()) errors.title = 'Title is required';
+    if (!formQuestion.trim()) errors.question = 'Question is required';
+    setFormErrors(errors);
+    if (Object.keys(errors).length > 0) return;
+    submitMut.mutate(
+      { title: formTitle.trim(), category: formTopic, description: formQuestion.trim() },
+      {
+        onSuccess: () => {
+          notifySuccess('Inquiry', 'Your inquiry has been submitted');
+          setFormTitle(''); setFormDept(''); setFormTopic('general'); setFormQuestion('');
+          setFormErrors({}); setShowNew(false);
+        },
+        onError: () => notifyError('Error', 'Failed to submit inquiry'),
+      },
+    );
+  };
 
   const toggle = (id: string) => setExpanded((prev) => {
     const n = new Set(prev);
@@ -195,26 +222,28 @@ export default function InquiriesPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] text-white/40 font-medium">Title</label>
-                <Input placeholder="Brief summary…" className="bg-white/4 border-white/8 text-white/80 text-xs h-8" />
+                <Input value={formTitle} onChange={(e) => { setFormTitle(e.target.value); setFormErrors((p) => ({ ...p, title: '' })); }} placeholder="Brief summary…" className={cn('bg-white/4 border-white/8 text-white/80 text-xs h-8', formErrors.title && 'border-red-400/50')} />
+                {formErrors.title && <span className="text-[9px] text-red-400">{formErrors.title}</span>}
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] text-white/40 font-medium">Department</label>
-                <Input placeholder="e.g., IT Services, Registrar" className="bg-white/4 border-white/8 text-white/80 text-xs h-8" />
+                <Input value={formDept} onChange={(e) => setFormDept(e.target.value)} placeholder="e.g., IT Services, Registrar" className="bg-white/4 border-white/8 text-white/80 text-xs h-8" />
               </div>
               <div className="flex flex-col gap-1">
                 <label className="text-[10px] text-white/40 font-medium">Topic</label>
-                <select className="h-8 rounded-md border border-white/8 bg-white/4 px-3 text-xs text-white/60 outline-none">
+                <select value={formTopic} onChange={(e) => setFormTopic(e.target.value as Inquiry['topic'])} className="h-8 rounded-md border border-white/8 bg-white/4 px-3 text-xs text-white/60 outline-none">
                   {Object.entries(TOPIC_CFG).map(([k, v]) => <option key={k} value={k}>{v.label}</option>)}
                 </select>
               </div>
             </div>
             <div className="flex flex-col gap-1">
               <label className="text-[10px] text-white/40 font-medium">Your Question</label>
-              <textarea rows={3} placeholder="Describe your question in detail…" className="rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-xs text-white/80 placeholder:text-white/25 outline-none resize-none focus:border-violet-400/40" />
+              <textarea value={formQuestion} onChange={(e) => { setFormQuestion(e.target.value); setFormErrors((p) => ({ ...p, question: '' })); }} rows={3} placeholder="Describe your question in detail…" className={cn('rounded-lg border border-white/8 bg-white/4 px-3 py-2 text-xs text-white/80 placeholder:text-white/25 outline-none resize-none focus:border-violet-400/40', formErrors.question && 'border-red-400/50')} />
+            {formErrors.question && <span className="text-[9px] text-red-400">{formErrors.question}</span>}
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={() => setShowNew(false)} className="text-xs border-white/10 text-white/50">Cancel</Button>
-              <Button size="sm" onClick={() => notifySuccess('Inquiry', 'Your inquiry has been submitted')} className="text-xs bg-violet-500/20 text-violet-300 border border-violet-400/20 gap-1"><Send className="size-3" />Submit</Button>
+              <Button size="sm" onClick={handleSubmit} disabled={submitMut.isPending} className="text-xs bg-violet-500/20 text-violet-300 border border-violet-400/20 gap-1"><Send className="size-3" />{submitMut.isPending ? 'Submitting…' : 'Submit'}</Button>
             </div>
           </CardContent>
         </Card>
@@ -222,7 +251,17 @@ export default function InquiriesPage() {
 
       {/* Inquiries list */}
       <div data-animate className="flex flex-col gap-3">
-        {!filtered.length && (
+        {isLoading && (
+          <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
+            <CardContent className="py-10 text-center text-white/30 text-sm">Loading inquiries…</CardContent>
+          </Card>
+        )}
+        {isError && (
+          <Card className="border-red-400/10 bg-red-500/5 backdrop-blur-xl">
+            <CardContent className="py-10 text-center text-red-300 text-sm">Failed to load inquiries. Showing sample data.</CardContent>
+          </Card>
+        )}
+        {!isLoading && !filtered.length && (
           <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="py-10 text-center text-white/30 text-sm">No inquiries match your filters.</CardContent>
           </Card>

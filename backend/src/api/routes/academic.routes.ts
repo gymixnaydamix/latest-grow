@@ -18,6 +18,7 @@ import { validateCsrf } from '../middlewares/csrf.middleware.js';
 import { validate } from '../middlewares/validation.middleware.js';
 import {
   createCourseSchema,
+  updateCourseSchema,
   createAssignmentSchema,
   updateAssignmentSchema,
   createSubmissionSchema,
@@ -27,6 +28,7 @@ import {
   createSessionSchema,
   updateSessionSchema,
   createAnnouncementSchema,
+  updateAnnouncementSchema,
   idParamSchema,
   schoolIdParamSchema,
   createDepartmentSchema,
@@ -50,8 +52,8 @@ router.post(
 );
 router.get('/schools/:schoolId/courses', validate({ params: schoolIdParamSchema }), courseController.list);
 router.get('/courses/:id', validate({ params: idParamSchema }), courseController.getById);
-router.patch('/courses/:id', authorize('PROVIDER', 'ADMIN', 'TEACHER'), validateCsrf, courseController.update);
-router.delete('/courses/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, courseController.delete);
+router.patch('/courses/:id', authorize('PROVIDER', 'ADMIN', 'TEACHER'), validateCsrf, validate({ params: idParamSchema, body: updateCourseSchema }), courseController.update);
+router.delete('/courses/:id', authorize('PROVIDER', 'ADMIN'), validateCsrf, validate({ params: idParamSchema }), courseController.delete);
 
 // Departments
 router.post(
@@ -141,7 +143,7 @@ router.post(
   validate({ body: createAssignmentSchema }),
   assignmentController.create,
 );
-router.get('/courses/:courseId/assignments', assignmentController.listByCourse);
+router.get('/courses/:courseId/assignments', validate({ params: courseIdParamSchema }), assignmentController.listByCourse);
 router.get('/assignments/:id', validate({ params: idParamSchema }), assignmentController.getById);
 router.patch(
   '/assignments/:id',
@@ -150,7 +152,7 @@ router.patch(
   validate({ params: idParamSchema, body: updateAssignmentSchema }),
   assignmentController.update,
 );
-router.delete('/assignments/:id', authorize('TEACHER', 'ADMIN'), validateCsrf, assignmentController.delete);
+router.delete('/assignments/:id', authorize('TEACHER', 'ADMIN'), validateCsrf, validate({ params: idParamSchema }), assignmentController.delete);
 
 // Enrollments
 router.post(
@@ -240,12 +242,14 @@ router.patch(
   '/announcements/:id',
   authorize('PROVIDER', 'ADMIN', 'TEACHER'),
   validateCsrf,
+  validate({ params: idParamSchema, body: updateAnnouncementSchema }),
   announcementController.update,
 );
 router.delete(
   '/announcements/:id',
   authorize('PROVIDER', 'ADMIN'),
   validateCsrf,
+  validate({ params: idParamSchema }),
   announcementController.delete,
 );
 

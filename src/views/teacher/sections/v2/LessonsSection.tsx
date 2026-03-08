@@ -15,8 +15,8 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { useCourses, useCurriculumStandards } from '@/hooks/api';
-import { useCreateLessonPlan, useUploadResource, useTeacherLessonPlans } from '@/hooks/api/use-teacher';
-import { notifySuccess } from '@/lib/notify';
+import { useCreateLessonPlan, useDeleteLessonPlan, useUploadResource, useTeacherLessonPlans } from '@/hooks/api/use-teacher';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course, CurriculumStandard } from '@root/types';
 import {
@@ -87,6 +87,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
     : FALLBACK_teacherClassesDemo;
 
   const createLessonMut = useCreateLessonPlan();
+  const deleteLessonMut = useDeleteLessonPlan();
   const uploadResourceMut = useUploadResource();
   const { data: apiLessonPlans } = useTeacherLessonPlans();
   const lessonPlans = (apiLessonPlans as unknown as typeof FALLBACK_lessonPlansDemo) ?? FALLBACK_lessonPlansDemo;
@@ -479,7 +480,12 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
                   variant="ghost"
                   size="sm"
                   className="text-xs text-rose-400 hover:text-rose-300 hover:bg-rose-500/10"
-                  onClick={() => { notifySuccess('Deleted', `"${selectedLesson.title}" deleted`); setSelectedLesson(null); }}
+                  onClick={() => {
+                    deleteLessonMut.mutate(selectedLesson.id, {
+                      onSuccess: () => { notifySuccess('Deleted', `"${selectedLesson.title}" deleted`); setSelectedLesson(null); },
+                      onError: () => notifyError('Error', 'Failed to delete lesson plan'),
+                    });
+                  }}
                 >
                   <Trash2 className="size-3 mr-1" /> Delete
                 </Button>

@@ -14,12 +14,17 @@ import { validateCsrf } from '../middlewares/csrf.middleware.js';
 import { validate } from '../middlewares/validation.middleware.js';
 import {
   createTuitionPlanSchema,
+  updateTuitionPlanSchema,
   createInvoiceSchema,
+  updateInvoiceStatusSchema,
   processPayrollSchema,
   createBudgetSchema,
+  updateBudgetSchema,
   createGrantSchema,
+  updateGrantSchema,
   idParamSchema,
   schoolIdParamSchema,
+  parentIdParamSchema,
   createExpenseRecordSchema,
   updateExpenseRecordSchema,
   reportRangeQuerySchema,
@@ -38,8 +43,8 @@ router.post(
   tuitionController.create,
 );
 router.get('/schools/:schoolId/tuition-plans', validate({ params: schoolIdParamSchema }), tuitionController.list);
-router.patch('/tuition-plans/:id', authorize('PROVIDER', 'ADMIN', 'FINANCE'), validateCsrf, tuitionController.update);
-router.delete('/tuition-plans/:id', authorize('PROVIDER', 'ADMIN', 'FINANCE'), validateCsrf, tuitionController.delete);
+router.patch('/tuition-plans/:id', authorize('PROVIDER', 'ADMIN', 'FINANCE'), validateCsrf, validate({ params: idParamSchema, body: updateTuitionPlanSchema }), tuitionController.update);
+router.delete('/tuition-plans/:id', authorize('PROVIDER', 'ADMIN', 'FINANCE'), validateCsrf, validate({ params: idParamSchema }), tuitionController.delete);
 
 // Invoices
 router.post(
@@ -55,9 +60,10 @@ router.patch(
   '/invoices/:id/status',
   authorize('PROVIDER', 'ADMIN', 'FINANCE'),
   validateCsrf,
+  validate({ params: idParamSchema, body: updateInvoiceStatusSchema }),
   invoiceController.updateStatus,
 );
-router.get('/parents/:parentId/invoices', invoiceController.getByParent);
+router.get('/parents/:parentId/invoices', validate({ params: parentIdParamSchema }), invoiceController.getByParent);
 
 // Payroll
 router.post(
@@ -78,7 +84,7 @@ router.post(
   budgetController.create,
 );
 router.get('/schools/:schoolId/budgets', validate({ params: schoolIdParamSchema }), budgetController.list);
-router.patch('/budgets/:id', authorize('PROVIDER', 'ADMIN', 'FINANCE'), validateCsrf, budgetController.update);
+router.patch('/budgets/:id', authorize('PROVIDER', 'ADMIN', 'FINANCE'), validateCsrf, validate({ params: idParamSchema, body: updateBudgetSchema }), budgetController.update);
 
 // Grants
 router.post(
@@ -89,7 +95,7 @@ router.post(
   grantController.create,
 );
 router.get('/schools/:schoolId/grants', validate({ params: schoolIdParamSchema }), grantController.list);
-router.patch('/grants/:id', authorize('PROVIDER', 'ADMIN', 'FINANCE'), validateCsrf, grantController.update);
+router.patch('/grants/:id', authorize('PROVIDER', 'ADMIN', 'FINANCE'), validateCsrf, validate({ params: idParamSchema, body: updateGrantSchema }), grantController.update);
 
 // Expenses
 router.post(

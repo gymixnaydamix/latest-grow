@@ -32,6 +32,13 @@ class StripeService {
   }
 
   createCheckoutSession(args: CreateCheckoutArgs) {
+    if (!args.amount || args.amount <= 0) {
+      throw new BadRequestError('Amount must be a positive number');
+    }
+    if (!args.currency || args.currency.trim().length === 0) {
+      throw new BadRequestError('Currency is required');
+    }
+
     const successUrl = args.successUrl ?? config.stripeSuccessUrl;
     const cancelUrl = args.cancelUrl ?? config.stripeCancelUrl;
 

@@ -1,10 +1,19 @@
 import { Router, type IRouter } from 'express';
 import { wellnessController } from '../controllers/wellness.controller.js';
 import { authenticate } from '../middlewares/auth.middleware.js';
+import { authorize } from '../middlewares/rbac.middleware.js';
 import { validateCsrf } from '../middlewares/csrf.middleware.js';
+import { validate } from '../middlewares/validation.middleware.js';
+import {
+  wellnessJournalSchema,
+  wellnessGoalSchema,
+  updateWellnessGoalSchema,
+  idParamSchema,
+} from '../schemas/validation.schemas.js';
 
 const router: IRouter = Router();
 router.use(authenticate);
+router.use(authorize('STUDENT', 'TEACHER', 'PARENT'));
 router.use(validateCsrf);
 
 // Wellness overview metrics
@@ -15,12 +24,12 @@ router.get('/weekly', wellnessController.getWeeklySummary);
 
 // Journal CRUD
 router.get('/journal', wellnessController.listJournalEntries);
-router.post('/journal', wellnessController.createJournalEntry);
+router.post('/journal', validate({ body: wellnessJournalSchema }), wellnessController.createJournalEntry);
 
 // Goals CRUD
 router.get('/goals', wellnessController.listGoals);
-router.post('/goals', wellnessController.createGoal);
-router.patch('/goals/:id', wellnessController.updateGoal);
+router.post('/goals', validate({ body: wellnessGoalSchema }), wellnessController.createGoal);
+router.patch('/goals/:id', validate({ params: idParamSchema, body: updateWellnessGoalSchema }), wellnessController.updateGoal);
 
 // Mind-body dashboard metrics
 router.get('/mind-body', wellnessController.getMindBodyMetrics);

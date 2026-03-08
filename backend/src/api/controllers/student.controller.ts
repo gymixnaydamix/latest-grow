@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { NotFoundError, AppError } from '../../utils/errors.js';
 
 // ---------------------------------------------------------------------------
 // In-memory student store
@@ -237,9 +238,9 @@ export const studentController = {
     } catch (e) { next(e); }
   },
 
-  async changePassword(_req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { res.json({ success: true, data: { success: true } }); }
-    catch (e) { next(e); }
+  async changePassword(_req: Request, _res: Response, next: NextFunction): Promise<void> {
+    // TODO: implement real password change against auth service
+    next(new AppError('Password change not yet implemented for in-memory student store', 501));
   },
 
   async updateAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -258,7 +259,7 @@ export const studentController = {
   async downloadDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const doc = documentsStore.find(d => d.id === req.params.id);
-      if (!doc) { res.status(404).json({ success: false, error: 'Document not found' }); return; }
+      if (!doc) { throw new NotFoundError('Document not found'); }
       res.json({ success: true, data: { url: `/files/${doc.name}`, name: doc.name } });
     } catch (e) { next(e); }
   },
@@ -273,7 +274,7 @@ export const studentController = {
     try {
       const { invoiceId, amount } = req.body;
       const inv = invoicesStore.find(i => i.id === invoiceId);
-      if (!inv) { res.status(404).json({ success: false, error: 'Invoice not found' }); return; }
+      if (!inv) { throw new NotFoundError('Invoice not found'); }
       inv.paidAmount = Math.min(inv.paidAmount + amount, inv.amount);
       inv.status = inv.paidAmount >= inv.amount ? 'paid' : 'pending';
       res.json({ success: true, data: inv });
@@ -345,14 +346,19 @@ export const studentController = {
 
   async submitAssignment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      res.json({ success: true, data: { id: req.params.id, status: 'submitted' } });
+      // TODO: persist submission to database when assignment store is real
+      res.status(201).json({ success: true, data: { id: req.params.id, status: 'submitted', submittedAt: new Date().toISOString() } });
     } catch (e) { next(e); }
   },
 
   // ── Wellness ──
   async getWellness(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      res.json({ success: true, data: { score: 78, metrics: [] } });
+      // Aggregate from existing mood + session stores until dedicated wellness Prisma model exists
+      const recentMoods = moodStore.slice(0, 7);
+      const positiveCount = recentMoods.filter(m => ['happy', 'great', 'good'].includes(m.mood)).length;
+      const score = recentMoods.length > 0 ? Math.round((positiveCount / recentMoods.length) * 100) : 0;
+      res.json({ success: true, data: { score, metrics: recentMoods.map(m => ({ mood: m.mood, date: m.date })) } });
     } catch (e) { next(e); }
   },
 
@@ -363,7 +369,7 @@ export const studentController = {
 
   async logMood(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const entry: MoodEntry = { id: uid(), mood: req.body.mood, note: req.body.note, date: new Date().toISOString(), userId: 'student-1' };
+      const entry: MoodEntry = { id: uid(), mood: req.body.mood, note: req.body.note, date: new Date().toISOString(), userId: (req as any).user?.id ?? 'student-1' };
       moodStore.unshift(entry);
       res.status(201).json({ success: true, data: entry });
     } catch (e) { next(e); }
@@ -379,7 +385,7 @@ export const studentController = {
       const session: WellnessSession = {
         id: uid(), date: req.body.preferredDate || new Date().toISOString(),
         type: req.body.type || 'counseling', counselor: 'Dr. Smith',
-        status: 'scheduled', userId: 'student-1',
+        status: 'scheduled', userId: (req as any).user?.id ?? 'student-1',
       };
       sessionsStore.push(session);
       res.status(201).json({ success: true, data: session });
@@ -430,7 +436,7 @@ export const studentController = {
 
   async createMindMap(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const map: MindMap = { id: uid(), title: req.body.title, nodes: 0, lastEdited: 'just now', color: req.body.color || 'bg-indigo-500/10', userId: 'student-1' };
+      const map: MindMap = { id: uid(), title: req.body.title, nodes: 0, lastEdited: 'just now', color: req.body.color || 'bg-indigo-500/10', userId: (req as any).user?.id ?? 'student-1' };
       mindMapsStore.push(map);
       res.status(201).json({ success: true, data: map });
     } catch (e) { next(e); }
@@ -448,7 +454,7 @@ export const studentController = {
         id: uid(), type: req.body.sourceType, title: req.body.title,
         authors: req.body.authors, year: req.body.year,
         formatted: `${req.body.authors} (${req.body.year}). ${req.body.title}.`,
-        project: req.body.project || '', userId: 'student-1',
+        project: req.body.project || '', userId: (req as any).user?.id ?? 'student-1',
       };
       citationsStore.push(citation);
       res.status(201).json({ success: true, data: citation });
@@ -458,7 +464,7 @@ export const studentController = {
   async deleteCitation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const idx = citationsStore.findIndex(c => c.id === req.params.id);
-      if (idx === -1) { res.status(404).json({ success: false, error: 'Citation not found' }); return; }
+      if (idx === -1) { throw new NotFoundError('Citation not found'); }
       citationsStore.splice(idx, 1);
       res.json({ success: true, data: null });
     } catch (e) { next(e); }
@@ -472,7 +478,7 @@ export const studentController = {
 
   async createFocusSession(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const session: FocusSession = { id: uid(), duration: req.body.duration, task: req.body.task, completedAt: new Date().toISOString(), userId: 'student-1' };
+      const session: FocusSession = { id: uid(), duration: req.body.duration, task: req.body.task, completedAt: new Date().toISOString(), userId: (req as any).user?.id ?? 'student-1' };
       focusSessionsStore.push(session);
       res.status(201).json({ success: true, data: session });
     } catch (e) { next(e); }
@@ -486,7 +492,7 @@ export const studentController = {
 
   async addPlannerBlock(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      const block: PlannerBlock = { id: uid(), title: req.body.title, startTime: req.body.startTime, endTime: req.body.endTime, day: req.body.day, color: req.body.color || '#818cf8', userId: 'student-1' };
+      const block: PlannerBlock = { id: uid(), title: req.body.title, startTime: req.body.startTime, endTime: req.body.endTime, day: req.body.day, color: req.body.color || '#818cf8', userId: (req as any).user?.id ?? 'student-1' };
       plannerStore.push(block);
       res.status(201).json({ success: true, data: block });
     } catch (e) { next(e); }
@@ -535,8 +541,8 @@ export const studentController = {
   async likeCommunityPost(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const post = communityPostsStore.find(p => p.id === req.params.id);
-      if (!post) { res.status(404).json({ success: false, error: 'Post not found' }); return; }
-      const userId = 'student-1';
+      if (!post) { throw new NotFoundError('Post not found'); }
+      const userId = (req as any).user?.id ?? 'student-1';
       if (post.likedBy.includes(userId)) {
         post.likedBy = post.likedBy.filter(id => id !== userId);
         post.likes--;
@@ -551,8 +557,8 @@ export const studentController = {
   async bookmarkCommunityPost(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const post = communityPostsStore.find(p => p.id === req.params.id);
-      if (!post) { res.status(404).json({ success: false, error: 'Post not found' }); return; }
-      const userId = 'student-1';
+      if (!post) { throw new NotFoundError('Post not found'); }
+      const userId = (req as any).user?.id ?? 'student-1';
       if (post.bookmarkedBy.includes(userId)) {
         post.bookmarkedBy = post.bookmarkedBy.filter(id => id !== userId);
       } else {
