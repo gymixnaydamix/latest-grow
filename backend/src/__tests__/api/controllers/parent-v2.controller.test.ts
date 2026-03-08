@@ -136,10 +136,24 @@ describe('home', () => {
 /* ─── 2. listChildren ──────────────────────────────────────────────── */
 describe('listChildren', () => {
   it('should return scoped children', async () => {
+    // buildChildSummaries fetches: users, enrollments, grades, attendance, approvals, schedules (2x), exams, transport
     prismaMock.user.findMany.mockResolvedValueOnce([{ id: 'child-1', firstName: 'C', lastName: 'D', email: 'c@d.com', avatar: null }]);
+    prismaMock.courseEnrollment.findMany.mockResolvedValueOnce([]);
+    prismaMock.grade.findMany.mockResolvedValueOnce([]);
+    prismaMock.attendance.findMany.mockResolvedValueOnce([]);
+    prismaMock.approvalRequest.findMany.mockResolvedValueOnce([]);
+    prismaMock.examScheduleItem.findMany
+      .mockResolvedValueOnce([])   // for schedules
+      .mockResolvedValueOnce([]);  // for exam ID lookup
+    prismaMock.exam.findMany.mockResolvedValueOnce([]);
+    prismaMock.transportAssignment.findMany.mockResolvedValueOnce([]);
+
     const res = mockRes();
     await ctrl.listChildren(mockReq(), res, mockNext());
-    expect(res._json).toEqual({ success: true, data: [{ id: 'child-1', firstName: 'C', lastName: 'D', email: 'c@d.com', avatar: null }] });
+    expect(res._json.success).toBe(true);
+    expect(res._json.data).toHaveLength(1);
+    expect(res._json.data[0].id).toBe('child-1');
+    expect(res._json.data[0].firstName).toBe('C');
   });
 });
 
@@ -325,8 +339,10 @@ describe('explainAbsence', () => {
 describe('listMessageThreads', () => {
   it('should return formatted threads', async () => {
     prismaMock.messageThread.findMany.mockResolvedValueOnce([
-      { id: 't1', subject: 'Question', lastMessageAt: new Date(), messages: [{ body: 'Hello', readAt: null }] },
+      { id: 't1', subject: 'Question', participantIds: ['parent-1', 'teacher-1'], lastMessageAt: new Date(), messages: [{ body: 'Hello', readAt: null }] },
     ]);
+    // buildMessageThreadSummary fetches counterpart users
+    prismaMock.user.findMany.mockResolvedValueOnce([{ firstName: 'Teacher', lastName: 'One', role: 'TEACHER' }]);
     const res = mockRes();
     await ctrl.listMessageThreads(mockReq(), res, mockNext());
     expect(res._json.success).toBe(true);
@@ -339,7 +355,9 @@ describe('messageThreadDetail', () => {
   it('should return thread with messages', async () => {
     prismaMock.messageThread.findUnique
       .mockResolvedValueOnce({ id: 't1', participantIds: ['parent-1'] }) // ensureThreadOwner
-      .mockResolvedValueOnce({ id: 't1', subject: 'Q', messages: [] }); // main query
+      .mockResolvedValueOnce({ id: 't1', subject: 'Q', participantIds: ['parent-1'], lastMessageAt: new Date(), messages: [] }); // main query
+    // participant lookup
+    prismaMock.user.findMany.mockResolvedValueOnce([{ id: 'parent-1', firstName: 'P', lastName: 'T', role: 'PARENT' }]);
     const res = mockRes();
     await ctrl.messageThreadDetail(mockReq({ params: { threadId: 't1' } }), res, mockNext());
     expect(res._json.success).toBe(true);
@@ -565,30 +583,46 @@ describe('createCheckoutSession', () => {
 /* ─── 19. payments ─────────────────────────────────────────────────── */
 describe('payments', () => {
   it('should return payments for parent + children', async () => {
-    prismaMock.payment.findMany.mockResolvedValueOnce([{ id: 'pay-1' }]);
+    prismaMock.payment.findMany.mockResolvedValueOnce([{
+      id: 'pay-1', invoiceId: 'inv-1', currency: 'USD', amount: 100, paidAt: new Date(), method: 'CARD', status: 'SUCCESS', transactionRef: 'ref-1', providerPaymentId: null,
+      invoice: { studentId: 'child-1' },
+    }]);
     const res = mockRes();
     await ctrl.payments(mockReq(), res, mockNext());
-    expect(res._json).toEqual({ success: true, data: [{ id: 'pay-1' }] });
+    expect(res._json.success).toBe(true);
+    expect(res._json.data[0].id).toBe('pay-1');
+    expect(res._json.data[0].childId).toBe('child-1');
   });
 });
 
 /* ─── 20. receipts ─────────────────────────────────────────────────── */
 describe('receipts', () => {
   it('should return receipts for parent + children', async () => {
-    prismaMock.receipt.findMany.mockResolvedValueOnce([{ id: 'rec-1' }]);
+    prismaMock.receipt.findMany.mockResolvedValueOnce([{
+      id: 'rec-1', invoiceId: 'inv-1', studentId: 'child-1', currency: 'USD', amount: 50, issuedAt: new Date(), fileName: 'receipt.pdf',
+    }]);
     const res = mockRes();
     await ctrl.receipts(mockReq(), res, mockNext());
-    expect(res._json).toEqual({ success: true, data: [{ id: 'rec-1' }] });
+    expect(res._json.success).toBe(true);
+    expect(res._json.data[0].id).toBe('rec-1');
+    expect(res._json.data[0].childId).toBe('child-1');
+    expect(res._json.data[0].fileUrl).toBe('/uploads/documents/receipt.pdf');
   });
 });
 
 /* ─── 21. approvals ────────────────────────────────────────────────── */
 describe('approvals', () => {
   it('should return approval requests', async () => {
-    prismaMock.approvalRequest.findMany.mockResolvedValueOnce([{ id: 'ar-1', status: 'PENDING' }]);
+    prismaMock.approvalRequest.findMany.mockResolvedValueOnce([{
+      id: 'ar-1', studentId: 'child-1', title: 'Field Trip', type: 'TRIP', description: 'Museum visit', dueDate: new Date(), status: 'PENDING', priority: 'MEDIUM', createdAt: new Date(),
+    }]);
     const res = mockRes();
     await ctrl.approvals(mockReq(), res, mockNext());
-    expect(res._json).toEqual({ success: true, data: [{ id: 'ar-1', status: 'PENDING' }] });
+    expect(res._json.success).toBe(true);
+    expect(res._json.data[0].id).toBe('ar-1');
+    expect(res._json.data[0].status).toBe('PENDING');
+    expect(res._json.data[0].childId).toBe('child-1');
+    expect(res._json.data[0].requestedBy).toBe('School Staff');
   });
 
   it('should filter by status query param', async () => {
@@ -738,6 +772,18 @@ describe('profile', () => {
     prismaMock.parentChild.findMany.mockResolvedValueOnce([
       { student: { id: 'child-1', firstName: 'C', lastName: 'D', email: 'c@d.com' } },
     ]);
+    // buildChildSummaries mocks for ['child-1']
+    prismaMock.user.findMany.mockResolvedValueOnce([{ id: 'child-1', firstName: 'C', lastName: 'D', email: 'c@d.com', avatar: null }]);
+    prismaMock.courseEnrollment.findMany.mockResolvedValueOnce([]);
+    prismaMock.grade.findMany.mockResolvedValueOnce([]);
+    prismaMock.attendance.findMany.mockResolvedValueOnce([]);
+    prismaMock.approvalRequest.findMany.mockResolvedValueOnce([]);
+    prismaMock.examScheduleItem.findMany
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([]);
+    prismaMock.exam.findMany.mockResolvedValueOnce([]);
+    prismaMock.transportAssignment.findMany.mockResolvedValueOnce([]);
+
     const res = mockRes();
     await ctrl.profile(mockReq(), res, mockNext());
     expect(res._json.success).toBe(true);
@@ -942,7 +988,7 @@ describe('removePin', () => {
     prismaMock.parentWorkspaceItem.deleteMany.mockResolvedValueOnce({ count: 1 });
     const res = mockRes();
     await ctrl.removePin(mockReq({ params: { itemId: 'item-1' } }), res, mockNext());
-    expect(res._json).toEqual({ success: true, data: { itemId: 'item-1' } });
+    expect(res._json).toEqual({ success: true, data: { itemId: 'item-1', kind: 'PIN' } });
     expect(prismaMock.parentWorkspaceItem.deleteMany).toHaveBeenCalledWith(
       expect.objectContaining({ where: { parentId: 'parent-1', kind: 'PIN', itemId: 'item-1' } }),
     );
