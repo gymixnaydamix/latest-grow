@@ -19,7 +19,7 @@ docs/.*\.md
 backend/prisma/seed\.ts
 
 # Generated files
-.*\.generated\.ts
+\.generated\.ts$
 node_modules/
 
 # Build outputs
