@@ -16,7 +16,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
     if (!user && !isLoading) {
       fetchMe().catch(() => {/* not logged in */});
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   if (isLoading) {
     return (

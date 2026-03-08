@@ -30,7 +30,7 @@ export function useStaggerAnimate<T extends HTMLElement = HTMLDivElement>(
       el.style.setProperty('--delay', `${i * staggerMs}ms`);
       el.classList.add(animationClass);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, deps);
 
   return ref;
@@ -59,7 +59,7 @@ export function useChildStagger<T extends HTMLElement = HTMLDivElement>(
       el.style.setProperty('--delay', `${i * staggerMs}ms`);
       el.classList.add(animationClass);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    
   }, deps);
 
   return ref;
@@ -70,6 +70,5 @@ export function useChildStagger<T extends HTMLElement = HTMLDivElement>(
  * Useful for content area swaps.
  */
 export function useAnimationKey(...deps: unknown[]): string {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   return deps.map(String).join('-');
 }

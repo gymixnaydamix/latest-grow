@@ -13,6 +13,7 @@ import {
   schoolOpsCommController,
   schoolOpsSettingsController,
   schoolOpsAuditController,
+  schoolOpsDashboardController,
   schoolOpsStaffController,
   schoolOpsReportsController,
   schoolOpsNotificationsController,
@@ -46,6 +47,11 @@ import {
 const router: IRouter = Router({ mergeParams: true });
 router.use(authenticate);
 router.use(authorize('PROVIDER', 'ADMIN'));
+
+// ─────────────────── Dashboard ─────────────────────
+router.get('/:schoolId/dashboard/analytics', schoolOpsDashboardController.analytics);
+router.get('/:schoolId/dashboard/market', schoolOpsDashboardController.market);
+router.get('/:schoolId/dashboard/system', schoolOpsDashboardController.system);
 
 // ─────────────────── Attendance ────────────────────
 router.get('/:schoolId/attendance/overview', schoolOpsAttendanceController.overview);

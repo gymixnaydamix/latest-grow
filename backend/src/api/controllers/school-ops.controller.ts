@@ -1144,6 +1144,241 @@ export const schoolOpsAuditController = {
 };
 
 // ═══════════════════════════════════════════════════════════════════════
+// DASHBOARD ANALYTICS
+// ═══════════════════════════════════════════════════════════════════════
+
+/** Safe string coercion */
+const str = (value: unknown, fallback = ''): string =>
+  typeof value === 'string' ? value : value == null ? fallback : String(value);
+
+/** Safe number coercion */
+const num = (value: unknown, fallback = 0): number => {
+  if (typeof value === 'number' && Number.isFinite(value)) return value;
+  if (typeof value === 'string') {
+    const parsed = Number(value.replace(/[^0-9.-]/g, ''));
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+};
+
+/** Safe object coercion */
+const asRecord = (value: unknown): Record<string, unknown> =>
+  value && typeof value === 'object' && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
+
+/** Title-case a string like ENROLLED → Enrolled */
+const titleCase = (value: string): string =>
+  value
+    .toLowerCase()
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, (m) => m.toUpperCase());
+
+/** Format user first/last/email for display */
+const formatUserName = (user?: { firstName?: string | null; lastName?: string | null; email?: string | null } | null): string =>
+  [user?.firstName, user?.lastName].filter(Boolean).join(' ') || user?.email || 'Unknown';
+
+export const schoolOpsDashboardController = {
+  /** GET /admin/schools/:schoolId/dashboard/analytics */
+  async analytics(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const [members, grades, courses, attendance, assignments] = await Promise.all([
+        prisma.schoolMember.findMany({ where: { schoolId }, include: { user: { select: { role: true } } } }),
+        prisma.grade.findMany({
+          where: { course: { schoolId } },
+          include: { course: { select: { department: { select: { name: true } } } } },
+        }),
+        prisma.course.findMany({ where: { schoolId }, include: { department: { select: { name: true } }, _count: { select: { enrollments: true } } } }),
+        prisma.attendance.findMany({ where: { course: { schoolId } } }),
+        prisma.assignment.findMany({ where: { course: { schoolId } }, include: { _count: { select: { submissions: true } } } }),
+      ]);
+
+      const students = members.filter((m) => m.role === 'STUDENT' || m.user.role === 'STUDENT');
+      const totalStudents = students.length;
+      const averageScore = grades.length > 0 ? grades.reduce((sum: number, g) => sum + g.score, 0) / grades.length : 0;
+      const attendanceRate =
+        attendance.length > 0
+          ? (attendance.filter((r) => r.status === 'PRESENT' || r.status === 'LATE').length / attendance.length) * 100
+          : 0;
+      const completionRate =
+        assignments.length > 0
+          ? (assignments.reduce((sum: number, a) => sum + a._count.submissions, 0) / assignments.length) * 100
+          : 0;
+
+      const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
+      const enrollmentTrend = Array.from({ length: 6 }).map((_, index) => {
+        const anchor = new Date();
+        anchor.setMonth(anchor.getMonth() - (5 - index));
+        const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+        const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1);
+        const count = students.filter((s) => s.joinedAt < monthEnd).length;
+        return { name: monthFormatter.format(monthStart), students: count };
+      });
+
+      const attendanceTrend = Array.from({ length: 6 }).map((_, index) => {
+        const anchor = new Date();
+        anchor.setMonth(anchor.getMonth() - (5 - index));
+        const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+        const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1);
+        const monthRecords = attendance.filter((r) => r.date >= monthStart && r.date < monthEnd);
+        const rate =
+          monthRecords.length > 0
+            ? (monthRecords.filter((r) => r.status === 'PRESENT' || r.status === 'LATE').length / monthRecords.length) * 100
+            : 0;
+        return { name: monthFormatter.format(monthStart), rate: Math.round(rate) };
+      });
+
+      const gradeDistribution = [
+        { name: 'A', value: grades.filter((g) => g.score >= 90).length, color: '#34d399' },
+        { name: 'B', value: grades.filter((g) => g.score >= 80 && g.score < 90).length, color: '#818cf8' },
+        { name: 'C', value: grades.filter((g) => g.score >= 70 && g.score < 80).length, color: '#fbbf24' },
+        { name: 'D', value: grades.filter((g) => g.score >= 60 && g.score < 70).length, color: '#fb923c' },
+        { name: 'F', value: grades.filter((g) => g.score < 60).length, color: '#f87171' },
+      ];
+
+      const departmentPerformance = courses.reduce<Record<string, { scores: number[]; attendance: number[] }>>((acc, course) => {
+        const key = course.department?.name ?? 'General';
+        if (!acc[key]) acc[key] = { scores: [], attendance: [] };
+        const courseGrades = grades.filter((g) => g.courseId === course.id).map((g) => g.score);
+        const courseAttendance = attendance.filter((r) => r.courseId === course.id);
+        if (courseGrades.length > 0) acc[key].scores.push(...courseGrades);
+        if (courseAttendance.length > 0) {
+          const presentCount = courseAttendance.filter((r) => r.status === 'PRESENT' || r.status === 'LATE').length;
+          acc[key].attendance.push((presentCount / courseAttendance.length) * 100);
+        }
+        return acc;
+      }, {});
+
+      res.json({
+        success: true,
+        data: {
+          totalStudents,
+          avgGpa: Number((averageScore / 25).toFixed(2)),
+          attendanceRate: Number(attendanceRate.toFixed(1)),
+          courseCompletionRate: Number(Math.min(completionRate, 100).toFixed(1)),
+          enrollmentTrend,
+          attendanceTrend,
+          gradeDistribution,
+          departmentPerformance: Object.entries(departmentPerformance).map(([name, stats]) => ({
+            name,
+            avgGrade: stats.scores.length > 0 ? Math.round(stats.scores.reduce((s: number, v: number) => s + v, 0) / stats.scores.length) : 0,
+            attendance: stats.attendance.length > 0 ? Math.round(stats.attendance.reduce((s: number, v: number) => s + v, 0) / stats.attendance.length) : 0,
+          })),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /admin/schools/:schoolId/dashboard/market */
+  async market(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const [applicants, campaigns] = await Promise.all([
+        prisma.applicant.findMany({ where: { schoolId }, orderBy: { createdAt: 'asc' } }),
+        prisma.campaign.findMany({ where: { schoolId }, orderBy: { createdAt: 'desc' } }),
+      ]);
+
+      const monthFormatter = new Intl.DateTimeFormat('en-US', { month: 'short' });
+      const inquiryTrend = Array.from({ length: 6 }).map((_, index) => {
+        const anchor = new Date();
+        anchor.setMonth(anchor.getMonth() - (5 - index));
+        const monthStart = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
+        const monthEnd = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 1);
+        return {
+          name: monthFormatter.format(monthStart),
+          inquiries: applicants.filter((a) => a.createdAt >= monthStart && a.createdAt < monthEnd).length,
+        };
+      });
+
+      const stageCounts = ['INQUIRY', 'APPLICATION', 'REVIEW', 'ACCEPTED', 'ENROLLED', 'REJECTED'].map((stage) => ({
+        name: titleCase(stage),
+        value: applicants.filter((a) => a.stage === stage).length,
+      }));
+
+      const campaignPerformance = campaigns.map((c) => ({
+        name: c.name,
+        channel: c.channel,
+        budget: c.budget,
+        leads: num(asRecord(c.metrics).leads),
+        conversions: num(asRecord(c.metrics).conversions),
+      }));
+
+      const conversionRate = applicants.length > 0
+        ? (applicants.filter((a) => a.stage === 'ENROLLED').length / applicants.length) * 100
+        : 0;
+
+      res.json({
+        success: true,
+        data: {
+          inquiryVolume: applicants.length,
+          waitlistStudents: 0,
+          conversionRate: Number(conversionRate.toFixed(1)),
+          brandScore: campaigns.length > 0
+            ? Number((campaigns.reduce((sum: number, c) => sum + num(asRecord(c.metrics).engagementScore), 0) / campaigns.length).toFixed(1))
+            : 0,
+          inquiryTrend,
+          stageDistribution: stageCounts,
+          campaignPerformance,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /admin/schools/:schoolId/dashboard/system */
+  async system(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const [maintenance, compliance, audits, messages, announcements] = await Promise.all([
+        prisma.maintenanceRequest.findMany({ where: { schoolId }, orderBy: { requestedAt: 'desc' }, take: 20 }),
+        prisma.complianceReport.findMany({ where: { schoolId }, orderBy: { updatedAt: 'desc' }, take: 20 }),
+        prisma.auditLog.findMany({
+          where: { metadata: { path: ['schoolId'], equals: schoolId } },
+          include: { user: { select: { firstName: true, lastName: true } } },
+          orderBy: { timestamp: 'desc' },
+          take: 20,
+        }),
+        prisma.messageThread.count({ where: { schoolId } }),
+        prisma.announcement.count({ where: { schoolId, publishedAt: { not: null } } }),
+      ]);
+
+      const openMaintenance = maintenance.filter((item) => !['COMPLETED', 'DONE'].includes(str(item.status).toUpperCase())).length;
+      const openCompliance = compliance.filter((item) => !['COMPLETED', 'CLOSED'].includes(str(item.status).toUpperCase())).length;
+      const criticalAudits = audits.filter((log) => /delete|failed|denied|security/i.test(log.action)).length;
+      const operationalScore = Math.max(0, 100 - openMaintenance * 4 - openCompliance * 3 - criticalAudits * 5);
+
+      res.json({
+        success: true,
+        data: {
+          operationalScore,
+          openMaintenance,
+          openCompliance,
+          criticalAudits,
+          activeMessageThreads: messages,
+          publishedAnnouncements: announcements,
+          services: [
+            { name: 'Maintenance Queue', status: openMaintenance > 5 ? 'warning' : 'healthy', metric: openMaintenance },
+            { name: 'Compliance Queue', status: openCompliance > 3 ? 'warning' : 'healthy', metric: openCompliance },
+            { name: 'Communications', status: 'healthy', metric: messages + announcements },
+          ],
+          incidents: audits.slice(0, 8).map((log) => ({
+            title: log.action,
+            time: log.timestamp.toISOString(),
+            severity: /delete|failed|denied|security/i.test(log.action) ? 'critical' : 'info',
+            resolved: !/pending|failed/i.test(log.action),
+            actor: formatUserName(log.user),
+          })),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
 // STAFF / LEAVE
 // ═══════════════════════════════════════════════════════════════════════
 
