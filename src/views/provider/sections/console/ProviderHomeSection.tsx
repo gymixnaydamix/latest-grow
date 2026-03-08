@@ -99,11 +99,12 @@ function CommandCenterView() {
 
   useEffect(() => {
     if (home?.systemHealth) {
+      const sh = home.systemHealth as Record<string, unknown>;
       setPlatformHealth({
         uptime: home.systemHealth.uptimePct ?? 99.9,
-        avgLatency: 0,
-        errorRate: 0,
-        activeUsers: 0,
+        avgLatency: (sh.avgLatency as number) ?? 0,
+        errorRate: (sh.errorRate as number) ?? 0,
+        activeUsers: (sh.activeUsers as number) ?? 0,
       });
       setQuickStats({
         actionInbox: actionInbox.length,

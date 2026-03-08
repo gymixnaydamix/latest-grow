@@ -1284,7 +1284,7 @@ export const schoolOpsReportsController = {
             take: 500,
           });
           const avgScore = grades.length
-            ? Math.round((grades.reduce((sum: number, g: { score: number }) => sum + g.score, 0) / grades.length) * 100) / 100
+            ? Number((grades.reduce((sum: number, g: { score: number }) => sum + g.score, 0) / grades.length).toFixed(2))
             : 0;
           res.json({ success: true, data: { type, totalGrades: grades.length, averageScore: avgScore, grades } });
           return;
@@ -1322,15 +1322,19 @@ export const schoolOpsNotificationsController = {
       const { type, recipientId, recipientEmail, subject, body } = req.body;
       if (!subject || !body) throw new BadRequestError('subject and body are required');
 
+      const validChannels = ['email', 'sms', 'push'];
+      const channel = validChannels.includes(type) ? type : 'email';
+      const notificationType = channel === 'push' ? 'PUSH' : channel === 'sms' ? 'SMS' : 'EMAIL';
+
       // Create a notification record for in-app delivery
       if (recipientId) {
         await prisma.notification.create({
           data: {
             userId: recipientId,
-            type: (type === 'push' ? 'PUSH' : 'EMAIL').toUpperCase(),
+            type: notificationType,
             title: subject,
             message: body,
-            metadata: { schoolId, channel: type ?? 'email', recipientEmail: recipientEmail ?? null },
+            metadata: { schoolId, channel, recipientEmail: recipientEmail ?? null },
           },
         });
       }
