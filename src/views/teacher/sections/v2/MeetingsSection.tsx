@@ -4,7 +4,7 @@
 import { useState, useMemo } from 'react';
 import {
   Calendar, CalendarPlus, Clock, Edit3, ExternalLink, MapPin,
-  Search, Trash2, Users, XCircle,
+  Search, Users, XCircle,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

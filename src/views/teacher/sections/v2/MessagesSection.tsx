@@ -45,23 +45,6 @@ const categoryStyles: Record<string, { bg: string; text: string; label: string }
 };
 
 /* ── Demo conversation messages for expanded threads ── */
-const threadMessagesDemo: Record<string, { sender: string; body: string; time: string }[]> = {
-  mt1: [
-    { sender: 'You', body: 'Hi Mrs. Kim, I wanted to reach out about Jordan\'s missing assignments in Pre-Algebra. He has 3 outstanding this month.', time: 'Mar 4, 2:30 PM' },
-    { sender: 'Mrs. Kim', body: 'Thank you for letting me know, Ms. Chen. We were not aware of this. Can you send the list of assignments?', time: 'Mar 4, 4:15 PM' },
-    { sender: 'You', body: 'Of course — HW Set 5, Chapter 4 Practice, and the Fraction Review worksheet. All were due within the past 2 weeks.', time: 'Mar 4, 4:45 PM' },
-    { sender: 'Mrs. Kim', body: 'Thank you, Ms. Chen. We will make sure Jordan completes the work this weekend.', time: 'Mar 5, 9:20 AM' },
-  ],
-  mt3: [
-    { sender: 'Chen Wei', body: 'Ms. Chen, can I do the advanced projectile problem for extra credit?', time: 'Mar 4, 3:10 PM' },
-  ],
-  mt4: [
-    { sender: 'Ms. Johnson', body: 'Hi Sarah, I noticed Maria Garcia\'s grades are slipping. Have you seen anything in class?', time: 'Mar 3, 11:00 AM' },
-    { sender: 'You', body: 'Yes, she\'s been very withdrawn the past two weeks. Not participating at all.', time: 'Mar 3, 12:15 PM' },
-    { sender: 'Ms. Johnson', body: 'I spoke with Maria today. There may be issues at home. Let\'s coordinate.', time: 'Mar 4, 10:30 AM' },
-  ],
-};
-
 export function MessagesSection({ schoolId }: TeacherSectionProps) {
   const { activeHeader, setHeader } = useNavigationStore();
   const { user } = useAuthStore();
@@ -81,6 +64,19 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
   const [filterCategory, setFilterCategory] = useState<string | 'all'>('all');
   const [expandedThread, setExpandedThread] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
+
+  /* ── Fetch thread messages from API ── */
+  const { data: threadMessagesData } = useTeacherThreadMessages(expandedThread);
+  const threadMessages: { sender: string; body: string; time: string }[] = useMemo(() => {
+    const apiMsgs = (threadMessagesData as any)?.data?.messages ?? (threadMessagesData as any)?.messages;
+    if (apiMsgs?.length) return apiMsgs;
+    // Fallback: show at least the last message from the thread
+    if (expandedThread) {
+      const thread = effectiveThreads.find(t => t.id === expandedThread);
+      if (thread) return [{ sender: thread.lastSender, body: thread.lastMessage, time: thread.timestamp }];
+    }
+    return [];
+  }, [threadMessagesData, expandedThread, effectiveThreads]);
 
   /* ── Compose state ── */
   const [composeRecipient, setComposeRecipient] = useState('');
@@ -174,7 +170,8 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
               {filtered.map(thread => {
                 const cat = categoryStyles[thread.category] ?? categoryStyles.staff;
                 const isExpanded = expandedThread === thread.id;
-                const convo = threadMessagesDemo[thread.id];
+                /* threadMessages comes from API hook at top of component */
+                const convo = isExpanded ? threadMessages : null;
 
                 return (
                   <div key={thread.id} className="space-y-0">
@@ -226,7 +223,7 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
                     {isExpanded && (
                       <div className="rounded-b-xl border border-t-0 border-indigo-500/30 bg-indigo-500/3 px-4 pb-4">
                         <Separator className="bg-muted/80 mb-4" />
-                        {convo ? (
+                        {convo && convo.length > 0 ? (
                           <div className="space-y-3 mb-4 max-h-75 overflow-y-auto pr-1">
                             {convo.map((msg, i) => (
                               <div

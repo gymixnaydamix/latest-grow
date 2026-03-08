@@ -3,11 +3,12 @@
  * ──────────────────────────────────────────────────────────────────── */
 import { useState, useMemo } from 'react';
 import {
-  ChevronRight, Search,
+  ChevronRight, Search, Download, FileText, Mail, Calendar,
   TrendingDown, TrendingUp,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useTeacherClassPerformance } from '@/hooks/api/use-teacher';
 import { useNavigationStore } from '@/store/navigation.store';
@@ -129,7 +130,7 @@ const atRiskStudentsDemo: AtRiskStudent[] = [
 ];
 
 export function ReportsSection(_props: TeacherSectionProps) {
-  const { activeHeader } = useNavigationStore();
+  const { activeHeader, setSection, setHeader } = useNavigationStore();
   const header = activeHeader || 'class_analytics';
 
   const { data: apiClassPerformance } = useTeacherClassPerformance();
@@ -156,6 +157,34 @@ export function ReportsSection(_props: TeacherSectionProps) {
   }, [classes]);
 
   const atRiskCount = atRiskStudents.length;
+
+  /* ── Action mapper: make recommended actions clickable ── */
+  function actionNav(action: string): { icon: React.ReactNode; handler: () => void } | null {
+    const lower = action.toLowerCase();
+    if (lower.includes('contact parent') || lower.includes('message'))
+      return { icon: <Mail className="size-3" />, handler: () => { setSection('messages'); setHeader('compose'); } };
+    if (lower.includes('check-in') || lower.includes('schedule') || lower.includes('conference'))
+      return { icon: <Calendar className="size-3" />, handler: () => { setSection('meetings'); setHeader('schedule'); } };
+    if (lower.includes('review') || lower.includes('submission'))
+      return { icon: <FileText className="size-3" />, handler: () => { setSection('gradebook'); setHeader('grade_entry'); } };
+    return null;
+  }
+
+  /* ── CSV Export helper ── */
+  function handleExportCSV() {
+    const rows = [['Student', 'Average', 'Grade', 'Trend', 'Attendance %', 'Assignment Completion %']];
+    studentProgressDemo.forEach(s => {
+      rows.push([s.name, s.average.toFixed(1), s.letterGrade, s.trend, String(s.attendanceRate), String(s.assignmentCompletion)]);
+    });
+    const csv = rows.map(r => r.join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `student-progress-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
 
   const filteredStudents = useMemo(() => {
     if (!search.trim()) return studentProgressDemo;
@@ -260,16 +289,27 @@ export function ReportsSection(_props: TeacherSectionProps) {
       {/* ── STUDENT PROGRESS VIEW ── */}
       {header === 'student_progress' && (
         <div className="space-y-4" data-animate>
-          {/* Search */}
+          {/* Search + Export */}
           <GlassCard className="p-3!">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
-              <Input
-                placeholder="Search students..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
-              />
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
+                <Input
+                  placeholder="Search students..."
+                  value={search}
+                  onChange={e => setSearch(e.target.value)}
+                  className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
+                />
+              </div>
+              <Button
+                size="sm"
+                variant="outline"
+                className="gap-1.5 border-border/60 text-muted-foreground hover:text-foreground shrink-0"
+                onClick={handleExportCSV}
+              >
+                <Download className="size-3.5" />
+                Export CSV
+              </Button>
             </div>
           </GlassCard>
 
@@ -374,12 +414,28 @@ export function ReportsSection(_props: TeacherSectionProps) {
                     <div>
                       <p className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-wide mb-1">Recommended Actions</p>
                       <div className="space-y-1">
-                        {student.actions.map((action, i) => (
-                          <div key={i} className="flex items-center gap-2 text-xs text-emerald-400/60">
-                            <ChevronRight className="size-3 shrink-0" />
-                            {action}
-                          </div>
-                        ))}
+                        {student.actions.map((action, i) => {
+                          const nav = actionNav(action);
+                          if (nav) {
+                            return (
+                              <button
+                                key={i}
+                                onClick={nav.handler}
+                                className="flex items-center gap-2 text-xs text-emerald-400/80 hover:text-emerald-300 transition-colors group w-full text-left"
+                              >
+                                {nav.icon}
+                                <span className="group-hover:underline">{action}</span>
+                                <ChevronRight className="size-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </button>
+                            );
+                          }
+                          return (
+                            <div key={i} className="flex items-center gap-2 text-xs text-emerald-400/60">
+                              <ChevronRight className="size-3 shrink-0" />
+                              {action}
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
                   </div>
