@@ -9,7 +9,10 @@ import { useSystemHealth as useSystemHealthAnalytics } from '@/hooks/api/use-ana
 export function SystemView() {
   const { data: apiData } = useSystemHealth();
   const { data: analyticsHealth } = useSystemHealthAnalytics();
-  void analyticsHealth; // available for future wiring
+  /* Merge analyticsHealth into apiData when available */
+  const mergedKpis = analyticsHealth?.kpis ?? apiData?.kpis;
+  const mergedServices = analyticsHealth?.services ?? apiData?.services;
+  const mergedGauges = analyticsHealth?.gauges ?? apiData?.gauges;
   /* ── Inline 3D SVG Icons ── */
   const Icon3D_Server = () => (
     <svg viewBox="0 0 40 40" className="h-9 w-9 drop-shadow-lg" style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.35))' }}>
@@ -54,9 +57,9 @@ export function SystemView() {
   );
 
   /* ── Demo data (merged with API when available) ── */
-  const apiKpis = apiData?.kpis;
-  const apiServices = apiData?.services;
-  const apiGauges = apiData?.gauges;
+  const apiKpis = mergedKpis;
+  const apiServices = mergedServices;
+  const apiGauges = mergedGauges;
 
   const systemKpis: KpiDef[] = [
     { label: 'API Response', value: apiKpis?.[0]?.value ?? '42ms', change: apiKpis?.[0]?.change ?? '-8ms', up: true, sub: 'P95 latency', icon3d: Icon3D_Server, gradient: 'from-blue-500/10 to-blue-500/5', borderGlow: 'hover:shadow-blue-500/20', sparkline: apiKpis?.[0]?.sparkline ?? [55, 52, 49, 48, 47, 45, 44, 44, 43, 43, 42, 42], sparkColor: '#3b82f6', chipColor: 'bg-emerald-500/10 text-emerald-600', prefix: 's_' },
@@ -64,11 +67,18 @@ export function SystemView() {
     { label: 'Queue Depth', value: apiKpis?.[2]?.value ?? '12', change: apiKpis?.[2]?.change ?? '+3', up: false, sub: 'Jobs pending', icon3d: Icon3D_Queue, gradient: 'from-amber-500/10 to-amber-500/5', borderGlow: 'hover:shadow-amber-500/20', sparkline: apiKpis?.[2]?.sparkline ?? [5, 6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12], sparkColor: '#f59e0b', chipColor: 'bg-amber-500/10 text-amber-600', prefix: 's_' },
     { label: 'Storage', value: apiKpis?.[3]?.value ?? '2.4TB', change: apiKpis?.[3]?.change ?? '+120GB', up: false, sub: 'Of 5TB used', icon3d: Icon3D_Storage, gradient: 'from-violet-500/10 to-violet-500/5', borderGlow: 'hover:shadow-violet-500/20', sparkline: apiKpis?.[3]?.sparkline ?? [1.8, 1.9, 1.95, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4], sparkColor: '#8b5cf6', chipColor: 'bg-violet-500/10 text-violet-600', prefix: 's_' },
   ];
-  const infraData = Array.from({ length: 24 }, (_, i) => ({
-    hour: `${i.toString().padStart(2, '0')}:00`,
-    cpu: Math.round(15 + Math.random() * 25 + (i > 8 && i < 20 ? 15 : 0)),
-    memory: Math.round(40 + Math.random() * 15 + (i > 10 && i < 18 ? 10 : 0)),
-  }));
+  /* Deterministic infra data seeded from gauge values */
+  const cpuBase = (apiGauges?.[0]?.pct ?? 34);
+  const memBase = (apiGauges?.[1]?.pct ?? 62);
+  const infraData = Array.from({ length: 24 }, (_, i) => {
+    const workHourBump = (i > 8 && i < 20) ? 15 : 0;
+    const wave = Math.sin(i * 0.5) * 8;
+    return {
+      hour: `${i.toString().padStart(2, '0')}:00`,
+      cpu: Math.round(Math.max(5, Math.min(95, cpuBase - 10 + workHourBump + wave))),
+      memory: Math.round(Math.max(10, Math.min(95, memBase - 8 + (i > 10 && i < 18 ? 10 : 0) + wave * 0.5))),
+    };
+  });
   const statusColorMap: Record<string, string> = { Healthy: 'bg-emerald-500', Warning: 'bg-amber-500', Degraded: 'bg-red-500' };
   const services = (apiServices ?? [
     { name: 'API Gateway', status: 'Healthy' },
@@ -85,14 +95,17 @@ export function SystemView() {
     { time: '3h ago', msg: 'Database backup completed', type: 'success' },
     { time: '6h ago', msg: 'Deployment v2.4.1 rolled out', type: 'info' },
   ];
-  const events = FALLBACK_events;
+  const apiEvents = (analyticsHealth as any)?.events as typeof FALLBACK_events | undefined;
+  const events = apiEvents ?? FALLBACK_events;
   const gauges = (apiGauges ?? [
     { label: 'CPU', pct: 34, color: '#3b82f6' },
     { label: 'Memory', pct: 62, color: '#10b981' },
     { label: 'Disk I/O', pct: 28, color: '#f59e0b' },
     { label: 'Network', pct: 45, color: '#8b5cf6' },
   ]);
-  const uptimeDays = Array.from({ length: 30 }, (_, i) => ({ day: i + 1, up: Math.random() > 0.05 }));
+  /* Deterministic uptime: mark down only days divisible by 17 (rare but predictable) */
+  const downDaySet = new Set((analyticsHealth as any)?.downDays ?? [17]);
+  const uptimeDays = Array.from({ length: 30 }, (_, i) => ({ day: i + 1, up: !downDaySet.has(i + 1) }));
 
   return (
     <div className="flex gap-1.5 h-full min-h-0 overflow-hidden">
@@ -136,7 +149,7 @@ export function SystemView() {
               </div>
               <h3 className="text-[11px] font-semibold">Service Status</h3>
             </div>
-            <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600">5/6 Healthy</span>
+            <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600">{services.filter(s => s.status === 'Healthy').length}/{services.length} Healthy</span>
           </div>
           <div className="grid grid-cols-2 gap-1 px-2.5 pb-2 flex-1 min-h-0 content-start">
             {services.map(s => (
@@ -197,48 +210,40 @@ export function SystemView() {
       </div>
 
       {/* ═══ Right sidebar ═══ */}
-      <div className="hidden lg:flex w-44 flex-col gap-1 shrink-0 min-h-0">
-        {/* Uptime tracker (30-day grid) */}
-        <div data-animate className="group relative flex flex-col rounded-xl bg-slate-950 p-2 shadow-2xl transition-all duration-300 hover:shadow-emerald-500/20 overflow-hidden" style={{ minHeight: 140 }}>
-          <div className="absolute inset-0 rounded-xl bg-linear-to-r from-emerald-500 via-cyan-500 to-blue-500 opacity-20 blur-sm transition-opacity duration-300 group-hover:opacity-30" />
-          <div className="absolute inset-px rounded-[11px] bg-slate-950" />
-          <div className="relative flex flex-col gap-1.5">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-semibold text-white">Uptime (30d)</h3>
-              <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-400">99.97%</span>
-            </div>
-            <div className="grid grid-cols-10 gap-0.5">
-              {uptimeDays.map(d => (<div key={d.day} className={`h-2.5 rounded-sm ${d.up ? 'bg-emerald-500/60' : 'bg-red-500/60'}`} title={`Day ${d.day}: ${d.up ? 'Up' : 'Down'}`} />))}
-            </div>
-            <p className="text-[7px] text-slate-500 text-center">Last 30 days</p>
+      <div className="hidden lg:flex w-44 flex-col gap-1.5 shrink-0 min-h-0">
+        {/* Uptime tracker (30-day grid) — emerald chroma card */}
+        <div data-animate className="group flex flex-col rounded-xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-emerald-500/30 overflow-hidden" style={{ minHeight: 140 }}>
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="text-[10px] font-semibold text-foreground">Uptime (30d)</h3>
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">99.97%</span>
           </div>
+          <div className="grid grid-cols-10 gap-0.5">
+            {uptimeDays.map(d => (<div key={d.day} className={`h-2.5 rounded-sm ${d.up ? 'bg-emerald-500/60' : 'bg-red-500/60'}`} title={`Day ${d.day}: ${d.up ? 'Up' : 'Down'}`} />))}
+          </div>
+          <p className="text-[7px] text-muted-foreground text-center mt-1.5">Last 30 days</p>
         </div>
 
-        {/* Deployment pipeline */}
-        <div data-animate className="group relative flex flex-1 flex-col rounded-xl bg-slate-950 p-2 shadow-2xl transition-all duration-300 hover:shadow-violet-500/20 overflow-hidden min-h-0">
-          <div className="absolute inset-0 rounded-xl bg-linear-to-r from-violet-500 via-purple-500 to-pink-500 opacity-20 blur-sm transition-opacity duration-300 group-hover:opacity-30" />
-          <div className="absolute inset-px rounded-[11px] bg-slate-950" />
-          <div className="relative flex flex-1 flex-col gap-1.5 min-h-0">
-            <div className="flex items-center justify-between">
-              <h3 className="text-[10px] font-semibold text-white">Deploy Pipeline</h3>
-              <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-medium text-emerald-500"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Active</span>
-            </div>
-            <div className="flex flex-1 flex-col gap-1 overflow-auto min-h-0">
-              {[
-                { stage: 'Build', status: 'passed', time: '1m 23s' },
-                { stage: 'Test', status: 'passed', time: '3m 45s' },
-                { stage: 'Staging', status: 'passed', time: '2m 10s' },
-                { stage: 'Production', status: 'deploying', time: '~2m' },
-              ].map(p => (
-                <div key={p.stage} className="flex items-center justify-between rounded-md bg-slate-900/50 p-1.5 border border-slate-800/50">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`h-1.5 w-1.5 rounded-full ${p.status === 'passed' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
-                    <span className="text-[9px] font-medium text-slate-300">{p.stage}</span>
-                  </div>
-                  <span className="text-[7px] text-slate-500">{p.time}</span>
+        {/* Deployment pipeline — violet chroma card */}
+        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-violet-500/20 bg-linear-to-br from-violet-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-violet-500/30 overflow-hidden min-h-0">
+          <div className="flex items-center justify-between mb-1.5">
+            <h3 className="text-[10px] font-semibold text-foreground">Deploy Pipeline</h3>
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-medium text-emerald-600 dark:text-emerald-400"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Active</span>
+          </div>
+          <div className="flex flex-1 flex-col gap-1 overflow-auto min-h-0">
+            {[
+              { stage: 'Build', status: 'passed', time: '1m 23s' },
+              { stage: 'Test', status: 'passed', time: '3m 45s' },
+              { stage: 'Staging', status: 'passed', time: '2m 10s' },
+              { stage: 'Production', status: 'deploying', time: '~2m' },
+            ].map(p => (
+              <div key={p.stage} className="flex items-center justify-between rounded-lg bg-muted/40 p-1.5 border border-border/40 transition-colors hover:bg-muted/60">
+                <div className="flex items-center gap-1.5">
+                  <span className={`h-1.5 w-1.5 rounded-full ${p.status === 'passed' ? 'bg-emerald-500' : 'bg-amber-500 animate-pulse'}`} />
+                  <span className="text-[9px] font-medium text-foreground/80">{p.stage}</span>
                 </div>
-              ))}
-            </div>
+                <span className="text-[7px] text-muted-foreground">{p.time}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

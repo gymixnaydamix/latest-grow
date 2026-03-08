@@ -1,5 +1,5 @@
 /* ─── ProviderOnboardingSection ─── Pipeline · Wizard · Blockers ─── */
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect } from 'react';
 import {
   AlertTriangle,
   CheckCircle2,
@@ -104,7 +104,7 @@ function PipelineView() {
         description="Pipeline stages — lead → provisioning → import → training → go-live"
         accent={accent}
         actions={
-          <Button size="sm" className="h-7 bg-teal-500/20 text-teal-100 hover:bg-teal-500/30">
+          <Button size="sm" className="h-7 bg-teal-500/20 text-teal-100 hover:bg-teal-500/30" onClick={() => useNavigationStore.getState().setHeader('onboarding_wizard')}>
             <Sparkles className="mr-1 size-3" />New Onboarding
           </Button>
         }
@@ -187,17 +187,30 @@ function WizardView() {
     { label: 'Data Migration', description: 'Import students, teachers, courses' },
     { label: 'Review & Launch', description: 'Confirm settings and go live' },
   ];
+  const wizardHeaderTitleClassName = 'text-sm text-slate-900';
+  const wizardHeaderDescriptionClassName = 'text-[11px] text-slate-500';
 
-  /* Pre-populate from API pipeline tasks if available */
-  void onboarding;
+  /* Pre-populate form from the first in-progress pipeline card if available */
+  const pipelineCards = onboarding?.pipeline ?? [];
+  const activePipeline = pipelineCards.find((c) => (c as any).status === 'IN_PROGRESS') as Record<string, unknown> | undefined;
+  const activeTenantName = activePipeline?.tenantName as string | undefined;
+  useEffect(() => {
+    if (activeTenantName && !formData.schoolName) {
+      setFormData((prev) => ({
+        ...prev,
+        schoolName: activeTenantName ?? prev.schoolName,
+        country: (activePipeline?.country as string) ?? prev.country,
+      }));
+    }
+  }, [activeTenantName]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stepperActions = (
-    <div className="flex max-w-full flex-wrap gap-1.5 xl:justify-end">
+    <div className="flex w-full min-w-0 gap-1 overflow-x-auto pb-1 xl:justify-end">
       {steps.map((s, i) => (
         <button
           key={s.label}
           onClick={() => { setValidationError(null); setStep(i); }}
-          className={`flex-[1_1_220px] rounded-lg border px-2.5 py-2 text-left transition-all sm:flex-[1_1_240px] sm:px-3 xl:max-w-[248px] xl:flex-none ${
+          className={`min-w-[148px] shrink-0 rounded-lg border px-2 py-1.5 text-left transition-all xl:min-w-[156px] ${
             i === step
               ? 'border-teal-300 bg-teal-50 ring-1 ring-teal-100'
               : i < step
@@ -205,17 +218,15 @@ function WizardView() {
                 : 'border-slate-200 bg-slate-50'
           }`}
         >
-          <div className="flex items-center gap-2">
-            <span className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold sm:size-6 sm:text-[10px] ${
+          <div className="flex items-center gap-1.5">
+            <span className={`flex size-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold xl:size-6 xl:text-[10px] ${
               i === step ? 'bg-teal-500 text-white' : i < step ? 'bg-emerald-500 text-white' : 'bg-slate-200 text-slate-600'
             }`}>
               {i < step ? '✓' : i + 1}
             </span>
             <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
-                <p className="text-[11px] font-semibold leading-none text-slate-900 sm:text-xs">{s.label}</p>
-                <p className="text-[10px] leading-tight text-slate-500">{s.description}</p>
-              </div>
+              <p className="truncate text-[10px] font-semibold leading-none text-slate-900 xl:text-[11px]">{s.label}</p>
+              <p className="mt-0.5 truncate text-[9px] leading-tight text-slate-500 xl:text-[10px]">{s.description}</p>
             </div>
           </div>
         </button>
@@ -276,8 +287,8 @@ function WizardView() {
           description="Step-by-step new tenant provisioning"
           accent={accent}
           className="border-slate-200 bg-white ring-slate-200/80 shadow-sm"
-          titleClassName="text-slate-900"
-          descriptionClassName="text-slate-500"
+          titleClassName={wizardHeaderTitleClassName}
+          descriptionClassName={wizardHeaderDescriptionClassName}
         />
         <div className="flex items-center justify-center py-12"><Loader2 className="size-6 animate-spin text-amber-400" /></div>
       </SectionShell>
@@ -293,8 +304,8 @@ function WizardView() {
           description="Step-by-step new tenant provisioning"
           accent={accent}
           className="border-slate-200 bg-white ring-slate-200/80 shadow-sm"
-          titleClassName="text-slate-900"
-          descriptionClassName="text-slate-500"
+          titleClassName={wizardHeaderTitleClassName}
+          descriptionClassName={wizardHeaderDescriptionClassName}
         />
         <div className="flex flex-col items-center justify-center gap-4 rounded-2xl border border-emerald-200 bg-emerald-50 py-16">
           <CheckCircle2 className="size-16 text-emerald-500" />
@@ -324,11 +335,11 @@ function WizardView() {
         description="Step-by-step new tenant provisioning"
         accent={accent}
         className="border-slate-200 bg-white ring-slate-200/80 shadow-sm"
-        contentClassName="flex-col gap-3 xl:flex-row xl:items-start"
-        actionsClassName="w-full justify-start xl:w-auto xl:flex-1 xl:justify-end"
+        contentClassName="flex-col gap-3 xl:flex-row xl:items-center"
+        actionsClassName="w-full min-w-0 justify-start xl:flex-1 xl:justify-end"
         actions={stepperActions}
-        titleClassName="text-slate-900"
-        descriptionClassName="text-slate-500"
+        titleClassName={wizardHeaderTitleClassName}
+        descriptionClassName={wizardHeaderDescriptionClassName}
       />
 
       {/* Stepper */}

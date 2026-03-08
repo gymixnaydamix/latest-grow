@@ -209,6 +209,7 @@ type ConsoleState = {
   audit: AuditEvent[];
   macros: Array<Record<string, unknown>>;
   kbArticles: Array<Record<string, unknown>>;
+  csatRatings: Array<Record<string, unknown>>;
   maintenanceActions: Array<Record<string, unknown>>;
 };
 
@@ -373,14 +374,20 @@ function seedState(): ConsoleState {
     ],
     audit: [],
     macros: [
-      { id: 'macro_1', name: 'Billing Escalation', category: 'BILLING', template: 'Hi {{name}}, your billing issue has been escalated.', status: 'ACTIVE' },
-      { id: 'macro_2', name: 'Welcome Onboarding', category: 'ONBOARDING', template: 'Welcome to GrowYourNeed, {{name}}! Let us help you get started.', status: 'ACTIVE' },
-      { id: 'macro_3', name: 'SLA Breach Apology', category: 'SUPPORT', template: 'We apologize for the delayed response, {{name}}. Your case is now prioritized.', status: 'ACTIVE' },
+      { id: 'macro_1', name: 'Billing Escalation', category: 'BILLING', template: 'Hi {{name}}, your billing issue has been escalated.', status: 'ACTIVE', usageCount: 47, actions: ['auto-assign', 'tag-billing'], lastUsed: iso(-1 * DAY_MS) },
+      { id: 'macro_2', name: 'Welcome Onboarding', category: 'ONBOARDING', template: 'Welcome to GrowYourNeed, {{name}}! Let us help you get started.', status: 'ACTIVE', usageCount: 112, actions: ['assign-onboarding-team'], lastUsed: iso(-2 * HOUR_MS) },
+      { id: 'macro_3', name: 'SLA Breach Apology', category: 'SUPPORT', template: 'We apologize for the delayed response, {{name}}. Your case is now prioritized.', status: 'ACTIVE', usageCount: 23, actions: ['escalate', 'set-priority-urgent'], lastUsed: iso(-3 * DAY_MS) },
     ],
     kbArticles: [
-      { id: 'kb_1', title: 'How to configure SSO', category: 'SECURITY', status: 'PUBLISHED', views: 1240, createdAt: iso(-30 * DAY_MS) },
-      { id: 'kb_2', title: 'Setting up transport routes', category: 'OPERATIONS', status: 'PUBLISHED', views: 890, createdAt: iso(-20 * DAY_MS) },
-      { id: 'kb_3', title: 'Billing FAQ for tenants', category: 'BILLING', status: 'DRAFT', views: 0, createdAt: iso(-5 * DAY_MS) },
+      { id: 'kb_1', title: 'How to configure SSO', category: 'SECURITY', status: 'PUBLISHED', views: 1240, helpfulPct: 92, createdAt: iso(-30 * DAY_MS), updatedAt: iso(-2 * DAY_MS) },
+      { id: 'kb_2', title: 'Setting up transport routes', category: 'OPERATIONS', status: 'PUBLISHED', views: 890, helpfulPct: 78, createdAt: iso(-20 * DAY_MS), updatedAt: iso(-5 * DAY_MS) },
+      { id: 'kb_3', title: 'Billing FAQ for tenants', category: 'BILLING', status: 'DRAFT', views: 0, helpfulPct: 0, createdAt: iso(-5 * DAY_MS), updatedAt: iso(-5 * DAY_MS) },
+    ],
+    csatRatings: [
+      { id: 'csat_1', tenant: 'Bright Academy', score: 4.8, feedback: 'Excellent support turnaround', ticketId: 'ticket_1', createdAt: iso(-3 * DAY_MS) },
+      { id: 'csat_2', tenant: 'Sunrise School', score: 3.5, feedback: 'Response was slow but resolution was good', ticketId: 'ticket_3', createdAt: iso(-7 * DAY_MS) },
+      { id: 'csat_3', tenant: 'Evergreen Institute', score: 4.9, feedback: 'Very thorough and professional', ticketId: 'ticket_2', createdAt: iso(-1 * DAY_MS) },
+      { id: 'csat_4', tenant: 'Nova Learning', score: 4.2, feedback: '', ticketId: 'ticket_5', createdAt: iso(-10 * DAY_MS) },
     ],
     maintenanceActions: [
       { id: 'ma_1', tenantId: 'tenant_bright', type: 'SCHEMA_MIGRATION', description: 'Migrate billing tables to v2026.3', status: 'IN_PROGRESS', createdAt: iso(-2 * DAY_MS) },
@@ -1304,6 +1311,7 @@ export const providerConsoleService = {
     return {
       macros: state.macros,
       kbArticles: state.kbArticles,
+      csatRatings: state.csatRatings,
       slaStats: { avgResponseTime: '2h 14m', breaches: 3, complianceRate: 94.2 },
       escalationRules: [
         { id: 'esc_1', name: 'P1 Auto-Escalate', trigger: 'priority=P1 AND age>30m', action: 'ESCALATE_MANAGER' },
@@ -1334,6 +1342,57 @@ export const providerConsoleService = {
     if (input.status) article.status = input.status;
     logAudit('support.kb.update', 'KbArticle', String(article.id), null, input.actorEmail, reason, before, { title: article.title, status: article.status });
     return article;
+  },
+
+  createMacro(input: { name: string; category: string; template: string; actions?: string[]; actorEmail: string; reason: string }): Record<string, unknown> {
+    const reason = requireReason(input.reason);
+    const macro: Record<string, unknown> = {
+      id: `macro_${Date.now()}`,
+      name: input.name,
+      category: input.category,
+      template: input.template,
+      actions: input.actions ?? [],
+      status: 'ACTIVE',
+      usageCount: 0,
+      lastUsed: new Date().toISOString(),
+    };
+    state.macros.push(macro);
+    logAudit('support.macro.create', 'Macro', String(macro.id), null, input.actorEmail, reason, null, macro);
+    return macro;
+  },
+
+  deleteMacro(input: { macroId: string; actorEmail: string; reason: string }): Record<string, unknown> {
+    const reason = requireReason(input.reason);
+    const idx = state.macros.findIndex((m) => m.id === input.macroId);
+    if (idx === -1) throw new Error('Macro not found.');
+    const [removed] = state.macros.splice(idx, 1);
+    logAudit('support.macro.delete', 'Macro', String(removed.id), null, input.actorEmail, reason, removed, null);
+    return removed;
+  },
+
+  createKbArticle(input: { title: string; category: string; body: string; actorEmail: string; reason: string }): Record<string, unknown> {
+    const reason = requireReason(input.reason);
+    const article: Record<string, unknown> = {
+      id: `kb_${Date.now()}`,
+      title: input.title,
+      category: input.category,
+      body: input.body,
+      status: 'PUBLISHED',
+      views: 0,
+      helpfulPct: 0,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    state.kbArticles.push(article);
+    logAudit('support.kb.create', 'KbArticle', String(article.id), null, input.actorEmail, reason, null, article);
+    return article;
+  },
+
+  sendCsatSurvey(input: { tenantIds: string[]; actorEmail: string; reason: string }): Record<string, unknown> {
+    const reason = requireReason(input.reason);
+    const sent = input.tenantIds.length;
+    logAudit('support.csat.survey.send', 'CsatSurvey', `batch_${Date.now()}`, null, input.actorEmail, reason, null, { tenantIds: input.tenantIds, sent });
+    return { sent };
   },
 
   /* ── Incidents & maintenance windows ───────────────────── */
@@ -1462,6 +1521,61 @@ export const providerConsoleService = {
         { id: 'ct_1', name: 'Welcome Email', type: 'EMAIL', subject: 'Welcome to {{platform}}', status: 'ACTIVE' },
         { id: 'ct_2', name: 'Invoice Reminder', type: 'EMAIL', subject: 'Invoice #{{invoiceId}} is due', status: 'ACTIVE' },
       ],
+      threads: [
+        { id: 'thread_1', tenant: 'Bright Future Prep', subject: 'Payment processing issue', lastMessage: iso(-1 * HOUR_MS), status: 'OPEN', unread: 2 },
+        { id: 'thread_2', tenant: 'Northstar Academy', subject: 'Module activation request', lastMessage: iso(-4 * HOUR_MS), status: 'OPEN', unread: 1 },
+        { id: 'thread_3', tenant: 'Cedar Valley Public School', subject: 'Annual report questions', lastMessage: iso(-2 * DAY_MS), status: 'RESOLVED', unread: 0 },
+        { id: 'thread_4', tenant: 'Maple Leaf International School', subject: 'Storage limit upgrade', lastMessage: iso(-5 * DAY_MS), status: 'CLOSED', unread: 0 },
+      ],
+    };
+  },
+
+  /* ── Email Messages ────────────────────────────────────── */
+
+  listEmailMessages(folder?: string): Record<string, unknown> {
+    const allMessages = [
+      // Inbox messages
+      { id: 'em_1', from: 'admin@brightfutureprep.sc.ke', fromName: 'Julius Ndegwa', to: ['provider@growyourneed.dev'], cc: [], bcc: [], subject: 'Payment processing failure — need urgent help', body: 'Hi team,\n\nWe\'ve been experiencing payment processing failures for the last 48 hours. Our families are unable to pay tuition fees through the portal. This is critical as we\'re in the middle of the enrollment period.\n\nCan someone look into this urgently?\n\nRegards,\nJulius Ndegwa\nBright Future Prep', folder: 'INBOX', isRead: false, isStarred: true, hasAttachments: false, attachments: [], labels: ['urgent', 'billing'], replyToId: null, forwardedFromId: null, sentAt: iso(-2 * HOUR_MS), createdAt: iso(-2 * HOUR_MS), updatedAt: iso(-2 * HOUR_MS) },
+      { id: 'em_2', from: 'it@mapleleafis.ca', fromName: 'Olivia Bright', to: ['provider@growyourneed.dev'], cc: ['admin@mapleleafis.ca'], bcc: [], subject: 'Storage limit approaching — upgrade options?', body: 'Hello,\n\nWe\'re currently at 611 GB out of 1 TB storage. With the upcoming semester and new multimedia content, we expect to hit the limit soon.\n\nCould you share the options for upgrading our storage allocation?\n\nThanks,\nOlivia Bright\nMaple Leaf International School', folder: 'INBOX', isRead: false, isStarred: false, hasAttachments: false, attachments: [], labels: ['storage'], replyToId: null, forwardedFromId: null, sentAt: iso(-5 * HOUR_MS), createdAt: iso(-5 * HOUR_MS), updatedAt: iso(-5 * HOUR_MS) },
+      { id: 'em_3', from: 'admin@northstaracademy.edu', fromName: 'Camila Perez', to: ['provider@growyourneed.dev'], cc: [], bcc: [], subject: 'Trial extension request for Northstar Academy', body: 'Dear GrowYourNeed Team,\n\nWe\'re currently on a trial plan and would like to request a 14-day extension to complete our evaluation. Our board meets next week to finalize the decision.\n\nPlease let us know if this is possible.\n\nBest,\nCamila Perez', folder: 'INBOX', isRead: true, isStarred: false, hasAttachments: true, attachments: [{ id: 'att_1', name: 'evaluation-report.pdf', size: '2.4 MB', type: 'application/pdf' }], labels: ['trial'], replyToId: null, forwardedFromId: null, sentAt: iso(-1 * DAY_MS), createdAt: iso(-1 * DAY_MS), updatedAt: iso(-8 * HOUR_MS) },
+      { id: 'em_4', from: 'nives@cedarvalley.edu', fromName: 'Nathan Ives', to: ['provider@growyourneed.dev'], cc: [], bcc: [], subject: 'Re: Annual compliance report submission', body: 'Thanks for sending the compliance checklist. We\'ve completed all items and attached the signed document.\n\nPlease confirm receipt.\n\nNathan', folder: 'INBOX', isRead: true, isStarred: false, hasAttachments: true, attachments: [{ id: 'att_2', name: 'compliance-signed.pdf', size: '1.8 MB', type: 'application/pdf' }], labels: ['compliance'], replyToId: 'em_10', forwardedFromId: null, sentAt: iso(-2 * DAY_MS), createdAt: iso(-2 * DAY_MS), updatedAt: iso(-2 * DAY_MS) },
+      { id: 'em_5', from: 'aiden@riverstonecollege.ac.uk', fromName: 'Aiden Walsh', to: ['provider@growyourneed.dev'], cc: [], bcc: [], subject: 'Custom domain SSL certificate issue', body: 'Hi,\n\nOur custom domain platform.riverstonecollege.ac.uk is showing certificate warnings for some users. The certificate should be auto-renewed but it seems to have failed.\n\nCan you investigate?\n\nAiden Walsh\nRiverstone College', folder: 'INBOX', isRead: false, isStarred: true, hasAttachments: false, attachments: [], labels: ['technical', 'urgent'], replyToId: null, forwardedFromId: null, sentAt: iso(-3 * HOUR_MS), createdAt: iso(-3 * HOUR_MS), updatedAt: iso(-3 * HOUR_MS) },
+      { id: 'em_6', from: 'miguel@pacificcrest.edu.ph', fromName: 'Miguel Santos', to: ['provider@growyourneed.dev'], cc: [], bcc: [], subject: 'Training session scheduling', body: 'Hello,\n\nWe\'d like to schedule the next batch of teacher training sessions. Our staff is available Tuesday and Thursday afternoons (PHT).\n\nCould we set up 4 sessions over the next 2 weeks?\n\nMiguel Santos', folder: 'INBOX', isRead: true, isStarred: false, hasAttachments: false, attachments: [], labels: ['training'], replyToId: null, forwardedFromId: null, sentAt: iso(-3 * DAY_MS), createdAt: iso(-3 * DAY_MS), updatedAt: iso(-1 * DAY_MS) },
+      // Sent messages
+      { id: 'em_7', from: 'provider@growyourneed.dev', fromName: 'GrowYourNeed Support', to: ['admin@brightfutureprep.sc.ke'], cc: [], bcc: [], subject: 'Re: Payment processing failure — need urgent help', body: 'Hi Julius,\n\nWe\'ve identified the issue and our engineering team is working on it. The payment gateway integration had a certificate mismatch after the recent security update.\n\nExpected resolution: within 4 hours.\n\nWe\'ll keep you updated.\n\nBest,\nGrowYourNeed Support Team', folder: 'SENT', isRead: true, isStarred: false, hasAttachments: false, attachments: [], labels: [], replyToId: 'em_1', forwardedFromId: null, sentAt: iso(-1 * HOUR_MS), createdAt: iso(-1 * HOUR_MS), updatedAt: iso(-1 * HOUR_MS) },
+      { id: 'em_8', from: 'provider@growyourneed.dev', fromName: 'GrowYourNeed Support', to: ['admin@desertbloom.ma'], cc: [], bcc: [], subject: 'Scheduled maintenance notification — March 15', body: 'Dear Laila,\n\nThis is to inform you about scheduled maintenance on March 15, 2025 from 02:00-04:00 UTC. During this window, the platform may experience brief interruptions.\n\nPlease plan accordingly.\n\nRegards,\nGrowYourNeed Operations', folder: 'SENT', isRead: true, isStarred: false, hasAttachments: false, attachments: [], labels: ['maintenance'], replyToId: null, forwardedFromId: null, sentAt: iso(-4 * DAY_MS), createdAt: iso(-4 * DAY_MS), updatedAt: iso(-4 * DAY_MS) },
+      { id: 'em_9', from: 'provider@growyourneed.dev', fromName: 'GrowYourNeed Support', to: ['principal@horizonstem.org'], cc: [], bcc: [], subject: 'Account suspension notice — Horizon STEM Institute', body: 'Dear Priya,\n\nDue to consecutive failed billing attempts over 30 days, your Horizon STEM Institute account has been suspended. All data is preserved for 90 days.\n\nTo reactivate, please update your payment method or contact us.\n\nGrowYourNeed Billing Team', folder: 'SENT', isRead: true, isStarred: false, hasAttachments: true, attachments: [{ id: 'att_3', name: 'suspension-policy.pdf', size: '512 KB', type: 'application/pdf' }], labels: ['billing'], replyToId: null, forwardedFromId: null, sentAt: iso(-6 * DAY_MS), createdAt: iso(-6 * DAY_MS), updatedAt: iso(-6 * DAY_MS) },
+      { id: 'em_10', from: 'provider@growyourneed.dev', fromName: 'GrowYourNeed Support', to: ['nives@cedarvalley.edu'], cc: [], bcc: [], subject: 'Annual compliance report submission', body: 'Hi Nathan,\n\nPlease find attached the annual compliance checklist that needs to be completed and returned by end of month.\n\nLet us know if you have questions.\n\nGrowYourNeed Compliance', folder: 'SENT', isRead: true, isStarred: false, hasAttachments: true, attachments: [{ id: 'att_4', name: 'compliance-checklist.pdf', size: '890 KB', type: 'application/pdf' }], labels: ['compliance'], replyToId: null, forwardedFromId: null, sentAt: iso(-5 * DAY_MS), createdAt: iso(-5 * DAY_MS), updatedAt: iso(-5 * DAY_MS) },
+      // Drafts
+      { id: 'em_11', from: 'provider@growyourneed.dev', fromName: 'GrowYourNeed Support', to: ['yara@atlashub.ae'], cc: [], bcc: [], subject: 'Offboarding checklist — Atlas Learning Hub', body: 'Dear Yara,\n\nAs part of the offboarding process, here is the data export schedule:\n\n1. Student records — available by March 20\n2. Financial data — available by March 22\n3. Content library — available by March 25\n\nPlease confirm the data handover format you prefer.', folder: 'DRAFTS', isRead: true, isStarred: false, hasAttachments: false, attachments: [], labels: ['offboarding'], replyToId: null, forwardedFromId: null, sentAt: null, createdAt: iso(-1 * DAY_MS), updatedAt: iso(-6 * HOUR_MS) },
+      { id: 'em_12', from: 'provider@growyourneed.dev', fromName: 'GrowYourNeed Support', to: [], cc: [], bcc: [], subject: 'Q1 platform performance report', body: 'Dear valued partners,\n\nPlease find below our Q1 platform performance summary:\n\n- Uptime: 99.97%\n- Average response time: 142ms\n- 0 major incidents\n- 3 minor patches deployed\n\n[TODO: Add growth metrics]', folder: 'DRAFTS', isRead: true, isStarred: false, hasAttachments: false, attachments: [], labels: [], replyToId: null, forwardedFromId: null, sentAt: null, createdAt: iso(-3 * DAY_MS), updatedAt: iso(-2 * DAY_MS) },
+      // Starred (items also in INBOX but flagged)
+      // Archive
+      { id: 'em_13', from: 'admin@greenfield.edu', fromName: 'Alice Admin', to: ['provider@growyourneed.dev'], cc: [], bcc: [], subject: 'Module activation: Library Management', body: 'Hi,\n\nWe would like to activate the Library Management module for Greenfield Academy. Please process this request.\n\nThanks,\nAlice', folder: 'ARCHIVE', isRead: true, isStarred: false, hasAttachments: false, attachments: [], labels: ['modules'], replyToId: null, forwardedFromId: null, sentAt: iso(-14 * DAY_MS), createdAt: iso(-14 * DAY_MS), updatedAt: iso(-12 * DAY_MS) },
+      { id: 'em_14', from: 'provider@growyourneed.dev', fromName: 'GrowYourNeed Support', to: ['admin@greenfield.edu'], cc: [], bcc: [], subject: 'Re: Module activation: Library Management', body: 'Hi Alice,\n\nThe Library Management module is now active on your plan. All librarian accounts have been provisioned.\n\nBest,\nGrowYourNeed Support', folder: 'ARCHIVE', isRead: true, isStarred: false, hasAttachments: false, attachments: [], labels: ['modules'], replyToId: 'em_13', forwardedFromId: null, sentAt: iso(-13 * DAY_MS), createdAt: iso(-13 * DAY_MS), updatedAt: iso(-13 * DAY_MS) },
+      // Trash
+      { id: 'em_15', from: 'noreply@spam-marketing.com', fromName: 'Marketing Promo', to: ['provider@growyourneed.dev'], cc: [], bcc: [], subject: 'Exclusive SaaS partnership opportunity!!!', body: 'Congratulations! You\'ve been selected for an exclusive partnership. Click here to claim your reward!\n\n[This is spam]', folder: 'TRASH', isRead: true, isStarred: false, hasAttachments: false, attachments: [], labels: [], replyToId: null, forwardedFromId: null, sentAt: iso(-10 * DAY_MS), createdAt: iso(-10 * DAY_MS), updatedAt: iso(-9 * DAY_MS) },
+    ];
+
+    const folderCounts = [
+      { name: 'INBOX', count: allMessages.filter((m) => m.folder === 'INBOX').length, unread: allMessages.filter((m) => m.folder === 'INBOX' && !m.isRead).length },
+      { name: 'SENT', count: allMessages.filter((m) => m.folder === 'SENT').length, unread: 0 },
+      { name: 'DRAFTS', count: allMessages.filter((m) => m.folder === 'DRAFTS').length, unread: 0 },
+      { name: 'STARRED', count: allMessages.filter((m) => m.isStarred).length, unread: allMessages.filter((m) => m.isStarred && !m.isRead).length },
+      { name: 'ARCHIVE', count: allMessages.filter((m) => m.folder === 'ARCHIVE').length, unread: 0 },
+      { name: 'TRASH', count: allMessages.filter((m) => m.folder === 'TRASH').length, unread: 0 },
+    ];
+
+    const filtered = folder && folder !== 'ALL'
+      ? folder === 'STARRED'
+        ? allMessages.filter((m) => m.isStarred)
+        : allMessages.filter((m) => m.folder === folder)
+      : allMessages;
+
+    return {
+      messages: filtered,
+      folders: folderCounts,
+      labels: [...new Set(allMessages.flatMap((m) => m.labels))],
     };
   },
 

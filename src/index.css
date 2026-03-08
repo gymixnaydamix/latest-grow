@@ -5,164 +5,232 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ═══════════════════════════════════════════════════════════════════════
- * LUXURY 2040 DESIGN SYSTEM — Premium Material Surfaces
- * Light: Pearl · Ceramic · Frosted Glass · Liquid Silver · Champagne
- * Dark:  Obsidian · Graphite · Gunmetal · Smoked Chrome · Deep Navy
+ * ENTERPRISE CONTROL CENTER — Design Token System
+ * Foundation: Neutral surfaces + Brand blue accent + Chroma families
+ * Typography: Plus Jakarta Sans (headings) + Inter (body/UI)
  * ═══════════════════════════════════════════════════════════════════════ */
 
-/* ─── LIGHT MODE — Pearl & Champagne Metallic ────────────────────────── */
+/* ─── LIGHT MODE ─────────────────────────────────────────────────────── */
 :root {
-  --radius: 0.625rem;
+  --radius: 14px;
 
-  /* Soft warm gray — gives contrast for neumorphic surfaces */
-  --background: oklch(0.935 0.006 80);
-  --foreground: oklch(0.18 0.02 260);
+  /* App backgrounds */
+  --background: #F4F7FB;
+  --foreground: #0F172A;
 
-  /* Ceramic card surface — cream-tinted with depth */
-  --card: oklch(0.993 0.004 90);
-  --card-foreground: oklch(0.18 0.02 260);
+  /* Card / panel surfaces */
+  --card: #FCFDFE;
+  --card-foreground: #334155;
 
-  /* Frosted glass popover */
-  --popover: oklch(0.99 0.003 80);
-  --popover-foreground: oklch(0.18 0.02 260);
+  /* Popover */
+  --popover: #FFFFFF;
+  --popover-foreground: #0F172A;
 
-  /* Primary — deep sapphire with metallic blue sheen */
-  --primary: oklch(0.45 0.18 265);
-  --primary-foreground: oklch(0.99 0.003 80);
+  /* Brand primary */
+  --primary: #2563EB;
+  --primary-foreground: #FFFFFF;
 
-  /* Secondary — liquid silver */
-  --secondary: oklch(0.955 0.005 260);
-  --secondary-foreground: oklch(0.25 0.02 260);
+  /* Secondary */
+  --secondary: #F7FAFC;
+  --secondary-foreground: #334155;
 
-  /* Muted — platinum fog */
-  --muted: oklch(0.945 0.004 260);
-  --muted-foreground: oklch(0.48 0.015 260);
+  /* Muted */
+  --muted: #F4F6F8;
+  --muted-foreground: #64748B;
 
-  /* Accent — champagne metallic with warm gold */
-  --accent: oklch(0.94 0.012 80);
-  --accent-foreground: oklch(0.22 0.02 260);
+  /* Accent */
+  --accent: #DBEAFE;
+  --accent-foreground: #1E40AF;
 
-  --destructive: oklch(0.577 0.245 27.325);
+  --destructive: #DC2626;
 
-  /* Borders — subtle platinum with blue micro-tint */
-  --border: oklch(0.905 0.008 260);
-  --input: oklch(0.92 0.006 260);
-  --ring: oklch(0.55 0.15 265);
+  /* Borders */
+  --border: #E6ECF3;
+  --input: #D8E1EA;
+  --ring: #2563EB;
 
-  /* Charts — jewel tones */
-  --chart-1: oklch(0.55 0.2 265);
-  --chart-2: oklch(0.6 0.15 165);
-  --chart-3: oklch(0.5 0.12 310);
-  --chart-4: oklch(0.7 0.16 80);
-  --chart-5: oklch(0.6 0.2 30);
+  /* Charts — business palette */
+  --chart-1: #2563EB;
+  --chart-2: #059669;
+  --chart-3: #7C3AED;
+  --chart-4: #D97706;
+  --chart-5: #DC2626;
 
-  /* Sidebar — ceramic cream */
-  --sidebar: oklch(0.985 0.005 80);
-  --sidebar-foreground: oklch(0.18 0.02 260);
-  --sidebar-primary: oklch(0.45 0.18 265);
-  --sidebar-primary-foreground: oklch(0.99 0 0);
-  --sidebar-accent: oklch(0.95 0.008 80);
-  --sidebar-accent-foreground: oklch(0.22 0.02 260);
-  --sidebar-border: oklch(0.91 0.008 260);
-  --sidebar-ring: oklch(0.55 0.15 265);
+  /* Sidebar — deep graphite/navy rail (dark in both modes) */
+  --sidebar: #101827;
+  --sidebar-foreground: #E5EEF8;
+  --sidebar-primary: #5B8CFF;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: rgba(91,140,255,0.12);
+  --sidebar-accent-foreground: #E5EEF8;
+  --sidebar-border: #1E2B3D;
+  --sidebar-ring: #5B8CFF;
 
-  /* Premium surface layers */
-  --surface-1: oklch(0.993 0.004 90);
-  --surface-2: oklch(0.975 0.006 80);
-  --surface-3: oklch(0.955 0.005 260);
-  --surface-glow: oklch(0.45 0.18 265 / 8%);
-  --surface-shimmer: oklch(0.99 0.01 80 / 60%);
-  --surface-reflection: linear-gradient(135deg, oklch(1 0 0 / 80%) 0%, oklch(1 0 0 / 0%) 50%);
-  --ambient-light: oklch(0.45 0.18 265 / 4%);
-  --card-glow: 0 1px 3px oklch(0.45 0.18 265 / 6%), 0 8px 24px oklch(0.2 0.05 260 / 6%);
-  --card-glow-hover: 0 2px 8px oklch(0.45 0.18 265 / 10%), 0 12px 32px oklch(0.2 0.05 260 / 10%);
+  /* Surface layers */
+  --surface-1: #FDFEFF;
+  --surface-2: #F7FAFC;
+  --surface-3: #F4F6F8;
+
+  /* Compat vars for existing component refs */
+  --surface-glow: rgba(37,99,235,0.04);
+  --surface-shimmer: rgba(37,99,235,0.02);
+  --surface-reflection: none;
+  --ambient-light: rgba(37,99,235,0.02);
+  --card-glow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --card-glow-hover: 0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+
+  /* Chroma families — controlled hue tints for card differentiation */
+  --chroma-blue: #EEF4FF;
+  --chroma-steel: #F4F6F8;
+  --chroma-sand: #F7F2EA;
+  --chroma-violet: #F4F0FA;
+  --chroma-teal: #ECF8F6;
+  --chroma-rose: #FCEEEF;
+
+  /* Semantic status colors */
+  --success: #059669;
+  --success-soft: #D1FAE5;
+  --warning: #D97706;
+  --warning-soft: #FEF3C7;
+  --danger: #DC2626;
+  --danger-soft: #FEE2E2;
+  --info: #0284C7;
+  --info-soft: #E0F2FE;
+
+  /* Extended text scale */
+  --text-soft: #94A3B8;
+
+  /* Extended border scale */
+  --border-subtle: #E6ECF3;
+  --border-default: #D8E1EA;
+  --border-strong: #C3D0DD;
+
+  /* Brand extended */
+  --brand-primary: #2563EB;
+  --brand-primary-hover: #1D4ED8;
+  --brand-primary-soft: #DBEAFE;
+
+  /* Shadow tiers (strict — no other shadow values) */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 1px 3px rgba(0,0,0,0.06);
+  --shadow-focus: 0 0 0 3px rgba(37,99,235,0.15);
+
+  /* Typography tokens */
+  --font-heading: 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
 }
 
-/* ─── DARK MODE — Obsidian & Smoked Chrome ───────────────────────────── */
+/* ─── DARK MODE ──────────────────────────────────────────────────────── */
 .dark {
-  /* Deep obsidian with navy undertone */
-  --background: oklch(0.14 0.015 265);
-  --foreground: oklch(0.93 0.005 260);
+  /* Deep navy app background */
+  --background: #0B1220;
+  --foreground: #E5EEF8;
 
-  /* Graphite card — lifted with subtle blue shift */
-  --card: oklch(0.19 0.018 265);
-  --card-foreground: oklch(0.93 0.005 260);
+  /* Graphite card surfaces */
+  --card: #111C2D;
+  --card-foreground: #C7D3E3;
 
-  /* Gunmetal popover */
-  --popover: oklch(0.2 0.016 265);
-  --popover-foreground: oklch(0.93 0.005 260);
+  /* Elevated panel popover */
+  --popover: #162235;
+  --popover-foreground: #E5EEF8;
 
-  /* Primary — electric sapphire glow */
-  --primary: oklch(0.68 0.19 265);
-  --primary-foreground: oklch(0.98 0.003 265);
+  /* Electric blue primary */
+  --primary: #5B8CFF;
+  --primary-foreground: #0B1220;
 
-  /* Secondary — smoked chrome */
-  --secondary: oklch(0.24 0.015 265);
-  --secondary-foreground: oklch(0.9 0.005 260);
+  /* Secondary — dark surface */
+  --secondary: #0F172A;
+  --secondary-foreground: #C7D3E3;
 
-  /* Muted — charcoal with depth */
-  --muted: oklch(0.22 0.012 265);
-  --muted-foreground: oklch(0.62 0.01 260);
+  /* Muted — charcoal depth */
+  --muted: #101827;
+  --muted-foreground: #93A4B8;
 
-  /* Accent — dark titanium with blue reflection */
-  --accent: oklch(0.25 0.02 265);
-  --accent-foreground: oklch(0.93 0.005 260);
+  /* Accent — brand tint */
+  --accent: rgba(91,140,255,0.18);
+  --accent-foreground: #78A3FF;
 
-  --destructive: oklch(0.704 0.191 22.216);
+  --destructive: #F87171;
 
-  /* Borders — subtle chrome edge with glow */
-  --border: oklch(0.32 0.015 265 / 50%);
-  --input: oklch(0.28 0.015 265 / 60%);
-  --ring: oklch(0.68 0.19 265);
+  /* Borders — subtle chrome edges */
+  --border: #1E2B3D;
+  --input: #243348;
+  --ring: #5B8CFF;
 
-  /* Charts — neon jewels on dark */
-  --chart-1: oklch(0.68 0.19 265);
-  --chart-2: oklch(0.7 0.18 165);
-  --chart-3: oklch(0.75 0.16 70);
-  --chart-4: oklch(0.65 0.22 310);
-  --chart-5: oklch(0.7 0.2 30);
+  /* Charts — vivid on dark */
+  --chart-1: #5B8CFF;
+  --chart-2: #10B981;
+  --chart-3: #A78BFA;
+  --chart-4: #F59E0B;
+  --chart-5: #F87171;
 
-  /* Sidebar — deep charcoal */
-  --sidebar: oklch(0.17 0.018 265);
-  --sidebar-foreground: oklch(0.93 0.005 260);
-  --sidebar-primary: oklch(0.68 0.19 265);
-  --sidebar-primary-foreground: oklch(0.98 0 0);
-  --sidebar-accent: oklch(0.24 0.02 265);
-  --sidebar-accent-foreground: oklch(0.93 0.005 260);
-  --sidebar-border: oklch(0.35 0.015 265 / 40%);
-  --sidebar-ring: oklch(0.68 0.19 265);
+  /* Sidebar — deepest layer */
+  --sidebar: #0B1220;
+  --sidebar-foreground: #E5EEF8;
+  --sidebar-primary: #5B8CFF;
+  --sidebar-primary-foreground: #0B1220;
+  --sidebar-accent: rgba(91,140,255,0.12);
+  --sidebar-accent-foreground: #E5EEF8;
+  --sidebar-border: #1E2B3D;
+  --sidebar-ring: #5B8CFF;
 
-  /* Premium surface layers — cinematic depth */
-  --surface-1: oklch(0.19 0.018 265);
-  --surface-2: oklch(0.16 0.015 265);
-  --surface-3: oklch(0.22 0.02 265);
-  --surface-glow: oklch(0.68 0.19 265 / 6%);
-  --surface-shimmer: oklch(0.68 0.19 265 / 8%);
-  --surface-reflection: linear-gradient(135deg, oklch(1 0 0 / 6%) 0%, oklch(1 0 0 / 0%) 50%);
-  --ambient-light: oklch(0.68 0.19 265 / 3%);
-  --card-glow: 0 1px 3px oklch(0 0 0 / 30%), 0 8px 24px oklch(0 0 0 / 30%), inset 0 1px 0 oklch(1 0 0 / 4%);
-  --card-glow-hover: 0 2px 8px oklch(0.68 0.19 265 / 15%), 0 16px 40px oklch(0 0 0 / 40%), inset 0 1px 0 oklch(1 0 0 / 6%);
+  /* Dark surface layers */
+  --surface-1: #111C2D;
+  --surface-2: #0F172A;
+  --surface-3: #162235;
+
+  /* Compat vars */
+  --surface-glow: rgba(91,140,255,0.04);
+  --surface-shimmer: rgba(91,140,255,0.03);
+  --surface-reflection: none;
+  --ambient-light: rgba(91,140,255,0.02);
+  --card-glow: 0 1px 3px rgba(0,0,0,0.3), 0 4px 8px rgba(0,0,0,0.2);
+  --card-glow-hover: 0 4px 12px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.25);
+
+  /* Dark chroma families */
+  --chroma-blue: #13243C;
+  --chroma-steel: #1A2430;
+  --chroma-sand: #2A241E;
+  --chroma-violet: #201B31;
+  --chroma-teal: #132B2A;
+  --chroma-rose: #301A22;
+
+  /* Semantic dark */
+  --success: #10B981;
+  --success-soft: rgba(16,185,129,0.16);
+  --warning: #F59E0B;
+  --warning-soft: rgba(245,158,11,0.18);
+  --danger: #F87171;
+  --danger-soft: rgba(248,113,113,0.18);
+  --info: #38BDF8;
+  --info-soft: rgba(56,189,248,0.18);
+
+  --text-soft: #6E8097;
+
+  --border-subtle: #1E2B3D;
+  --border-default: #243348;
+  --border-strong: #324763;
+
+  --brand-primary: #5B8CFF;
+  --brand-primary-hover: #78A3FF;
+  --brand-primary-soft: rgba(91,140,255,0.18);
+
+  /* Dark shadows — deeper */
+  --shadow-xs: 0 1px 2px rgba(0,0,0,0.2);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.15);
+  --shadow-md: 0 4px 12px rgba(0,0,0,0.35), 0 1px 3px rgba(0,0,0,0.2);
+  --shadow-focus: 0 0 0 3px rgba(91,140,255,0.2);
 }
 
 /* ─── Base Styles ──────────────────────────────────────────────────── */
 body {
-  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-/* ─── Premium Atmospheric Background ────────────────────────────────── */
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  pointer-events: none;
-  background:
-    radial-gradient(ellipse 80% 60% at 20% 10%, var(--surface-glow), transparent 60%),
-    radial-gradient(ellipse 60% 50% at 80% 80%, var(--ambient-light), transparent 50%),
-    radial-gradient(ellipse 40% 30% at 50% 50%, var(--surface-shimmer), transparent 70%);
-}
-
-/* ─── Scrollbar — Chrome-metallic ──────────────────────────────────── */
+/* ─── Scrollbar — minimal premium ──────────────────────────────────── */
 ::-webkit-scrollbar {
   width: 5px;
   height: 5px;
@@ -178,14 +246,22 @@ body::before {
   background: var(--muted-foreground);
 }
 
+/* ─── Tailwind Theme Mapping ───────────────────────────────────────── */
 @theme inline {
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
-  --radius-2xl: calc(var(--radius) + 8px);
-  --radius-3xl: calc(var(--radius) + 12px);
-  --radius-4xl: calc(var(--radius) + 16px);
+  /* Radius scale (strict: 10, 14, 18, 24) */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
+  --radius-xl: 24px;
+  --radius-2xl: 24px;
+  --radius-3xl: 24px;
+  --radius-4xl: 24px;
+
+  /* Font families */
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-heading);
+
+  /* Core color mapping */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -217,10 +293,29 @@ body::before {
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
-  /* Premium surface tokens */
+
+  /* Surface tokens */
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
   --color-surface-3: var(--surface-3);
+
+  /* Chroma family tokens — use as bg-chroma-blue etc. */
+  --color-chroma-blue: var(--chroma-blue);
+  --color-chroma-steel: var(--chroma-steel);
+  --color-chroma-sand: var(--chroma-sand);
+  --color-chroma-violet: var(--chroma-violet);
+  --color-chroma-teal: var(--chroma-teal);
+  --color-chroma-rose: var(--chroma-rose);
+
+  /* Semantic status tokens */
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
 }
 
 @layer base {
@@ -233,70 +328,75 @@ body::before {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════
- * PREMIUM SURFACE UTILITY CLASSES
+ * CARD SYSTEM — 3 classes: base / chroma / semantic
+ * All share same radius, spacing, border, shadow logic
  * ═══════════════════════════════════════════════════════════════════════ */
-
-/* Luxury card — ceramic / graphite with metallic edge highlight */
 @layer utilities {
+  /* 1. Core neutral card — tables, forms, standard panels */
+  .card-base {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow 0.2s ease;
+  }
+  .card-base:hover {
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* 2. Premium chroma card — KPI, module summaries, widgets */
+  .card-chroma {
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+    transition: box-shadow 0.2s ease, transform 0.15s ease;
+  }
+  .card-chroma:hover {
+    box-shadow: var(--shadow-md);
+  }
+
+  /* 3. Semantic state card — alerts, warnings, incidents */
+  .card-semantic {
+    border-radius: 14px;
+    box-shadow: var(--shadow-xs);
+    transition: box-shadow 0.2s ease;
+  }
+
+  /* Backward compat: premium-card maps to card-base */
   .premium-card {
     background: var(--card);
-    box-shadow: var(--card-glow);
-    border-color: var(--border);
-    position: relative;
-    transition: box-shadow 0.3s ease, transform 0.3s ease;
-  }
-  .premium-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: var(--surface-reflection);
-    pointer-events: none;
-    opacity: 0.5;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s ease;
   }
   .premium-card:hover {
-    box-shadow: var(--card-glow-hover);
+    box-shadow: var(--shadow-md);
   }
 
-  /* Frosted glass panel */
+  /* Backward compat: frosted-glass simplified */
   .frosted-glass {
     background: var(--card);
-    backdrop-filter: blur(24px) saturate(1.8);
-    -webkit-backdrop-filter: blur(24px) saturate(1.8);
-    border-color: var(--border);
+    border: 1px solid var(--border);
   }
 
-  /* Metallic shimmer on hover — for interactive elements */
-  .metallic-hover {
-    position: relative;
-    overflow: hidden;
-  }
-  .metallic-hover::after {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(
-      105deg,
-      transparent 40%,
-      var(--surface-shimmer) 45%,
-      var(--surface-shimmer) 55%,
-      transparent 60%
-    );
-    transform: translateX(-100%);
-    transition: transform 0.6s ease;
-    pointer-events: none;
-  }
-  .metallic-hover:hover::after {
-    transform: translateX(100%);
-  }
-
-  /* Ambient glow ring — for focused / active elements */
+  /* Backward compat: glow-ring simplified */
   .glow-ring {
-    box-shadow: 0 0 0 1px var(--border), 0 0 12px var(--surface-glow);
+    box-shadow: 0 0 0 1px var(--border), var(--shadow-focus);
+  }
+
+  /* Backward compat: metallic-hover → subtle lift */
+  .metallic-hover {
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  .metallic-hover:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
   }
 }
 
-/* ─── Performance-optimised entry animations (GSAP replacement) ─── */
+/* ─── Entry animations (preserved) ─────────────────────────────────── */
 @keyframes fadeSlideUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: none; }

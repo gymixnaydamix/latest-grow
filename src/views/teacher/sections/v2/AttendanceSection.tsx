@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Progress } from '@/components/ui/progress';
 import { useCourses, useCourseAttendance } from '@/hooks/api';
-import { useSubmitAttendance, useTeacherAttendanceHistory } from '@/hooks/api/use-teacher';
+import { useSubmitAttendance, useTeacherAttendanceHistory, useTeacherAttendance } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course, AttendanceRecord } from '@root/types';
@@ -57,14 +57,17 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
   
   const selectedClass = classes[selectedClassIdx] ?? classes[0];
 
-  // Students — demo for now
+  // Students from API with demo fallback
+  const { data: apiAttendanceData } = useTeacherAttendance(selectedClass?.id ?? null);
+  const apiStudents = (apiAttendanceData as any)?.data as typeof FALLBACK_attendanceStudentsDemo | undefined;
+
   const students = useMemo(() => {
-    let list = FALLBACK_attendanceStudentsDemo;
+    const list = apiStudents?.length ? apiStudents : FALLBACK_attendanceStudentsDemo;
     if (searchTerm) {
-      list = list.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
+      return list.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }
     return list;
-  }, [searchTerm]);
+  }, [searchTerm, apiStudents]);
 
   const setStatus = useCallback((studentId: string, status: AttendanceStatus) => {
     setAttendanceMap(prev => ({ ...prev, [studentId]: status }));
@@ -112,9 +115,9 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
       <TeacherSectionShell title="Attendance Submitted" description={`${selectedClass?.name} · ${new Date().toLocaleDateString()}`}>
         <GlassCard className="text-center py-12">
           <CheckCircle2 className="size-12 text-emerald-400 mx-auto mb-4" />
-          <h3 className="text-lg font-semibold text-white/80 mb-2">Attendance Saved Successfully</h3>
-          <p className="text-sm text-white/40 mb-1">{presentCount}/{totalStudents} students present ({Math.round((presentCount / totalStudents) * 100)}%)</p>
-          <p className="text-xs text-white/25 mb-6">Submitted at {new Date().toLocaleTimeString()}</p>
+          <h3 className="text-lg font-semibold text-foreground/80 mb-2">Attendance Saved Successfully</h3>
+          <p className="text-sm text-muted-foreground mb-1">{presentCount}/{totalStudents} students present ({Math.round((presentCount / totalStudents) * 100)}%)</p>
+          <p className="text-xs text-muted-foreground/60 mb-6">Submitted at {new Date().toLocaleTimeString()}</p>
           <Button
             className="bg-indigo-600 hover:bg-indigo-500 text-white"
             onClick={() => { setSubmitted(false); setAttendanceMap({}); setSelectedClassIdx(i => Math.min(i + 1, classes.length - 1)); }}
@@ -132,7 +135,7 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
       description={`${selectedClass?.name ?? 'Select class'} · ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}`}
       actions={
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="text-[9px] border-white/10 text-white/30">
+          <Badge variant="outline" className="text-[9px] border-border/70 text-muted-foreground/70">
             <Keyboard className="size-3 mr-1" /> P A L E ↑↓
           </Badge>
         </div>
@@ -147,7 +150,7 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
             className={`shrink-0 rounded-xl px-4 py-2 text-xs font-medium border transition-all ${
               i === selectedClassIdx
                 ? 'border-indigo-500/40 bg-indigo-500/15 text-indigo-400'
-                : 'border-white/6 bg-white/3 text-white/40 hover:text-white/60'
+                : 'border-border/50 bg-card/80 text-muted-foreground hover:text-muted-foreground'
             }`}
           >
             {cls.name}
@@ -159,7 +162,7 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
       {/* Progress bar + bulk actions */}
       <div className="flex items-center gap-4" data-animate>
         <div className="flex-1">
-          <div className="flex items-center justify-between text-xs text-white/40 mb-1">
+          <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
             <span>{markedCount}/{totalStudents} marked</span>
             <span>{completion}%</span>
           </div>
@@ -167,19 +170,19 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
         </div>
         <div className="flex gap-1.5 shrink-0">
           <Button size="sm" variant="outline" className="text-[10px] h-7 border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/10" onClick={() => markAll('PRESENT')}>All Present</Button>
-          <Button size="sm" variant="outline" className="text-[10px] h-7 border-white/10 text-white/40" onClick={() => setAttendanceMap({})}>Clear</Button>
+          <Button size="sm" variant="outline" className="text-[10px] h-7 border-border/70 text-muted-foreground" onClick={() => setAttendanceMap({})}>Clear</Button>
         </div>
       </div>
 
       {/* Search */}
       <div className="relative" data-animate>
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/20" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/50" />
         <input
           type="text"
           placeholder="Search students..."
           value={searchTerm}
           onChange={e => setSearchTerm(e.target.value)}
-          className="w-full rounded-xl border border-white/8 bg-white/3 pl-10 pr-4 py-2.5 text-sm text-white/80 placeholder:text-white/20 focus:border-indigo-500/30 focus:outline-none"
+          className="w-full rounded-xl border border-border/60 bg-card/80 pl-10 pr-4 py-2.5 text-sm text-foreground/80 placeholder:text-muted-foreground/50 focus:border-indigo-500/30 focus:outline-none"
         />
       </div>
 
@@ -192,18 +195,18 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
             <div
               key={student.id}
               className={`flex items-center gap-3 rounded-xl border px-4 py-3 transition-all ${
-                isFocused ? 'ring-1 ring-indigo-500/30 border-indigo-500/20 bg-indigo-500/5' : 'border-white/6 bg-white/2'
+                isFocused ? 'ring-1 ring-indigo-500/30 border-indigo-500/20 bg-indigo-500/5' : 'border-border/50 bg-card/60'
               }`}
               onClick={() => setFocusedIdx(i)}
             >
-              <Avatar className="size-9 border border-white/10 shrink-0">
-                <AvatarFallback className={`text-[10px] ${status ? statusStyles[status].bg + ' ' + statusStyles[status].text : 'bg-white/5 text-white/40'}`}>
+              <Avatar className="size-9 border border-border/70 shrink-0">
+                <AvatarFallback className={`text-[10px] ${status ? statusStyles[status].bg + ' ' + statusStyles[status].text : 'bg-muted/70 text-muted-foreground'}`}>
                   {student.initials}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white/80">{student.name}</p>
-                <p className="text-[10px] text-white/25">{student.streak > 0 ? `${student.streak}d streak` : 'No streak'} · {student.overallRate}% rate</p>
+                <p className="text-sm font-medium text-foreground/80">{student.name}</p>
+                <p className="text-[10px] text-muted-foreground/60">{student.streak > 0 ? `${student.streak}d streak` : 'No streak'} · {student.overallRate}% rate</p>
               </div>
               {/* Large tap buttons */}
               <div className="flex gap-1">
@@ -218,7 +221,7 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
                       className={`size-9 rounded-lg border text-xs font-bold transition-all ${
                         active
                           ? `${style.bg} ${style.border} ${style.text} scale-110`
-                          : 'border-white/8 bg-white/3 text-white/25 hover:text-white/50 hover:border-white/15'
+                          : 'border-border/60 bg-card/80 text-muted-foreground/60 hover:text-muted-foreground hover:border-border'
                       }`}
                     >
                       {labels[s]}
@@ -320,7 +323,7 @@ function AttendanceHistoryView({ schoolId, teacherId }: TeacherSectionProps) {
             className={`shrink-0 rounded-xl px-4 py-2 text-xs font-medium border transition-all ${
               i === selectedCourseIdx
                 ? 'border-indigo-500/40 bg-indigo-500/15 text-indigo-400'
-                : 'border-white/6 bg-white/3 text-white/40 hover:text-white/60'
+                : 'border-border/50 bg-card/80 text-muted-foreground hover:text-muted-foreground'
             }`}
           >
             {cls.name}
@@ -335,8 +338,8 @@ function AttendanceHistoryView({ schoolId, teacherId }: TeacherSectionProps) {
               ? data
               : { present: (data as { present: number }).present, late: (data as { late: number }).late, absent: (data as { absent: number }).absent, total: (data as { total: number }).total, rate: Math.round(((data as { present: number }).present / (data as { total: number }).total) * 100) };
             return (
-              <div key={date as string} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/2 px-4 py-3">
-                <span className="text-sm font-medium text-white/70 w-32">{date as string}</span>
+              <div key={date as string} className="flex items-center justify-between rounded-xl border border-border/40 bg-card/60 px-4 py-3">
+                <span className="text-sm font-medium text-foreground/70 w-32">{date as string}</span>
                 <div className="flex gap-4 text-xs">
                   <span className="text-emerald-400">{d.present} present</span>
                   <span className="text-amber-400">{d.late} late</span>
@@ -357,12 +360,31 @@ function AttendanceHistoryView({ schoolId, teacherId }: TeacherSectionProps) {
 
 /* ─── Attendance Reports ──────────────────────────────────────────── */
 function AttendanceReportsView(_props: TeacherSectionProps) {
-  const reportMetrics = [
-    { label: 'Overall Rate', value: '95.2%', accent: '#34d399', trend: 'up' as const },
-    { label: 'Perfect Attendance', value: '14', accent: '#818cf8' },
-    { label: 'Chronic Absent', value: '3', accent: '#f43f5e', trend: 'down' as const },
-    { label: 'Avg Late/week', value: '2.4', accent: '#fbbf24' },
-  ];
+  const { data: apiAttHistory } = useTeacherAttendanceHistory();
+  const historyItems = (apiAttHistory as any)?.data as any[] | undefined;
+
+  const reportMetrics = useMemo(() => {
+    if (historyItems?.length) {
+      const totalRecords = historyItems.reduce((s: number, h: any) => s + (h.total ?? 0), 0);
+      const totalPresent = historyItems.reduce((s: number, h: any) => s + (h.present ?? 0), 0);
+      const overallRate = totalRecords > 0 ? ((totalPresent / totalRecords) * 100).toFixed(1) : '0';
+      const totalAbsent = historyItems.reduce((s: number, h: any) => s + (h.absent ?? 0), 0);
+      const totalLate = historyItems.reduce((s: number, h: any) => s + (h.late ?? 0), 0);
+      const avgLatePerWeek = historyItems.length > 0 ? (totalLate / Math.max(1, Math.ceil(historyItems.length / 5))).toFixed(1) : '0';
+      return [
+        { label: 'Overall Rate', value: `${overallRate}%`, accent: '#34d399', trend: 'up' as const },
+        { label: 'Total Present', value: String(totalPresent), accent: '#818cf8' },
+        { label: 'Total Absent', value: String(totalAbsent), accent: '#f43f5e', trend: 'down' as const },
+        { label: 'Avg Late/week', value: avgLatePerWeek, accent: '#fbbf24' },
+      ];
+    }
+    return [
+      { label: 'Overall Rate', value: '95.2%', accent: '#34d399', trend: 'up' as const },
+      { label: 'Perfect Attendance', value: '14', accent: '#818cf8' },
+      { label: 'Chronic Absent', value: '3', accent: '#f43f5e', trend: 'down' as const },
+      { label: 'Avg Late/week', value: '2.4', accent: '#fbbf24' },
+    ];
+  }, [historyItems]);
 
   const atRisk = [
     { name: 'Tyler Brooks', rate: '78%', absences: 8, className: 'Pre-Algebra' },
@@ -381,14 +403,14 @@ function AttendanceReportsView(_props: TeacherSectionProps) {
       <GlassCard data-animate>
         <div className="flex items-center gap-2 mb-3">
           <AlertTriangle className="size-4 text-rose-400" />
-          <h3 className="text-sm font-semibold text-white/80">At-Risk Students (below 90%)</h3>
+          <h3 className="text-sm font-semibold text-foreground/80">At-Risk Students (below 90%)</h3>
         </div>
         <div className="space-y-2">
           {atRisk.map(s => (
-            <div key={s.name} className="flex items-center justify-between rounded-xl border border-white/5 bg-white/2 px-4 py-3">
+            <div key={s.name} className="flex items-center justify-between rounded-xl border border-border/40 bg-card/60 px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-white/75">{s.name}</p>
-                <p className="text-[10px] text-white/30">{s.className} · {s.absences} absences</p>
+                <p className="text-sm font-medium text-foreground/70">{s.name}</p>
+                <p className="text-[10px] text-muted-foreground/70">{s.className} · {s.absences} absences</p>
               </div>
               <StatusBadge status={s.rate} tone="bad" />
             </div>

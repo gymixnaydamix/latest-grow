@@ -1,17 +1,18 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Bell, Lock, Mail, Phone, Shield, User, Users } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { useParentV2Profile, useUpdateParentV2Profile } from '@/hooks/api/use-parent-v2';
+import { useParentV2Children, useParentV2Profile, useUpdateParentV2Profile } from '@/hooks/api/use-parent-v2';
 import { parentChildrenDemo as FALLBACK_CHILDREN } from './parent-v2-demo-data';
 import type { ParentChildDemo } from './parent-v2-demo-data';
 import { ParentSectionShell } from './shared';
 import type { ParentSectionProps } from './shared';
 
-export function ProfileSettingsSection(_props: ParentSectionProps) {
+export function ProfileSettingsSection({ scope, childId }: ParentSectionProps) {
+  const { data: childrenRaw } = useParentV2Children({ scope, childId });
   const { data: profileRaw } = useParentV2Profile();
   const updateProfile = useUpdateParentV2Profile();
   const profile = (profileRaw as Record<string, unknown> | undefined) ?? {};
@@ -25,7 +26,7 @@ export function ProfileSettingsSection(_props: ParentSectionProps) {
   const [notifyGrades, setNotifyGrades] = useState(false);
   const [notifyTransport, setNotifyTransport] = useState(true);
 
-  const children: ParentChildDemo[] = useMemo(() => FALLBACK_CHILDREN, []);
+  const children: ParentChildDemo[] = (childrenRaw as ParentChildDemo[] | undefined) ?? FALLBACK_CHILDREN;
 
   return (
     <ParentSectionShell

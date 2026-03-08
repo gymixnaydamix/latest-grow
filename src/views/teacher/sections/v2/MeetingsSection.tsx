@@ -159,12 +159,12 @@ export function MeetingsSection(_props: TeacherSectionProps) {
           {/* Search + Filter */}
           <GlassCard className="flex flex-wrap items-center gap-3 p-3!">
             <div className="relative flex-1 min-w-50">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
               <Input
                 placeholder="Search meetings..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
               />
             </div>
             <div className="flex gap-1.5 flex-wrap">
@@ -175,7 +175,7 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                     filterType === t
                       ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                      : 'bg-white/3 text-white/40 border border-white/6 hover:bg-white/5'
+                      : 'bg-card/80 text-muted-foreground border border-border/50 hover:bg-muted/70'
                   }`}
                 >
                   {t === 'all' ? 'All' : meetingTypeStyles[t]?.label ?? t}
@@ -189,7 +189,7 @@ export function MeetingsSection(_props: TeacherSectionProps) {
             <EmptyState title="No meetings" message="No upcoming meetings match your filters." icon={<Calendar className="size-8" />} />
           ) : (
             <div className="relative space-y-3">
-              <div className="absolute left-4.75 top-4 bottom-4 w-px bg-white/6" />
+              <div className="absolute left-4.75 top-4 bottom-4 w-px bg-muted/80" />
 
               {filtered.map(mtg => {
                 const style = meetingTypeStyles[mtg.type] ?? meetingTypeStyles['staff-meeting'];
@@ -201,16 +201,16 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                     </div>
 
                     {/* Card */}
-                    <div className="flex-1 rounded-xl border border-white/6 bg-white/3 backdrop-blur-xl p-4">
+                    <div className="flex-1 rounded-xl border border-border/50 bg-card/80 backdrop-blur-xl p-4">
                       <div className="flex flex-wrap items-start justify-between gap-2 mb-2">
                         <div>
                           <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <span className="text-sm font-semibold text-white/80">{mtg.title}</span>
+                            <span className="text-sm font-semibold text-foreground/80">{mtg.title}</span>
                             <Badge className={`text-[9px] font-medium ${style.border} ${style.bg} ${style.text}`}>
                               {style.label}
                             </Badge>
                           </div>
-                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-white/35">
+                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground/80">
                             <span className="flex items-center gap-1">
                               <Calendar className="size-3" /> {formatDateLabel(mtg.date)}
                             </span>
@@ -231,10 +231,10 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                       {/* Attendees */}
                       {mtg.attendees.length > 0 && (
                         <div className="flex items-center gap-2 mt-2">
-                          <Users className="size-3.5 text-white/25" />
+                          <Users className="size-3.5 text-muted-foreground/60" />
                           <div className="flex flex-wrap gap-1">
                             {mtg.attendees.map(a => (
-                              <Badge key={a} variant="outline" className="text-[9px] border-white/8 text-white/40">
+                              <Badge key={a} variant="outline" className="text-[9px] border-border/60 text-muted-foreground">
                                 {a}
                               </Badge>
                             ))}
@@ -244,7 +244,7 @@ export function MeetingsSection(_props: TeacherSectionProps) {
 
                       {/* Notes */}
                       {mtg.notes && (
-                        <p className="mt-2 text-xs text-white/40 italic">{mtg.notes}</p>
+                        <p className="mt-2 text-xs text-muted-foreground italic">{mtg.notes}</p>
                       )}
                     </div>
                   </div>
@@ -256,15 +256,15 @@ export function MeetingsSection(_props: TeacherSectionProps) {
           {/* Completed Meetings section */}
           {completed.length > 0 && (
             <div className="space-y-2 pt-2">
-              <h4 className="text-xs font-semibold text-white/30 uppercase tracking-wide">Recently Completed</h4>
+              <h4 className="text-xs font-semibold text-muted-foreground/70 uppercase tracking-wide">Recently Completed</h4>
               {completed.map(mtg => {
                 const style = meetingTypeStyles[mtg.type] ?? meetingTypeStyles['staff-meeting'];
                 return (
-                  <div key={mtg.id} className="rounded-xl border border-white/5 bg-white/2 px-4 py-3 opacity-60">
+                  <div key={mtg.id} className="rounded-xl border border-border/40 bg-card/60 px-4 py-3 opacity-60">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm text-white/50">{mtg.title}</span>
+                      <span className="text-sm text-muted-foreground">{mtg.title}</span>
                       <Badge className={`text-[9px] ${style.border} ${style.bg} ${style.text}`}>{style.label}</Badge>
-                      <span className="ml-auto text-[10px] text-white/25">{formatDateLabel(mtg.date)}</span>
+                      <span className="ml-auto text-[10px] text-muted-foreground/60">{formatDateLabel(mtg.date)}</span>
                       <StatusBadge status="Completed" tone="good" />
                     </div>
                   </div>
@@ -280,27 +280,27 @@ export function MeetingsSection(_props: TeacherSectionProps) {
         <GlassCard data-animate>
           <div className="flex items-center gap-2 mb-5">
             <CalendarPlus className="size-4 text-indigo-400" />
-            <h3 className="text-sm font-semibold text-white/80">Schedule New Meeting</h3>
+            <h3 className="text-sm font-semibold text-foreground/80">Schedule New Meeting</h3>
           </div>
 
           <div className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/50">Title</Label>
+                <Label className="text-xs text-muted-foreground">Title</Label>
                 <Input
                   placeholder="Meeting title"
                   value={formTitle}
                   onChange={e => setFormTitle(e.target.value)}
-                  className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                  className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/50">Type</Label>
+                <Label className="text-xs text-muted-foreground">Type</Label>
                 <Select value={formType} onValueChange={setFormType}>
-                  <SelectTrigger className="bg-white/3 border-white/8 text-white/70">
+                  <SelectTrigger className="bg-card/80 border-border/60 text-foreground/70">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectContent className="bg-popover border-border/70">
                     <SelectItem value="parent-conference">Parent Conference</SelectItem>
                     <SelectItem value="staff-meeting">Staff Meeting</SelectItem>
                     <SelectItem value="department">Department Meeting</SelectItem>
@@ -312,68 +312,68 @@ export function MeetingsSection(_props: TeacherSectionProps) {
 
             <div className="grid gap-4 sm:grid-cols-3">
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/50">Date</Label>
+                <Label className="text-xs text-muted-foreground">Date</Label>
                 <Input
                   type="date"
                   value={formDate}
                   onChange={e => setFormDate(e.target.value)}
-                  className="bg-white/3 border-white/8 text-white/80"
+                  className="bg-card/80 border-border/60 text-foreground/80"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/50">Start Time</Label>
+                <Label className="text-xs text-muted-foreground">Start Time</Label>
                 <Input
                   type="time"
                   value={formTime}
                   onChange={e => setFormTime(e.target.value)}
-                  className="bg-white/3 border-white/8 text-white/80"
+                  className="bg-card/80 border-border/60 text-foreground/80"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/50">End Time</Label>
+                <Label className="text-xs text-muted-foreground">End Time</Label>
                 <Input
                   type="time"
                   value={formEndTime}
                   onChange={e => setFormEndTime(e.target.value)}
-                  className="bg-white/3 border-white/8 text-white/80"
+                  className="bg-card/80 border-border/60 text-foreground/80"
                 />
               </div>
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/50">Location</Label>
+                <Label className="text-xs text-muted-foreground">Location</Label>
                 <Input
                   placeholder="Room number or virtual link"
                   value={formLocation}
                   onChange={e => setFormLocation(e.target.value)}
-                  className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                  className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-xs text-white/50">Attendees</Label>
+                <Label className="text-xs text-muted-foreground">Attendees</Label>
                 <Input
                   placeholder="Comma-separated names"
                   value={formAttendees}
                   onChange={e => setFormAttendees(e.target.value)}
-                  className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                  className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Agenda / Notes</Label>
+              <Label className="text-xs text-muted-foreground">Agenda / Notes</Label>
               <Textarea
                 placeholder="Meeting agenda or preparation notes..."
                 value={formNotes}
                 onChange={e => setFormNotes(e.target.value)}
                 rows={3}
-                className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25 resize-none"
+                className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60 resize-none"
               />
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" className="text-white/40 hover:text-white/60" onClick={() => setHeader('upcoming_meetings')}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-muted-foreground" onClick={() => setHeader('upcoming_meetings')}>
                 Cancel
               </Button>
               <Button
@@ -395,8 +395,8 @@ export function MeetingsSection(_props: TeacherSectionProps) {
           <GlassCard className="flex items-center gap-3 py-3!">
             <Clock className="size-5 text-sky-400" />
             <div>
-              <h3 className="text-sm font-semibold text-white/80">Office Hours — Room 204</h3>
-              <p className="text-xs text-white/35">Weekly availability for students and parents · 3:30 – 4:30 PM daily</p>
+              <h3 className="text-sm font-semibold text-foreground/80">Office Hours — Room 204</h3>
+              <p className="text-xs text-muted-foreground/80">Weekly availability for students and parents · 3:30 – 4:30 PM daily</p>
             </div>
             <div className="ml-auto flex gap-2">
               <Badge variant="outline" className="text-[9px] border-sky-500/30 text-sky-400">{openSlots} open</Badge>
@@ -416,21 +416,21 @@ export function MeetingsSection(_props: TeacherSectionProps) {
               >
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <Calendar className="size-4 text-white/30" />
-                    <span className="text-sm font-medium text-white/70">{slot.day}</span>
+                    <Calendar className="size-4 text-muted-foreground/70" />
+                    <span className="text-sm font-medium text-foreground/70">{slot.day}</span>
                   </div>
                   <StatusBadge
                     status={slot.status === 'booked' ? 'Booked' : 'Open'}
                     tone={slot.status === 'booked' ? 'warn' : 'good'}
                   />
                 </div>
-                <div className="flex items-center gap-2 text-xs text-white/35">
+                <div className="flex items-center gap-2 text-xs text-muted-foreground/80">
                   <Clock className="size-3" /> {slot.time}
                 </div>
                 {slot.bookedBy && (
-                  <div className="mt-2 pt-2 border-t border-white/6">
-                    <p className="text-xs text-white/50 font-medium">{slot.bookedBy}</p>
-                    {slot.topic && <p className="text-[11px] text-white/30 mt-0.5">{slot.topic}</p>}
+                  <div className="mt-2 pt-2 border-t border-border/50">
+                    <p className="text-xs text-muted-foreground font-medium">{slot.bookedBy}</p>
+                    {slot.topic && <p className="text-[11px] text-muted-foreground/70 mt-0.5">{slot.topic}</p>}
                   </div>
                 )}
               </div>

@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useParentV2Documents } from '@/hooks/api/use-parent-v2';
+import { useParentV2Documents, useUploadParentV2Document } from '@/hooks/api/use-parent-v2';
 import { childDisplayName, filterByChild, formatDateLabel, parentDocumentsDemo as FALLBACK_DOCUMENTS } from './parent-v2-demo-data';
 import type { ParentDocumentDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
@@ -12,6 +12,7 @@ import type { ParentSectionProps } from './shared';
 
 export function DocumentsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawRows } = useParentV2Documents({ scope, childId });
+  const uploadMut = useUploadParentV2Document();
   const allRows: ParentDocumentDemo[] = (rawRows as ParentDocumentDemo[] | undefined) ?? filterByChild(FALLBACK_DOCUMENTS, childId, scope);
 
   const [query, setQuery] = useState('');
@@ -34,7 +35,23 @@ export function DocumentsSection({ scope, childId }: ParentSectionProps) {
       title="Documents"
       description="Report cards, receipts, school letters, upload requests, and document workflows."
       actions={
-        <Button size="sm" variant="outline" className="gap-1.5"><Upload className="size-3.5" /> Upload document</Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="gap-1.5"
+          disabled={uploadMut.isPending}
+          onClick={() => {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.onchange = (e) => {
+              const file = (e.target as HTMLInputElement).files?.[0];
+              if (file) uploadMut.mutate({ documentId: childId ?? 'general', file });
+            };
+            input.click();
+          }}
+        >
+          <Upload className="size-3.5" /> {uploadMut.isPending ? 'Uploading…' : 'Upload document'}
+        </Button>
       }
     >
       {/* Summary */}

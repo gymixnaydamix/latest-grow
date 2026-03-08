@@ -53,7 +53,7 @@ function SubNavContent({ items, parentLabel, onItemClick }: SubNavContentProps) 
   return (
     <aside
       className={cn(
-        'relative flex shrink-0 flex-col rounded-2xl border border-border/60 bg-background/80 backdrop-blur-xl shadow-sm',
+        'relative flex shrink-0 flex-col rounded-xl border border-border/60 bg-card/80 shadow-[var(--shadow-sm)]',
         'w-28',
       )}
       style={{ height: 'calc(100vh - 5.5rem)' }}
@@ -84,8 +84,8 @@ function SubNavContent({ items, parentLabel, onItemClick }: SubNavContentProps) 
                 className={cn(
                   'w-full rounded-lg border px-2 py-2 text-center transition-colors',
                   isActive
-                    ? 'border-primary/40 bg-primary/10 text-primary'
-                    : 'border-transparent text-muted-foreground hover:border-border/60 hover:bg-muted/60 hover:text-foreground',
+                    ? 'border-primary/30 bg-primary/8 text-primary shadow-[var(--shadow-xs)]'
+                    : 'border-transparent text-muted-foreground hover:border-border/60 hover:bg-muted/50 hover:text-foreground',
                 )}
               >
                 {Icon && <Icon className="mx-auto mb-1 size-3.5" />}
@@ -147,7 +147,7 @@ export function LeftSubNav({ items, parentLabel }: LeftSubNavProps) {
               aria-label="Close parent sub navigation"
             />
             <div className="absolute bottom-16 left-4 top-20 w-64">
-              <div className="mb-2 flex items-center justify-between rounded-t-2xl border border-border/60 bg-background/95 px-3 py-2 backdrop-blur-xl">
+              <div className="mb-2 flex items-center justify-between rounded-t-xl border border-border/60 bg-card px-3 py-2 shadow-[var(--shadow-xs)]">
                 <p className="text-sm font-semibold">Section Navigation</p>
                 <Button
                   type="button"

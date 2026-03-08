@@ -165,7 +165,7 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
       <div>
         <div className="flex items-center gap-2 mb-3">
           <Calendar className="size-4 text-indigo-400" />
-          <h3 className="text-sm font-semibold text-white/80">Upcoming Exams</h3>
+          <h3 className="text-sm font-semibold text-foreground/80">Upcoming Exams</h3>
         </div>
         {upcomingExams.length === 0 ? (
           <EmptyState title="No upcoming exams" message="All scheduled exams have been completed." icon={<GraduationCap className="size-8" />} />
@@ -181,23 +181,23 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
                   <div className="flex items-start gap-4 pl-3">
                     <div className="shrink-0 text-center">
                       <p className="text-2xl font-bold text-indigo-400">{new Date(exam.date).getDate()}</p>
-                      <p className="text-[10px] text-white/30 uppercase">
+                      <p className="text-[10px] text-muted-foreground/70 uppercase">
                         {new Date(exam.date).toLocaleDateString('en-US', { month: 'short' })}
                       </p>
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 mb-1">
-                        <p className="text-sm font-semibold text-white/80 truncate">{exam.title}</p>
+                        <p className="text-sm font-semibold text-foreground/80 truncate">{exam.title}</p>
                         <StatusBadge status={st.label} tone={st.tone} />
                       </div>
-                      <p className="text-xs text-white/40">
+                      <p className="text-xs text-muted-foreground">
                         {exam.className} · {formatTimeRange(exam.startTime, exam.endTime)} · {exam.room}
                       </p>
                       <div className="flex items-center gap-3 mt-2">
-                        <div className="flex items-center gap-1 text-[11px] text-white/30">
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
                           <Users className="size-3" /> {exam.totalStudents} students
                         </div>
-                        <div className="flex items-center gap-1 text-[11px] text-white/30">
+                        <div className="flex items-center gap-1 text-[11px] text-muted-foreground/70">
                           <Clock className="size-3" />
                           {daysUntil <= 0 ? 'Today' : daysUntil === 1 ? 'Tomorrow' : `${daysUntil} days`}
                         </div>
@@ -207,7 +207,7 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-[10px] text-white/30 hover:text-white/60"
+                        className="text-[10px] text-muted-foreground/70 hover:text-muted-foreground"
                         onClick={() => { setSelectedExam(exam.id); setHeader('marks_entry'); }}
                       >
                         <Edit3 className="size-3 mr-1" /> Enter Marks
@@ -226,7 +226,7 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
         <div>
           <div className="flex items-center gap-2 mb-3">
             <CheckCircle2 className="size-4 text-emerald-400" />
-            <h3 className="text-sm font-semibold text-white/80">Completed Exams</h3>
+            <h3 className="text-sm font-semibold text-foreground/80">Completed Exams</h3>
           </div>
           <div className="space-y-2">
             {completedExams.map(exam => {
@@ -234,20 +234,20 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
               return (
                 <div
                   key={exam.id}
-                  className="flex items-center gap-4 rounded-xl border border-white/6 bg-white/3 px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer"
+                  className="flex items-center gap-4 rounded-xl border border-border/50 bg-card/80 px-4 py-3 hover:bg-muted/70 transition-colors cursor-pointer"
                   onClick={() => { setSelectedResultExam(exam.id); setHeader('exam_results'); }}
                 >
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium text-white/75 truncate">{exam.title}</p>
+                      <p className="text-sm font-medium text-foreground/70 truncate">{exam.title}</p>
                       <StatusBadge status={st.label} tone={st.tone} />
                     </div>
-                    <p className="text-[11px] text-white/30">{exam.className} · {formatDateLabel(exam.date)}</p>
+                    <p className="text-[11px] text-muted-foreground/70">{exam.className} · {formatDateLabel(exam.date)}</p>
                   </div>
                   {exam.avgScore != null && (
                     <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-white/70">{exam.avgScore}%</p>
-                      <p className="text-[10px] text-white/25">avg score</p>
+                      <p className="text-sm font-bold text-foreground/70">{exam.avgScore}%</p>
+                      <p className="text-[10px] text-muted-foreground/60">avg score</p>
                     </div>
                   )}
                 </div>
@@ -270,11 +270,11 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
     return (
       <div className="space-y-4" data-animate>
         <div className="flex items-center gap-3 mb-2">
-          <Button variant="ghost" size="sm" className="text-xs text-white/40" onClick={() => setHeader('exam_schedule')}>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setHeader('exam_schedule')}>
             ← Exam Schedule
           </Button>
           <Select value={selectedExam} onValueChange={setSelectedExam}>
-            <SelectTrigger className="w-72 border-white/8 bg-white/4 text-white/80 text-xs">
+            <SelectTrigger className="w-72 border-border/60 bg-muted/60 text-foreground/80 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -304,20 +304,20 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
         {currentExam && (
           <GlassCard className="flex items-center gap-6">
             <div>
-              <p className="text-xs text-white/30">Exam</p>
-              <p className="text-sm font-semibold text-white/80">{currentExam.title}</p>
+              <p className="text-xs text-muted-foreground/70">Exam</p>
+              <p className="text-sm font-semibold text-foreground/80">{currentExam.title}</p>
             </div>
             <div>
-              <p className="text-xs text-white/30">Date</p>
-              <p className="text-sm text-white/60">{formatDateLabel(currentExam.date)}</p>
+              <p className="text-xs text-muted-foreground/70">Date</p>
+              <p className="text-sm text-muted-foreground">{formatDateLabel(currentExam.date)}</p>
             </div>
             <div>
-              <p className="text-xs text-white/30">Time</p>
-              <p className="text-sm text-white/60">{formatTimeRange(currentExam.startTime, currentExam.endTime)}</p>
+              <p className="text-xs text-muted-foreground/70">Time</p>
+              <p className="text-sm text-muted-foreground">{formatTimeRange(currentExam.startTime, currentExam.endTime)}</p>
             </div>
             <div>
-              <p className="text-xs text-white/30">Room</p>
-              <p className="text-sm text-white/60">{currentExam.room}</p>
+              <p className="text-xs text-muted-foreground/70">Room</p>
+              <p className="text-sm text-muted-foreground">{currentExam.room}</p>
             </div>
           </GlassCard>
         )}
@@ -333,12 +333,12 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-white/6">
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider w-8">#</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Student</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider w-32">Score</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider w-24">Status</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider w-20">%</th>
+                <tr className="border-b border-border/50">
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-8">#</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Student</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-32">Score</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-24">Status</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider w-20">%</th>
                 </tr>
               </thead>
               <tbody>
@@ -349,14 +349,14 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
                   const isLow = pct != null && pct < 60;
 
                   return (
-                    <tr key={st.id} className="border-b border-white/4 last:border-0">
-                      <td className="py-2.5 text-xs text-white/25">{i + 1}</td>
+                    <tr key={st.id} className="border-b border-border/30 last:border-0">
+                      <td className="py-2.5 text-xs text-muted-foreground/60">{i + 1}</td>
                       <td className="py-2.5">
                         <div className="flex items-center gap-2.5">
-                          <Avatar className="size-7 border border-white/10">
-                            <AvatarFallback className="text-[9px] bg-white/5 text-white/50">{st.initials}</AvatarFallback>
+                          <Avatar className="size-7 border border-border/70">
+                            <AvatarFallback className="text-[9px] bg-muted/70 text-muted-foreground">{st.initials}</AvatarFallback>
                           </Avatar>
-                          <span className="text-xs text-white/70">{st.name}</span>
+                          <span className="text-xs text-foreground/70">{st.name}</span>
                         </div>
                       </td>
                       <td className="py-2.5">
@@ -372,11 +372,11 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
                               isLow
                                 ? 'border-rose-500/30 bg-rose-500/8 text-rose-300'
                                 : val === ''
-                                  ? 'border-white/8 bg-white/3 text-white/25'
-                                  : 'border-white/10 bg-white/5 text-white/70'
+                                  ? 'border-border/60 bg-card/80 text-muted-foreground/60'
+                                  : 'border-border/70 bg-muted/70 text-foreground/70'
                             }`}
                           />
-                          <span className="text-[10px] text-white/20">/ {st.maxScore}</span>
+                          <span className="text-[10px] text-muted-foreground/50">/ {st.maxScore}</span>
                         </div>
                       </td>
                       <td className="py-2.5">
@@ -391,7 +391,7 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
                             {pct}%
                           </span>
                         ) : (
-                          <span className="text-xs text-white/20">—</span>
+                          <span className="text-xs text-muted-foreground/50">—</span>
                         )}
                       </td>
                     </tr>
@@ -408,17 +408,42 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
   /* ── Render: Exam Results ── */
   const renderResults = () => {
     const resultExam = exams.find(e => e.id === selectedResultExam);
-    const resultDetail = examResultsDemo.find(r => r.examId === selectedResultExam);
+    // Compute results dynamically from marks data when available, falling back to static demo
+    const marksForExam = marksEntryDemo[selectedResultExam];
+    const staticResult = examResultsDemo.find(r => r.examId === selectedResultExam);
+    const resultDetail: ExamResultDetail | undefined = marksForExam
+      ? (() => {
+          const scores = marksForExam.filter(s => s.score != null).map(s => s.score!);
+          if (scores.length === 0) return staticResult;
+          const avg = scores.reduce((a, b) => a + b, 0) / scores.length;
+          const passCount = scores.filter(s => s >= 60).length;
+          const dist = [
+            { label: '90-100', count: scores.filter(s => s >= 90).length, color: 'bg-emerald-400' },
+            { label: '80-89', count: scores.filter(s => s >= 80 && s < 90).length, color: 'bg-sky-400' },
+            { label: '70-79', count: scores.filter(s => s >= 70 && s < 80).length, color: 'bg-amber-400' },
+            { label: '60-69', count: scores.filter(s => s >= 60 && s < 70).length, color: 'bg-orange-400' },
+            { label: '0-59', count: scores.filter(s => s < 60).length, color: 'bg-rose-400' },
+          ];
+          return {
+            examId: selectedResultExam,
+            avgScore: Math.round(avg * 10) / 10,
+            passRate: Math.round((passCount / scores.length) * 100),
+            highest: Math.max(...scores),
+            lowest: Math.min(...scores),
+            distribution: dist,
+          };
+        })()
+      : staticResult;
     const maxCount = resultDetail ? Math.max(...resultDetail.distribution.map(d => d.count), 1) : 1;
 
     return (
       <div className="space-y-4" data-animate>
         <div className="flex items-center gap-3 mb-2">
-          <Button variant="ghost" size="sm" className="text-xs text-white/40" onClick={() => setHeader('exam_schedule')}>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setHeader('exam_schedule')}>
             ← Exam Schedule
           </Button>
           <Select value={selectedResultExam} onValueChange={setSelectedResultExam}>
-            <SelectTrigger className="w-72 border-white/8 bg-white/4 text-white/80 text-xs">
+            <SelectTrigger className="w-72 border-border/60 bg-muted/60 text-foreground/80 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -443,17 +468,17 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
               <GlassCard>
                 <div className="flex items-center gap-2 mb-4">
                   <BarChart3 className="size-4 text-indigo-400" />
-                  <h4 className="text-sm font-semibold text-white/80">Score Distribution</h4>
+                  <h4 className="text-sm font-semibold text-foreground/80">Score Distribution</h4>
                 </div>
                 <div className="flex items-end gap-3 h-40">
                   {resultDetail.distribution.map(d => (
                     <div key={d.label} className="flex-1 flex flex-col items-center gap-2">
-                      <span className="text-xs font-semibold text-white/60">{d.count}</span>
+                      <span className="text-xs font-semibold text-muted-foreground">{d.count}</span>
                       <div
                         className={`w-full rounded-t-lg ${d.color} transition-all`}
                         style={{ height: `${Math.max(8, (d.count / maxCount) * 120)}px` }}
                       />
-                      <span className="text-[10px] text-white/30">{d.label}</span>
+                      <span className="text-[10px] text-muted-foreground/70">{d.label}</span>
                     </div>
                   ))}
                 </div>
@@ -463,32 +488,32 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
               <GlassCard>
                 <div className="flex items-center gap-2 mb-4">
                   <FileText className="size-4 text-emerald-400" />
-                  <h4 className="text-sm font-semibold text-white/80">Exam Details</h4>
+                  <h4 className="text-sm font-semibold text-foreground/80">Exam Details</h4>
                 </div>
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between border-b border-white/6 pb-2">
-                    <span className="text-xs text-white/40">Exam</span>
-                    <span className="text-xs font-medium text-white/70">{resultExam.title}</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-xs text-muted-foreground">Exam</span>
+                    <span className="text-xs font-medium text-foreground/70">{resultExam.title}</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-white/6 pb-2">
-                    <span className="text-xs text-white/40">Class</span>
-                    <span className="text-xs text-white/70">{resultExam.className}</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-xs text-muted-foreground">Class</span>
+                    <span className="text-xs text-foreground/70">{resultExam.className}</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-white/6 pb-2">
-                    <span className="text-xs text-white/40">Date</span>
-                    <span className="text-xs text-white/70">{formatDateLabel(resultExam.date)}</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-xs text-muted-foreground">Date</span>
+                    <span className="text-xs text-foreground/70">{formatDateLabel(resultExam.date)}</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-white/6 pb-2">
-                    <span className="text-xs text-white/40">Time</span>
-                    <span className="text-xs text-white/70">{formatTimeRange(resultExam.startTime, resultExam.endTime)}</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-xs text-muted-foreground">Time</span>
+                    <span className="text-xs text-foreground/70">{formatTimeRange(resultExam.startTime, resultExam.endTime)}</span>
                   </div>
-                  <div className="flex items-center justify-between border-b border-white/6 pb-2">
-                    <span className="text-xs text-white/40">Room</span>
-                    <span className="text-xs text-white/70">{resultExam.room}</span>
+                  <div className="flex items-center justify-between border-b border-border/50 pb-2">
+                    <span className="text-xs text-muted-foreground">Room</span>
+                    <span className="text-xs text-foreground/70">{resultExam.room}</span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-xs text-white/40">Total Students</span>
-                    <span className="text-xs text-white/70">{resultExam.totalStudents}</span>
+                    <span className="text-xs text-muted-foreground">Total Students</span>
+                    <span className="text-xs text-foreground/70">{resultExam.totalStudents}</span>
                   </div>
                 </div>
               </GlassCard>
@@ -499,7 +524,7 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
               <GlassCard>
                 <div className="flex items-center gap-2 mb-4">
                   <Users className="size-4 text-pink-400" />
-                  <h4 className="text-sm font-semibold text-white/80">Student Scores</h4>
+                  <h4 className="text-sm font-semibold text-foreground/80">Student Scores</h4>
                 </div>
                 <div className="space-y-1.5">
                   {marksEntryDemo[selectedResultExam]
@@ -508,13 +533,13 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
                     .map((st, i) => {
                       const pct = Math.round(((st.score ?? 0) / st.maxScore) * 100);
                       return (
-                        <div key={st.id} className="flex items-center gap-3 rounded-lg border border-white/4 bg-white/2 px-3 py-2">
-                          <span className="text-[10px] text-white/20 w-5">{i + 1}</span>
-                          <Avatar className="size-6 border border-white/10">
-                            <AvatarFallback className="text-[8px] bg-white/5 text-white/50">{st.initials}</AvatarFallback>
+                        <div key={st.id} className="flex items-center gap-3 rounded-lg border border-border/30 bg-card/60 px-3 py-2">
+                          <span className="text-[10px] text-muted-foreground/50 w-5">{i + 1}</span>
+                          <Avatar className="size-6 border border-border/70">
+                            <AvatarFallback className="text-[8px] bg-muted/70 text-muted-foreground">{st.initials}</AvatarFallback>
                           </Avatar>
-                          <span className="text-xs text-white/70 w-32">{st.name}</span>
-                          <div className="flex-1 h-1.5 rounded-full bg-white/6 overflow-hidden">
+                          <span className="text-xs text-foreground/70 w-32">{st.name}</span>
+                          <div className="flex-1 h-1.5 rounded-full bg-muted/80 overflow-hidden">
                             <div
                               className={`h-full rounded-full transition-all ${pct >= 80 ? 'bg-emerald-400' : pct >= 60 ? 'bg-amber-400' : 'bg-rose-400'}`}
                               style={{ width: `${pct}%` }}

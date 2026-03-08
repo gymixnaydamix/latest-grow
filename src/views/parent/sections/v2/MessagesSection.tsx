@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { useParentV2MessageThreads } from '@/hooks/api/use-parent-v2';
+import { useParentV2MessageThreads, useCreateParentV2MessageThread, usePostParentV2Message } from '@/hooks/api/use-parent-v2';
 import { childDisplayName, filterByChild, formatDateTimeLabel, parentMessageThreadsDemo as FALLBACK_MESSAGE_THREADS } from './parent-v2-demo-data';
 import type { ParentMessageThreadDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, PriorityBadge } from './shared';
@@ -15,11 +15,17 @@ const FILTER_OPTIONS = ['ALL', 'UNREAD', 'HIGH', 'WITH_ATTACHMENT'] as const;
 
 export function MessagesSection({ scope, childId }: ParentSectionProps) {
   const { data: rawThreads } = useParentV2MessageThreads({ scope, childId });
+  const createThread = useCreateParentV2MessageThread();
+  const postMessage = usePostParentV2Message();
   const allRows: ParentMessageThreadDemo[] = (rawThreads as ParentMessageThreadDemo[] | undefined) ?? filterByChild(FALLBACK_MESSAGE_THREADS, childId, scope);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<(typeof FILTER_OPTIONS)[number]>('ALL');
   const [showCompose, setShowCompose] = useState(false);
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
+  const [composeRecipient, setComposeRecipient] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeBody, setComposeBody] = useState('');
+  const [replyBody, setReplyBody] = useState('');
 
   const rows = useMemo(
     () =>
@@ -89,11 +95,23 @@ export function MessagesSection({ scope, childId }: ParentSectionProps) {
             <CardTitle className="text-base">Compose New Message</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Input placeholder="Recipient (e.g., Mr. Johnson — Homeroom)" />
-            <Input placeholder="Subject" />
-            <Textarea placeholder="Write your message..." rows={3} />
+            <Input placeholder="Recipient (e.g., Mr. Johnson — Homeroom)" value={composeRecipient} onChange={(e) => setComposeRecipient(e.target.value)} />
+            <Input placeholder="Subject" value={composeSubject} onChange={(e) => setComposeSubject(e.target.value)} />
+            <Textarea placeholder="Write your message..." rows={3} value={composeBody} onChange={(e) => setComposeBody(e.target.value)} />
             <div className="flex gap-2">
-              <Button size="sm" className="gap-1.5"><Send className="size-3.5" /> Send</Button>
+              <Button
+                size="sm"
+                className="gap-1.5"
+                disabled={!composeRecipient.trim() || !composeSubject.trim() || !composeBody.trim() || createThread.isPending}
+                onClick={() =>
+                  createThread.mutate(
+                    { recipientIds: [composeRecipient.trim()], subject: composeSubject.trim(), body: composeBody.trim() },
+                    { onSuccess: () => { setComposeRecipient(''); setComposeSubject(''); setComposeBody(''); setShowCompose(false); } },
+                  )
+                }
+              >
+                <Send className="size-3.5" /> {createThread.isPending ? 'Sending…' : 'Send'}
+              </Button>
               <Button size="sm" variant="ghost" onClick={() => setShowCompose(false)}>Cancel</Button>
             </div>
           </CardContent>
@@ -187,9 +205,21 @@ export function MessagesSection({ scope, childId }: ParentSectionProps) {
                 </div>
 
                 <div className="space-y-2">
-                  <Textarea placeholder="Type your reply..." rows={3} />
+                  <Textarea placeholder="Type your reply..." rows={3} value={replyBody} onChange={(e) => setReplyBody(e.target.value)} />
                   <div className="flex gap-2">
-                    <Button size="sm" className="gap-1.5"><Send className="size-3.5" /> Reply</Button>
+                    <Button
+                      size="sm"
+                      className="gap-1.5"
+                      disabled={!replyBody.trim() || postMessage.isPending}
+                      onClick={() =>
+                        postMessage.mutate(
+                          { threadId: selectedThread.id, body: replyBody.trim() },
+                          { onSuccess: () => setReplyBody('') },
+                        )
+                      }
+                    >
+                      <Send className="size-3.5" /> {postMessage.isPending ? 'Sending…' : 'Reply'}
+                    </Button>
                     <Button size="sm" variant="outline" className="gap-1.5"><Paperclip className="size-3.5" /> Attach</Button>
                   </div>
                 </div>

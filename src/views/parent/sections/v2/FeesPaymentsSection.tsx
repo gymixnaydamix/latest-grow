@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useParentV2Invoices, useParentV2Payments } from '@/hooks/api/use-parent-v2';
+import { useParentV2Invoices, useParentV2Payments, useParentV2Receipts, useCreateParentV2CheckoutSession } from '@/hooks/api/use-parent-v2';
 import {
   childDisplayName,
   filterByChild,
@@ -23,10 +23,12 @@ type Tab = 'invoices' | 'payments' | 'receipts';
 export function FeesPaymentsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawInvoices } = useParentV2Invoices({ scope, childId });
   const { data: rawPayments } = useParentV2Payments({ scope, childId });
+  const { data: rawReceipts } = useParentV2Receipts({ scope, childId });
+  const checkoutMut = useCreateParentV2CheckoutSession();
 
   const invoices: ParentInvoiceDemo[] = (rawInvoices as ParentInvoiceDemo[] | undefined) ?? filterByChild(FALLBACK_INVOICES, childId, scope);
   const payments: ParentPaymentDemo[] = (rawPayments as ParentPaymentDemo[] | undefined) ?? filterByChild(FALLBACK_PAYMENTS, childId, scope);
-  const receipts: ParentReceiptDemo[] = filterByChild(FALLBACK_RECEIPTS, childId, scope);
+  const receipts: ParentReceiptDemo[] = (rawReceipts as ParentReceiptDemo[] | undefined) ?? filterByChild(FALLBACK_RECEIPTS, childId, scope);
 
   const [tab, setTab] = useState<Tab>('invoices');
   const [query, setQuery] = useState('');
@@ -164,7 +166,14 @@ export function FeesPaymentsSection({ scope, childId }: ParentSectionProps) {
                   <div className="mt-3 flex flex-wrap gap-2">
                     <Button size="sm" variant="outline" className="gap-1.5"><Eye className="size-3.5" /> View</Button>
                     {inv.status !== 'PAID' && inv.status !== 'CANCELLED' && inv.status !== 'REFUNDED' && (
-                      <Button size="sm" className="gap-1.5"><CreditCard className="size-3.5" /> Pay Now</Button>
+                      <Button
+                        size="sm"
+                        className="gap-1.5"
+                        disabled={checkoutMut.isPending}
+                        onClick={() => checkoutMut.mutate(inv.id)}
+                      >
+                        <CreditCard className="size-3.5" /> {checkoutMut.isPending ? 'Processing…' : 'Pay Now'}
+                      </Button>
                     )}
                   </div>
                 </div>

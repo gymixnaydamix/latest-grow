@@ -81,7 +81,7 @@ function RevenueAnalyticsView() {
         <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
           <StatCard label="Avg LTV" value={`$${(avgRevenuePerTenant * 24).toLocaleString()}`} sub="24-month estimate" gradient="from-emerald-500/10 to-emerald-500/5" />
           <StatCard label="Best Plan LTV" value={`$${(avgRevenuePerTenant * 36).toLocaleString()}`} sub="36-month enterprise" gradient="from-blue-500/10 to-blue-500/5" />
-          <StatCard label="Payback Period" value="3.2 mo" sub="Avg CAC recovery" gradient="from-amber-500/10 to-amber-500/5" />
+          <StatCard label="Payback Period" value={avgRevenuePerTenant > 0 ? `${(totalRevenue > 0 ? (totalRevenue / (subscriptions.length * avgRevenuePerTenant) || 0).toFixed(1) : '—')} mo` : '—'} sub="Revenue / ARPT estimate" gradient="from-amber-500/10 to-amber-500/5" />
         </div>
       </Panel>
     </SectionShell>
@@ -178,10 +178,10 @@ function ChurnView() {
       <Panel title="Retention Strategies" accentBorder="border-emerald-500/20">
         <div className="grid gap-2 md:grid-cols-2">
           {[
-            { name: 'Early Warning System', desc: 'Alert when usage drops below baseline for 7+ days', status: 'ACTIVE' },
-            { name: 'Win-back Campaign', desc: 'Automated outreach to suspended tenants', status: 'ACTIVE' },
-            { name: 'Payment Recovery', desc: 'Dunning + grace period before suspension', status: 'ACTIVE' },
-            { name: 'Health Check Calls', desc: 'Quarterly business review with at-risk tenants', status: 'PENDING' },
+            { name: 'Early Warning System', desc: `Alert when usage drops — ${atRisk.length} tenant${atRisk.length !== 1 ? 's' : ''} currently at risk`, status: atRisk.length > 0 ? 'ACTIVE' : 'PENDING' },
+            { name: 'Win-back Campaign', desc: `Automated outreach to ${suspended.length} suspended tenant${suspended.length !== 1 ? 's' : ''}`, status: suspended.length > 0 ? 'ACTIVE' : 'PENDING' },
+            { name: 'Payment Recovery', desc: `Dunning + grace period — ${paymentDue.length} tenant${paymentDue.length !== 1 ? 's' : ''} with payment due`, status: paymentDue.length > 0 ? 'ACTIVE' : 'PENDING' },
+            { name: 'Health Check Calls', desc: `Quarterly business review for ${atRisk.length} at-risk tenant${atRisk.length !== 1 ? 's' : ''}`, status: atRisk.length > 3 ? 'ACTIVE' : 'PENDING' },
           ].map((s) => (
             <Row key={s.name}>
               <div className="flex items-center justify-between">
@@ -206,6 +206,7 @@ function ReportsView() {
   const reportsList = reports ?? [];
   const createReport = useCreateProviderScheduledReport();
   const runReport = useRunProviderReport();
+  const exportReport = useExportProviderAnalyticsReport();
   const [showNew, setShowNew] = useState(false);
   const [rName, setRName] = useState('');
   const [rFreq, setRFreq] = useState('WEEKLY');
@@ -268,7 +269,13 @@ function ReportsView() {
                     <Button size="sm" variant="outline" className="h-6 text-[10px] border-blue-500/30" onClick={() => handleRun(rpt.id)} disabled={runReport.isPending}>
                       {runReport.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : null}Run Now
                     </Button>
-                    <Button size="sm" variant="outline" className="h-6 text-[10px] border-blue-500/30" disabled>Download</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[10px] border-blue-500/30" disabled={exportReport.isPending} onClick={() => {
+                      const reason = reasonPrompt('Download report');
+                      if (!reason) return;
+                      exportReport.mutate({ type: rpt.name, format: rpt.format ?? 'CSV', reason });
+                    }}>
+                      {exportReport.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Download className="mr-1 size-3" />}Download
+                    </Button>
                   </div>
                 </div>
               </Row>

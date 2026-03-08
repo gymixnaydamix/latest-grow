@@ -10,6 +10,7 @@ import {
   useCreateProviderAnnouncement,
 } from '@/hooks/api/use-provider-console';
 import { notifySuccess } from '@/lib/notify';
+import { reasonPrompt } from '@/views/provider/sections/console/shared';
 
 const FALLBACK_BROADCASTS = [
   { id: 'pb1', title: 'Platform maintenance window — March 8', audience: 'All tenants (8)', date: 'Mar 5', status: 'Scheduled', opened: 0 },
@@ -60,7 +61,7 @@ export function ProviderConciergeComms() {
   /* ── API hooks ── */
   const { data: commsData } = useProviderComms();
   const { data: notifData } = useProviderNotifications();
-  const sendAnnouncement = useSendProviderAnnouncement(); void sendAnnouncement;
+  const sendAnnouncement = useSendProviderAnnouncement();
   const createAnnouncement = useCreateProviderAnnouncement();
 
   const broadcasts = (commsData?.announcements as any[]) ?? FALLBACK_BROADCASTS;
@@ -228,6 +229,21 @@ export function ProviderConciergeComms() {
               <span className="inline-flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{b.audience}</span>
               <span>{b.date}</span>
               {b.opened > 0 && <span className="inline-flex items-center gap-0.5"><Eye className="h-2.5 w-2.5" />{b.opened} opened</span>}
+              {b.status === 'Scheduled' && (
+                <button
+                  className="ml-auto rounded-lg bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary hover:bg-primary/20 transition-colors"
+                  onClick={() => {
+                    const reason = reasonPrompt('Send this broadcast now?');
+                    if (!reason) return;
+                    sendAnnouncement.mutate(
+                      { announcementId: b.id, reason },
+                      { onSuccess: () => notifySuccess('Broadcast sent', `"${b.title}" sent to ${b.audience}`) },
+                    );
+                  }}
+                >
+                  Send Now
+                </button>
+              )}
             </div>
           </div>
         ))}

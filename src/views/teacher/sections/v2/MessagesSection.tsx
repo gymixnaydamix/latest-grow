@@ -23,8 +23,18 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  messageThreadsDemo as FALLBACK_messageThreadsDemo, type MessageThreadDemo,
+  messageThreadsDemo as FALLBACK_messageThreadsDemo,
+  attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo,
+  type MessageThreadDemo,
 } from './teacher-demo-data';
+
+/* ── Compose recipient suggestions from demo data ── */
+const recipientSuggestions = [
+  ...FALLBACK_attendanceStudentsDemo.map(s => `${s.name} (Student)`),
+  'Mrs. Kim (Parent)', 'Mr. Wei (Parent)', 'Mr. Brooks (Parent)',
+  'Mr. Davis (Admin)', 'Ms. Johnson (Counselor)',
+  'Mr. Thompson (Principal)', 'Ms. Rivera (Science Dept)',
+];
 
 /* ── Category styling map ── */
 const categoryStyles: Record<string, { bg: string; text: string; label: string }> = {
@@ -131,12 +141,12 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
           {/* Search + Filter Bar */}
           <GlassCard className="flex flex-wrap items-center gap-3 p-3!">
             <div className="relative flex-1 min-w-50">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
               <Input
                 placeholder="Search messages..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
               />
             </div>
             <div className="flex gap-1.5">
@@ -147,7 +157,7 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                     filterCategory === cat
                       ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                      : 'bg-white/3 text-white/40 border border-white/6 hover:bg-white/5'
+                      : 'bg-card/80 text-muted-foreground border border-border/50 hover:bg-muted/70'
                   }`}
                 >
                   {cat === 'all' ? 'All' : categoryStyles[cat]?.label ?? cat}
@@ -175,8 +185,8 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
                         isExpanded
                           ? 'border-indigo-500/30 bg-indigo-500/5 rounded-b-none'
                           : thread.unread
-                            ? 'border-white/10 bg-white/4 hover:bg-white/5'
-                            : 'border-white/6 bg-white/2 hover:bg-white/3'
+                            ? 'border-border/70 bg-muted/60 hover:bg-muted/70'
+                            : 'border-border/50 bg-card/60 hover:bg-card/80'
                       }`}
                     >
                       <div className="flex items-start gap-3">
@@ -185,37 +195,37 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
                           {thread.unread ? (
                             <div className="size-2.5 rounded-full bg-indigo-400" />
                           ) : (
-                            <MailOpen className="size-4 text-white/15" />
+                            <MailOpen className="size-4 text-muted-foreground/40" />
                           )}
                         </div>
 
                         {/* Content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-0.5">
-                            <span className={`text-sm font-semibold ${thread.unread ? 'text-white/90' : 'text-white/60'}`}>
+                            <span className={`text-sm font-semibold ${thread.unread ? 'text-foreground' : 'text-muted-foreground'}`}>
                               {thread.subject}
                             </span>
                             <Badge className={`text-[9px] font-medium ${cat.bg} ${cat.text}`}>
                               {cat.label}
                             </Badge>
                           </div>
-                          <p className="text-xs text-white/40 mb-1">
+                          <p className="text-xs text-muted-foreground mb-1">
                             {thread.participants.join(', ')}
                           </p>
-                          <p className={`text-xs truncate ${thread.unread ? 'text-white/55' : 'text-white/30'}`}>
-                            <span className="font-medium text-white/45">{thread.lastSender}:</span> {thread.lastMessage}
+                          <p className={`text-xs truncate ${thread.unread ? 'text-muted-foreground' : 'text-muted-foreground/70'}`}>
+                            <span className="font-medium text-muted-foreground">{thread.lastSender}:</span> {thread.lastMessage}
                           </p>
                         </div>
 
                         {/* Timestamp */}
-                        <span className="text-[10px] text-white/25 shrink-0 mt-1">{thread.timestamp}</span>
+                        <span className="text-[10px] text-muted-foreground/60 shrink-0 mt-1">{thread.timestamp}</span>
                       </div>
                     </button>
 
                     {/* Expanded Conversation */}
                     {isExpanded && (
                       <div className="rounded-b-xl border border-t-0 border-indigo-500/30 bg-indigo-500/3 px-4 pb-4">
-                        <Separator className="bg-white/6 mb-4" />
+                        <Separator className="bg-muted/80 mb-4" />
                         {convo ? (
                           <div className="space-y-3 mb-4 max-h-75 overflow-y-auto pr-1">
                             {convo.map((msg, i) => (
@@ -223,24 +233,24 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
                                 key={i}
                                 className={`flex gap-3 ${msg.sender === 'You' ? 'flex-row-reverse' : ''}`}
                               >
-                                <Avatar className="size-7 shrink-0 border border-white/10">
-                                  <AvatarFallback className={`text-[9px] ${msg.sender === 'You' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 text-white/50'}`}>
+                                <Avatar className="size-7 shrink-0 border border-border/70">
+                                  <AvatarFallback className={`text-[9px] ${msg.sender === 'You' ? 'bg-indigo-500/20 text-indigo-300' : 'bg-muted/70 text-muted-foreground'}`}>
                                     {msg.sender === 'You' ? (user?.firstName?.[0] ?? 'T') : msg.sender[0]}
                                   </AvatarFallback>
                                 </Avatar>
                                 <div className={`max-w-[75%] rounded-xl px-3.5 py-2.5 ${
                                   msg.sender === 'You'
                                     ? 'bg-indigo-500/15 border border-indigo-500/20'
-                                    : 'bg-white/4 border border-white/6'
+                                    : 'bg-muted/60 border border-border/50'
                                 }`}>
-                                  <p className="text-[11px] font-medium text-white/50 mb-1">{msg.sender} · {msg.time}</p>
-                                  <p className="text-sm text-white/75 leading-relaxed">{msg.body}</p>
+                                  <p className="text-[11px] font-medium text-muted-foreground mb-1">{msg.sender} · {msg.time}</p>
+                                  <p className="text-sm text-foreground/70 leading-relaxed">{msg.body}</p>
                                 </div>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <p className="text-xs text-white/30 mb-4 italic">No previous messages loaded.</p>
+                          <p className="text-xs text-muted-foreground/70 mb-4 italic">No previous messages loaded.</p>
                         )}
 
                         {/* Reply Box */}
@@ -250,7 +260,7 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
                             value={replyText}
                             onChange={e => setReplyText(e.target.value)}
                             rows={2}
-                            className="flex-1 bg-white/3 border-white/8 text-white/80 placeholder:text-white/25 resize-none"
+                            className="flex-1 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60 resize-none"
                           />
                           <Button
                             size="sm"
@@ -275,30 +285,31 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
         <GlassCard data-animate>
           <div className="flex items-center gap-2 mb-5">
             <Send className="size-4 text-indigo-400" />
-            <h3 className="text-sm font-semibold text-white/80">New Message</h3>
+            <h3 className="text-sm font-semibold text-foreground/80">New Message</h3>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Recipient</Label>
+              <Label className="text-xs text-muted-foreground">Recipient</Label>
               <div className="relative">
-                <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+                <User className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
                 <Input
                   placeholder="Search teacher, parent, staff, or student..."
                   value={composeRecipient}
                   onChange={e => setComposeRecipient(e.target.value)}
-                  className="pl-9 bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                  className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
                 />
               </div>
               {composeRecipient.length > 1 && (
-                <div className="rounded-lg border border-white/8 bg-white/3 p-1.5 space-y-0.5">
-                  {['Mrs. Kim (Parent)', 'Mr. Davis (Admin)', 'Ms. Johnson (Counselor)', 'Chen Wei (Student)']
+                <div className="rounded-lg border border-border/60 bg-card/80 p-1.5 space-y-0.5">
+                  {recipientSuggestions
                     .filter(n => n.toLowerCase().includes(composeRecipient.toLowerCase()))
+                    .slice(0, 6)
                     .map(name => (
                       <button
                         key={name}
                         onClick={() => setComposeRecipient(name)}
-                        className="w-full text-left px-3 py-2 text-sm text-white/60 rounded-md hover:bg-white/5 transition-colors"
+                        className="w-full text-left px-3 py-2 text-sm text-muted-foreground rounded-md hover:bg-muted/70 transition-colors"
                       >
                         {name}
                       </button>
@@ -308,23 +319,23 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Subject</Label>
+              <Label className="text-xs text-muted-foreground">Subject</Label>
               <Input
                 placeholder="Message subject"
                 value={composeSubject}
                 onChange={e => setComposeSubject(e.target.value)}
-                className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Message</Label>
+              <Label className="text-xs text-muted-foreground">Message</Label>
               <Textarea
                 placeholder="Write your message..."
                 value={composeBody}
                 onChange={e => setComposeBody(e.target.value)}
                 rows={6}
-                className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25 resize-none"
+                className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60 resize-none"
               />
             </div>
 
@@ -332,7 +343,7 @@ export function MessagesSection({ schoolId }: TeacherSectionProps) {
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/40 hover:text-white/60"
+                className="text-muted-foreground hover:text-muted-foreground"
                 onClick={() => setHeader('inbox')}
               >
                 Cancel

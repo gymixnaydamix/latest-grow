@@ -30,7 +30,7 @@ import {
 const priorityAccent: Record<string, { border: string; bg: string; ring: string }> = {
   HIGH: { border: 'border-rose-500/25', bg: 'bg-rose-500/5', ring: 'ring-rose-500/10' },
   MEDIUM: { border: 'border-amber-500/20', bg: 'bg-amber-500/3', ring: 'ring-amber-500/10' },
-  LOW: { border: 'border-white/8', bg: 'bg-white/2', ring: '' },
+  LOW: { border: 'border-border/60', bg: 'bg-card/60', ring: '' },
 };
 
 export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProps) {
@@ -118,12 +118,12 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
           {/* Search + Filter */}
           <GlassCard className="flex flex-wrap items-center gap-3 p-3!">
             <div className="relative flex-1 min-w-50">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
               <Input
                 placeholder="Search announcements..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
               />
             </div>
             <div className="flex gap-1.5">
@@ -134,7 +134,7 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                     filterPriority === p
                       ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                      : 'bg-white/3 text-white/40 border border-white/6 hover:bg-white/5'
+                      : 'bg-card/80 text-muted-foreground border border-border/50 hover:bg-muted/70'
                   }`}
                 >
                   {p === 'all' ? 'All' : p}
@@ -157,14 +157,14 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
                     key={ann.id}
                     onClick={() => setExpandedId(isExpanded ? null : ann.id)}
                     className={`w-full text-left rounded-xl border px-5 py-4 transition-all ${accent.border} ${accent.bg} ${
-                      isExpanded ? `ring-1 ${accent.ring}` : 'hover:bg-white/4'
+                      isExpanded ? `ring-1 ${accent.ring}` : 'hover:bg-muted/60'
                     }`}
                   >
                     {/* Header Row */}
                     <div className="flex items-start gap-3">
                       <div className="mt-0.5 shrink-0">
                         {ann.read ? (
-                          <Eye className="size-4 text-white/15" />
+                          <Eye className="size-4 text-muted-foreground/40" />
                         ) : (
                           <div className="size-2.5 rounded-full bg-indigo-400 mt-1" />
                         )}
@@ -172,30 +172,30 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
 
                       <div className="flex-1 min-w-0">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <span className={`text-sm font-semibold ${ann.read ? 'text-white/55' : 'text-white/85'}`}>
+                          <span className={`text-sm font-semibold ${ann.read ? 'text-muted-foreground' : 'text-foreground'}`}>
                             {ann.title}
                           </span>
                           <PriorityBadge priority={ann.priority} />
                         </div>
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-white/35">
+                        <div className="flex flex-wrap items-center gap-2 text-[11px] text-muted-foreground/80">
                           <span>{ann.author}</span>
                           <span>·</span>
                           <span>{formatDateLabel(ann.publishedAt)}</span>
                           <span>·</span>
-                          <Badge variant="outline" className="text-[9px] border-white/10 text-white/30">
+                          <Badge variant="outline" className="text-[9px] border-border/70 text-muted-foreground/70">
                             {ann.audience}
                           </Badge>
                         </div>
 
                         {/* Expanded Body */}
                         {isExpanded && (
-                          <div className="mt-3 pt-3 border-t border-white/6">
-                            <p className="text-sm text-white/65 leading-relaxed">{ann.body}</p>
+                          <div className="mt-3 pt-3 border-t border-border/50">
+                            <p className="text-sm text-muted-foreground leading-relaxed">{ann.body}</p>
                           </div>
                         )}
                       </div>
 
-                      <ChevronRight className={`size-4 text-white/20 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                      <ChevronRight className={`size-4 text-muted-foreground/50 shrink-0 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
                     </div>
                   </button>
                 );
@@ -210,34 +210,34 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
         <GlassCard data-animate>
           <div className="flex items-center gap-2 mb-5">
             <Megaphone className="size-4 text-indigo-400" />
-            <h3 className="text-sm font-semibold text-white/80">Create Announcement</h3>
+            <h3 className="text-sm font-semibold text-foreground/80">Create Announcement</h3>
           </div>
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Title</Label>
+              <Label className="text-xs text-muted-foreground">Title</Label>
               <Input
                 placeholder="Announcement title"
                 value={newTitle}
                 onChange={e => setNewTitle(e.target.value)}
-                className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
               />
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Body</Label>
+              <Label className="text-xs text-muted-foreground">Body</Label>
               <Textarea
                 placeholder="Write the announcement details..."
                 value={newBody}
                 onChange={e => setNewBody(e.target.value)}
                 rows={5}
-                className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25 resize-none"
+                className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60 resize-none"
               />
             </div>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label className="text-xs text-white/50">Audience</Label>
+                <Label className="text-xs text-muted-foreground">Audience</Label>
                 <div className="space-y-2">
                   {[
                     { value: 'TEACHER', label: 'Teachers' },
@@ -246,26 +246,26 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
                   ].map(opt => (
                     <label
                       key={opt.value}
-                      className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-white/2 px-3 py-2.5 cursor-pointer hover:bg-white/4 transition-colors"
+                      className="flex items-center gap-2.5 rounded-lg border border-border/50 bg-card/60 px-3 py-2.5 cursor-pointer hover:bg-muted/60 transition-colors"
                     >
                       <Checkbox
                         checked={audiences.has(opt.value)}
                         onCheckedChange={() => toggleAudience(opt.value)}
-                        className="border-white/20 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                        className="border-border data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                       />
-                      <span className="text-sm text-white/60">{opt.label}</span>
+                      <span className="text-sm text-muted-foreground">{opt.label}</span>
                     </label>
                   ))}
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-xs text-white/50">Priority</Label>
+                <Label className="text-xs text-muted-foreground">Priority</Label>
                 <Select value={newPriority} onValueChange={v => setNewPriority(v as 'HIGH' | 'MEDIUM' | 'LOW')}>
-                  <SelectTrigger className="bg-white/3 border-white/8 text-white/70">
+                  <SelectTrigger className="bg-card/80 border-border/60 text-foreground/70">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="bg-zinc-900 border-white/10">
+                  <SelectContent className="bg-popover border-border/70">
                     <SelectItem value="HIGH">High Priority</SelectItem>
                     <SelectItem value="MEDIUM">Medium Priority</SelectItem>
                     <SelectItem value="LOW">Low Priority</SelectItem>
@@ -273,7 +273,7 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
                 </Select>
 
                 {/* Preview Badge */}
-                <div className="mt-3 flex items-center gap-2 text-xs text-white/30">
+                <div className="mt-3 flex items-center gap-2 text-xs text-muted-foreground/70">
                   Preview: <PriorityBadge priority={newPriority} />
                 </div>
               </div>
@@ -283,7 +283,7 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-white/40 hover:text-white/60"
+                className="text-muted-foreground hover:text-muted-foreground"
                 onClick={() => setHeader('announcement_feed')}
               >
                 Cancel

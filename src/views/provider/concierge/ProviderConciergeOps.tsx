@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { ConciergeSplitPreviewPanel, ConciergePermissionBadge, ConciergeAuditNotice } from '@/components/concierge/shared';
 import { Clock, Building2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useProviderModuleData, useUpdateProviderSupportTicketStatus } from '@/hooks/api/use-provider-console';
+import { useProviderModuleData, useUpdateProviderSupportTicketStatus, useSendProviderMessage } from '@/hooks/api/use-provider-console';
 import { notifySuccess } from '@/lib/notify';
 
 interface Ticket {
@@ -101,6 +101,7 @@ export function ProviderConciergeOps() {
 
   const tickets = (moduleData?.tickets as any as Ticket[]) ?? FALLBACK_TICKETS;
   const [selected, setSelected] = useState<Ticket | null>(tickets[0] ?? null);
+  const sendMessage = useSendProviderMessage();
 
   const filtered = (() => {
     switch (activeSubNav) {
@@ -217,9 +218,36 @@ export function ProviderConciergeOps() {
             { onSuccess: () => notifySuccess('Ticket escalated', `${selected.id} has been escalated`) },
           )}
         >Escalate</button>
-        <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Add Note</button>
-        <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Notify Tenant</button>
-        <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">View Timeline</button>
+        <button
+          className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+          onClick={() => {
+            const note = window.prompt(`Add note to ${selected.id}:`);
+            if (!note) return;
+            updateTicketStatus.mutate(
+              { ticketId: selected.id, status: selected.status, reason: `Note: ${note}` },
+              { onSuccess: () => notifySuccess('Note added', `Note saved on ${selected.id}`) },
+            );
+          }}
+        >Add Note</button>
+        <button
+          className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+          onClick={() => {
+            const body = window.prompt(`Notify ${selected.tenant} about ${selected.id}:`);
+            if (!body) return;
+            sendMessage.mutate(
+              { tenant: selected.tenant, subject: `Re: ${selected.title}`, body, reason: 'Ticket notification via concierge' },
+              { onSuccess: () => notifySuccess('Tenant notified', `Notification sent to ${selected.tenant}`) },
+            );
+          }}
+        >Notify Tenant</button>
+        <button
+          className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+          onClick={() => {
+            const nav = useNavigationStore.getState();
+            nav.setSection('provider_monitoring');
+            nav.setHeader('audit_events');
+          }}
+        >View Timeline</button>
       </div>
     </div>
   ) : <p className="py-8 text-center text-xs text-muted-foreground">Select a ticket to view details</p>;

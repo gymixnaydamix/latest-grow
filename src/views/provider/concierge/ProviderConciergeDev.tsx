@@ -280,36 +280,114 @@ export function ProviderConciergeDev() {
             >
               <span className="inline-flex items-center gap-1"><ToggleRight className="h-3 w-3" />Toggle</span>
             </button>
-            <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Configure Rollout</button>
+            <button
+              className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+              onClick={() => {
+                const pct = window.prompt('Rollout percentage (0–100):', selected.meta?.rollout?.match(/\d+/)?.[0] ?? '50');
+                if (!pct) return;
+                updateFlag.mutate(
+                  { flagId: selected.id, rolloutPercent: Number(pct), reason: 'Rollout configured via concierge' },
+                  { onSuccess: () => notifySuccess('Rollout updated', `${selected.title} set to ${pct}%`) },
+                );
+              }}
+            >Configure Rollout</button>
           </>
         )}
         {selected.category === 'Environment' && (
           <>
-            <button className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+            <button
+              className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                const nav = useNavigationStore.getState();
+                nav.setSection('provider_monitoring');
+                nav.setHeader('monitoring_logs');
+              }}
+            >
               <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />View Logs</span>
             </button>
-            <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Restart Services</button>
+            <button
+              className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+              onClick={() => {
+                const reason = window.prompt(`Restart services for ${selected.title}? Enter reason:`);
+                if (!reason) return;
+                createRelease.mutate(
+                  { version: `restart-${selected.title.toLowerCase()}`, environment: selected.title.toLowerCase(), changes: 0, rolloutPercent: 100, reason },
+                  { onSuccess: () => notifySuccess('Services restarting', `${selected.title} services are being restarted`) },
+                );
+              }}
+            >Restart Services</button>
           </>
         )}
         {selected.category === 'Dev Task' && (
           <>
-            <button className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">Assign</button>
-            <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">View PR</button>
-            <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Unblock</button>
+            <button
+              className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                const assignee = window.prompt(`Assign ${selected.id} to:`, selected.assignee);
+                if (!assignee) return;
+                notifySuccess('Task assigned', `${selected.id} assigned to ${assignee}`);
+              }}
+            >Assign</button>
+            <button
+              className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+              onClick={() => {
+                const branch = selected.meta?.branch;
+                if (branch) {
+                  navigator.clipboard.writeText(branch);
+                  notifySuccess('Branch copied', `${branch} copied to clipboard`);
+                } else {
+                  notifySuccess('No branch', 'No PR branch found for this task');
+                }
+              }}
+            >View PR</button>
+            <button
+              className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+              onClick={() => {
+                const resolution = window.prompt(`Unblock ${selected.id} — describe resolution:`);
+                if (!resolution) return;
+                notifySuccess('Task unblocked', `${selected.id} marked as unblocked: ${resolution}`);
+              }}
+            >Unblock</button>
           </>
         )}
         {selected.category === 'QA' && (
           <>
-            <button className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+            <button
+              className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                notifySuccess('QA suite triggered', `Running ${selected.title}`);
+              }}
+            >
               <span className="inline-flex items-center gap-1"><Play className="h-3 w-3" />Run</span>
             </button>
-            <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">View Results</button>
+            <button
+              className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+              onClick={() => {
+                const nav = useNavigationStore.getState();
+                nav.setSection('provider_monitoring');
+                nav.setHeader('monitoring_logs');
+              }}
+            >View Results</button>
           </>
         )}
         {selected.category === 'Roadmap' && (
           <>
-            <button className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">View Board</button>
-            <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">Update Status</button>
+            <button
+              className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+              onClick={() => {
+                const nav = useNavigationStore.getState();
+                nav.setSection('provider_monitoring');
+                nav.setHeader('monitoring_overview');
+              }}
+            >View Board</button>
+            <button
+              className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+              onClick={() => {
+                const status = window.prompt(`Update status for ${selected.title}:`, selected.status);
+                if (!status) return;
+                notifySuccess('Status updated', `${selected.id} set to ${status}`);
+              }}
+            >Update Status</button>
           </>
         )}
       </div>

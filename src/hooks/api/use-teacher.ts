@@ -8,6 +8,7 @@ import type {
   TeacherStudentAlert,
   TeacherGradingQueueItem,
   TeacherClass,
+  TeacherClassDetail,
   TeacherAttendanceStudent,
   TeacherAttendanceHistoryItem,
   TeacherLessonPlan,
@@ -36,6 +37,7 @@ export const teacherKeys = {
   gradingQueue: ['teacher', 'grading-queue'] as const,
   // Classes
   classes: ['teacher', 'classes'] as const,
+  classDetail: (classId: string) => ['teacher', 'class-detail', classId] as const,
   // Attendance
   attendance: (classId: string) => ['teacher', 'attendance', classId] as const,
   attendanceHistory: ['teacher', 'attendance-history'] as const,
@@ -104,6 +106,14 @@ export function useTeacherClasses() {
   return useQuery({
     queryKey: teacherKeys.classes,
     queryFn: () => api.get<ApiSuccessResponse<TeacherClass[]>>('/teacher/classes').then((r) => r.data),
+  });
+}
+
+export function useTeacherClassDetail(classId: string | null) {
+  return useQuery({
+    queryKey: teacherKeys.classDetail(classId ?? ''),
+    queryFn: () => api.get<ApiSuccessResponse<TeacherClassDetail>>(`/teacher/classes/${classId}`).then((r) => r.data),
+    enabled: !!classId,
   });
 }
 

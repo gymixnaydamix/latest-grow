@@ -27,8 +27,8 @@ export function TeacherSectionShell({
     <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-xl font-semibold text-white/90">{title}</h2>
-          <p className="text-sm text-white/40">{description}</p>
+          <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+          <p className="text-sm text-muted-foreground">{description}</p>
         </div>
         {actions}
       </div>
@@ -46,7 +46,7 @@ export function StatusBadge({
   tone?: 'neutral' | 'good' | 'warn' | 'bad' | 'info';
 }) {
   const toneMap: Record<string, string> = {
-    neutral: 'border-white/10 bg-white/5 text-white/50',
+    neutral: 'border-border/70 bg-muted/70 text-muted-foreground',
     good: 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400',
     warn: 'border-amber-500/30 bg-amber-500/10 text-amber-400',
     bad: 'border-rose-500/30 bg-rose-500/10 text-rose-400',
@@ -86,11 +86,11 @@ export function EmptyState({
   icon?: ReactNode;
 }) {
   return (
-    <Card className="border-dashed border-white/8 bg-white/2">
+    <Card className="border-dashed border-border/60 bg-card/60">
       <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-        {icon && <div className="mb-3 text-white/20">{icon}</div>}
-        <CardTitle className="text-base text-white/50">{title}</CardTitle>
-        <CardDescription className="mt-1 text-white/30">{message}</CardDescription>
+        {icon && <div className="mb-3 text-muted-foreground/50">{icon}</div>}
+        <CardTitle className="text-base text-muted-foreground">{title}</CardTitle>
+        <CardDescription className="mt-1 text-muted-foreground/70">{message}</CardDescription>
       </CardContent>
     </Card>
   );
@@ -111,10 +111,15 @@ export function MetricCard({
   trend?: 'up' | 'down' | 'flat';
 }) {
   const trendIcons: Record<string, string> = { up: '↑', down: '↓', flat: '→' };
-  const trendColors: Record<string, string> = { up: 'text-emerald-400', down: 'text-rose-400', flat: 'text-white/30' };
+  const trendColors: Record<string, string> = { up: 'text-emerald-400', down: 'text-rose-400', flat: 'text-muted-foreground/70' };
   return (
-    <div className="rounded-2xl border border-white/6 bg-white/3 backdrop-blur-xl p-4">
-      <p className="text-xs font-medium text-white/40">{label}</p>
+    <div
+      className="relative overflow-hidden rounded-2xl border bg-card/90 backdrop-blur-xl p-4 transition-all hover:shadow-md"
+      style={{ borderColor: `${accent}30` }}
+    >
+      {/* Accent gradient line */}
+      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${accent}00, ${accent}, ${accent}00)` }} />
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <div className="mt-1 flex items-end gap-1.5">
         <span className="text-2xl font-bold" style={{ color: accent }}>{value}{suffix}</span>
         {trend && <span className={cn('text-xs mb-0.5', trendColors[trend])}>{trendIcons[trend]}</span>}
@@ -126,7 +131,15 @@ export function MetricCard({
 /* ── Glass card wrapper ── */
 export function GlassCard({ children, className, onClick }: { children: ReactNode; className?: string; onClick?: () => void }) {
   return (
-    <div className={cn('rounded-2xl border border-white/6 bg-white/3 backdrop-blur-xl p-5', className)} onClick={onClick} role={onClick ? 'button' : undefined}>
+    <div
+      className={cn(
+        'rounded-2xl border border-border/50 bg-card/90 backdrop-blur-xl p-5 shadow-sm transition-all duration-200',
+        onClick && 'cursor-pointer hover:border-primary/30 hover:shadow-md',
+        className,
+      )}
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+    >
       {children}
     </div>
   );

@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { useParentV2Home, useCreateParentV2CheckoutSession, useDecideParentV2Approval, useMarkParentV2AnnouncementRead, useRsvpParentV2Event } from '@/hooks/api/use-parent-v2';
+import { useParentV2Home, useCreateParentV2CheckoutSession, useDecideParentV2Approval, useRsvpParentV2Event } from '@/hooks/api/use-parent-v2';
 import { useNavigationStore } from '@/store/navigation.store';
 import { notifySuccess, notifyError } from '@/lib/notify';
 import {
@@ -65,7 +65,6 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
   const { navigate } = useNavigationStore();
   const checkoutMut = useCreateParentV2CheckoutSession();
   const approvalMut = useDecideParentV2Approval();
-  useMarkParentV2AnnouncementRead();
   const rsvpMut = useRsvpParentV2Event();
 
   const children: ParentChildDemo[] = (homeData?.children as ParentChildDemo[] | undefined) ?? filterChildren(FALLBACK_CHILDREN, childId, scope);
@@ -76,10 +75,10 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
   const approvals: ParentApprovalDemo[] = (homeData?.approvals as ParentApprovalDemo[] | undefined) ?? filterByChild(FALLBACK_APPROVALS, childId, scope);
   const messages: ParentMessageThreadDemo[] = (homeData?.messages as ParentMessageThreadDemo[] | undefined) ?? filterByChild(FALLBACK_MESSAGES, childId, scope);
   const events: ParentEventDemo[] = (homeData?.events as ParentEventDemo[] | undefined) ?? filterByChild(FALLBACK_EVENTS, childId, scope);
-  const assignments: ParentAssignmentDemo[] = filterByChild(FALLBACK_ASSIGNMENTS, childId, scope);
-  const attendance: ParentAttendanceDemo[] = filterByChild(FALLBACK_ATTENDANCE, childId, scope);
-  const exams: ParentExamDemo[] = filterByChild(FALLBACK_EXAMS, childId, scope);
-  const calendarItems: ParentCalendarItemDemo[] = filterByChild(FALLBACK_CALENDAR, childId, scope);
+  const assignments: ParentAssignmentDemo[] = (homeData?.assignments as ParentAssignmentDemo[] | undefined) ?? filterByChild(FALLBACK_ASSIGNMENTS, childId, scope);
+  const attendance: ParentAttendanceDemo[] = (homeData?.attendanceAlerts as ParentAttendanceDemo[] | undefined) ?? filterByChild(FALLBACK_ATTENDANCE, childId, scope);
+  const exams: ParentExamDemo[] = (homeData?.exams as ParentExamDemo[] | undefined) ?? filterByChild(FALLBACK_EXAMS, childId, scope);
+  const calendarItems: ParentCalendarItemDemo[] = (homeData?.calendarItems as ParentCalendarItemDemo[] | undefined) ?? filterByChild(FALLBACK_CALENDAR, childId, scope);
 
   // Derived operational signals
   const unreadAnnouncementCount = announcements.filter((a) => !a.read).length;

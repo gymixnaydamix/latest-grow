@@ -262,6 +262,49 @@ export type ProviderCommsBundle = {
   templates: CommsTemplateDTO[];
 };
 
+/* ── Email message types ── */
+
+export type EmailAttachmentDTO = {
+  id: string;
+  name: string;
+  size: string;
+  type: string;
+};
+
+export type EmailMessageDTO = {
+  id: string;
+  from: string;
+  fromName: string;
+  to: string[];
+  cc: string[];
+  bcc: string[];
+  subject: string;
+  body: string;
+  folder: 'INBOX' | 'SENT' | 'DRAFTS' | 'STARRED' | 'ARCHIVE' | 'TRASH';
+  isRead: boolean;
+  isStarred: boolean;
+  hasAttachments: boolean;
+  attachments: EmailAttachmentDTO[];
+  labels: string[];
+  replyToId: string | null;
+  forwardedFromId: string | null;
+  sentAt: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type EmailFolderCountDTO = {
+  name: string;
+  count: number;
+  unread: number;
+};
+
+export type ProviderEmailBundle = {
+  messages: EmailMessageDTO[];
+  folders: EmailFolderCountDTO[];
+  labels: string[];
+};
+
 export type BackupScheduleDTO = {
   id: string;
   name: string;
@@ -321,6 +364,8 @@ export const providerKeys = {
   settings: ['provider-console', 'settings'] as const,
   apiMgmt: ['provider-console', 'api-mgmt'] as const,
   comms: ['provider-console', 'comms'] as const,
+  emails: (folder?: string) => ['provider-console', 'emails', folder] as const,
+  emailDetail: (id: string | null) => ['provider-console', 'email', id] as const,
   backups: ['provider-console', 'backups'] as const,
   billingOverview: ['provider-console', 'billing-overview'] as const,
   billingExtras: ['provider-console', 'billing-extras'] as const,
@@ -915,6 +960,93 @@ export function useSendProviderAnnouncement() {
         .then((res) => res.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: providerKeys.comms });
+    },
+  });
+}
+
+/* ── Email Messaging Hooks ── */
+
+export function useProviderEmails(folder?: string) {
+  return useQuery({
+    queryKey: providerKeys.emails(folder),
+    queryFn: () =>
+      api
+        .get<ApiSuccessResponse<ProviderEmailBundle>>(
+          `/provider/comms/emails${folder ? `?folder=${folder}` : ''}`,
+        )
+        .then((res) => res.data),
+  });
+}
+
+export function useProviderEmailDetail(messageId: string | null) {
+  return useQuery({
+    queryKey: providerKeys.emailDetail(messageId),
+    queryFn: () =>
+      api
+        .get<ApiSuccessResponse<EmailMessageDTO>>(`/provider/comms/emails/${messageId}`)
+        .then((res) => res.data),
+    enabled: !!messageId,
+  });
+}
+
+export function useComposeProviderEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      to: string[];
+      cc?: string[];
+      bcc?: string[];
+      subject: string;
+      body: string;
+      folder?: 'SENT' | 'DRAFTS';
+      replyToId?: string;
+      forwardedFromId?: string;
+      reason: string;
+    }) =>
+      api
+        .post<ApiSuccessResponse<EmailMessageDTO>>('/provider/comms/emails', input)
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['provider-console', 'emails'] });
+    },
+  });
+}
+
+export function useUpdateProviderEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      messageId: string;
+      isRead?: boolean;
+      isStarred?: boolean;
+      folder?: string;
+      labels?: string[];
+      reason: string;
+    }) =>
+      api
+        .patch<ApiSuccessResponse<Partial<EmailMessageDTO>>>(
+          `/provider/comms/emails/${input.messageId}`,
+          { isRead: input.isRead, isStarred: input.isStarred, folder: input.folder, labels: input.labels, reason: input.reason },
+        )
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['provider-console', 'emails'] });
+    },
+  });
+}
+
+export function useDeleteProviderEmail() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { messageId: string; reason: string }) =>
+      api
+        .request<ApiSuccessResponse<{ id: string; deleted: boolean }>>(
+          `/provider/comms/emails/${input.messageId}`,
+          { method: 'DELETE', body: { reason: input.reason } },
+        )
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['provider-console', 'emails'] });
     },
   });
 }
@@ -2421,6 +2553,91 @@ export function useUpdateProviderKbArticle() {
         .then((res) => res.data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: providerKeys.supportExtras });
+    },
+  });
+}
+
+/* ── Support: Create Macro ── */
+export function useCreateProviderMacro() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { name: string; category: string; template: string; actions?: string[]; reason: string }) =>
+      api
+        .post<ApiSuccessResponse<SupportMacroDTO>>(
+          '/provider/support/macros',
+          { name: input.name, category: input.category, template: input.template, actions: input.actions ?? [], reason: input.reason },
+        )
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: providerKeys.supportExtras });
+    },
+  });
+}
+
+/* ── Support: Delete Macro ── */
+export function useDeleteProviderMacro() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { macroId: string; reason: string }) =>
+      api
+        .request<ApiSuccessResponse<SupportMacroDTO>>(
+          `/provider/support/macros/${input.macroId}`,
+          { method: 'DELETE', body: { reason: input.reason } },
+        )
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: providerKeys.supportExtras });
+    },
+  });
+}
+
+/* ── Support: Create KB Article ── */
+export function useCreateProviderKbArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { title: string; category: string; body: string; reason: string }) =>
+      api
+        .post<ApiSuccessResponse<KbArticleDTO>>(
+          '/provider/support/kb',
+          { title: input.title, category: input.category, body: input.body, reason: input.reason },
+        )
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: providerKeys.supportExtras });
+    },
+  });
+}
+
+/* ── Support: Send CSAT Survey ── */
+export function useSendProviderCsatSurvey() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { tenantIds: string[]; reason: string }) =>
+      api
+        .post<ApiSuccessResponse<{ sent: number }>>(
+          '/provider/support/csat/survey',
+          { tenantIds: input.tenantIds, reason: input.reason },
+        )
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: providerKeys.supportExtras });
+    },
+  });
+}
+
+/* ── Security: Request Compliance Report ── */
+export function useRequestProviderComplianceReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { frameworks?: string[]; reason: string }) =>
+      api
+        .post<ApiSuccessResponse<{ requestId: string; status: string }>>(
+          '/provider/security/compliance/report',
+          { frameworks: input.frameworks, reason: input.reason },
+        )
+        .then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: providerKeys.securityExtras });
     },
   });
 }

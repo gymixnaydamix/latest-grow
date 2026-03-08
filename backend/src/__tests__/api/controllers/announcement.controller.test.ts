@@ -43,7 +43,16 @@ describe('announcementController', () => {
       const next = mockNext();
 
       await announcementController.list(req, res, next);
-      expect(res._json).toMatchObject({ success: true, data: expect.objectContaining({ total: 1 }) });
+      expect(res._json).toMatchObject({
+        success: true,
+        data: {
+          items: [{ id: 'an1' }],
+          total: 1,
+          page: 1,
+          pageSize: 20,
+          totalPages: 1,
+        },
+      });
     });
   });
 

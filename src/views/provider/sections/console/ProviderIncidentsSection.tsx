@@ -164,15 +164,18 @@ function StatusPageView() {
   const activeIncidents = incidents.filter((i) => i.status !== 'RESOLVED');
 
   const services = [
-    { name: 'Authentication', status: 'OPERATIONAL' },
-    { name: 'Student Portal', status: 'OPERATIONAL' },
-    { name: 'Teacher Dashboard', status: activeIncidents.some((i) => i.affectedServices.includes('teacher')) ? 'DEGRADED' : 'OPERATIONAL' },
-    { name: 'Notifications', status: activeIncidents.some((i) => i.affectedServices.includes('notifications')) ? 'DEGRADED' : 'OPERATIONAL' },
-    { name: 'Billing Engine', status: 'OPERATIONAL' },
-    { name: 'File Storage', status: 'OPERATIONAL' },
-    { name: 'API Gateway', status: 'OPERATIONAL' },
-    { name: 'WebSocket Server', status: 'OPERATIONAL' },
-  ];
+    { name: 'Authentication', key: 'auth' },
+    { name: 'Student Portal', key: 'student' },
+    { name: 'Teacher Dashboard', key: 'teacher' },
+    { name: 'Notifications', key: 'notifications' },
+    { name: 'Billing Engine', key: 'billing' },
+    { name: 'File Storage', key: 'storage' },
+    { name: 'API Gateway', key: 'api' },
+    { name: 'WebSocket Server', key: 'websocket' },
+  ].map((svc) => ({
+    ...svc,
+    status: activeIncidents.some((i) => i.affectedServices.includes(svc.key)) ? 'DEGRADED' : 'OPERATIONAL',
+  }));
 
   return (
     <SectionShell>

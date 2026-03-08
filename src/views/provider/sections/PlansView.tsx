@@ -13,12 +13,15 @@ import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuSeparator, DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { usePlatformPlans, useDeletePlatformPlan } from '@/hooks/api';
+import { usePlatformPlans, useDeletePlatformPlan, useTenantStats } from '@/hooks/api';
+import { useProviderBillingOverview } from '@/hooks/api/use-provider-console';
 import { CreatePlanDialog } from '../dialogs/CreatePlanDialog';
 import type { PlatformPlan } from '@root/types';
 
 export function PlansView() {
   const { data: apiPlans } = usePlatformPlans();
+  const { data: billingData } = useProviderBillingOverview();
+  const { data: tenantData } = useTenantStats();
   const deletePlan = useDeletePlatformPlan();
   const [planDialogOpen, setPlanDialogOpen] = useState(false);
   const [editingPlan, setEditingPlan] = useState<PlatformPlan | null>(null);
@@ -79,15 +82,23 @@ export function PlansView() {
     );
   };
 
-  const totalRevenue = plans.reduce((s, p) => s + p.price * p.tenants, 0);
+  const bAnalytics = billingData?.analytics;
+  const totalRevenue = bAnalytics?.summary?.mrr
+    ?? (plans.reduce((s, p) => s + p.price * p.tenants, 0) || 0);
+  const arptValue = bAnalytics?.summary?.arpt;
+  const arptFormatted = arptValue != null ? `$${Math.round(arptValue)}` : '$102';
+  const totalTenants = tenantData?.total ?? plans.reduce((s, p) => s + p.tenants, 0);
+  const trialTenants = tenantData?.trial ?? 0;
+  const paidTenants = totalTenants - trialTenants;
+  const conversionRate = totalTenants > 0 ? Math.round((paidTenants / totalTenants) * 100) : 68;
   const billingKpis = [
-    { label: 'Total Revenue', value: `$${totalRevenue > 0 ? totalRevenue.toLocaleString() : '12,190'}/mo`, change: '+$820', up: true, sub: 'All active plans', icon: Icon3D_Revenue, gradient: 'from-emerald-500/10 to-emerald-500/5', borderGlow: 'hover:shadow-emerald-500/20', sparkline: [8200,8800,9400,10200,10800,11150,11600,11900,12000,12100,12190,12190], sparkColor: '#10b981' },
-    { label: 'Active Subs', value: String(plans.reduce((s, p) => s + p.tenants, 0) || 120), change: '+5', up: true, sub: 'Across all plans', icon: Icon3D_Subs, gradient: 'from-blue-500/10 to-blue-500/5', borderGlow: 'hover:shadow-blue-500/20', sparkline: [90,95,98,101,104,106,108,110,113,116,118,120], sparkColor: '#3b82f6' },
-    { label: 'ARPU', value: '$102', change: '+$8', up: true, sub: 'Avg revenue per user', icon: Icon3D_ARPU, gradient: 'from-violet-500/10 to-violet-500/5', borderGlow: 'hover:shadow-violet-500/20', sparkline: [78,82,84,86,88,90,92,94,96,98,100,102], sparkColor: '#8b5cf6' },
-    { label: 'Conversion', value: '68%', change: '+4.2%', up: true, sub: 'Trial → paid rate', icon: Icon3D_ConvRate, gradient: 'from-amber-500/10 to-amber-500/5', borderGlow: 'hover:shadow-amber-500/20', sparkline: [48,50,52,54,56,58,60,62,63,65,66,68], sparkColor: '#f59e0b' },
+    { label: 'Total Revenue', value: `$${totalRevenue > 0 ? totalRevenue.toLocaleString() : '0'}/mo`, change: '+$820', up: true, sub: 'All active plans', icon: Icon3D_Revenue, gradient: 'from-emerald-500/10 to-emerald-500/5', borderGlow: 'hover:shadow-emerald-500/20', sparkline: bAnalytics?.monthlyRevenue?.map((m) => m.billed) ?? [8200,8800,9400,10200,10800,11150,11600,11900,12000,12100,12190,12190], sparkColor: '#10b981' },
+    { label: 'Active Subs', value: String(totalTenants || 120), change: '+5', up: true, sub: 'Across all plans', icon: Icon3D_Subs, gradient: 'from-blue-500/10 to-blue-500/5', borderGlow: 'hover:shadow-blue-500/20', sparkline: [90,95,98,101,104,106,108,110,113,116,118,totalTenants || 120], sparkColor: '#3b82f6' },
+    { label: 'ARPU', value: arptFormatted, change: '+$8', up: true, sub: 'Avg revenue per user', icon: Icon3D_ARPU, gradient: 'from-violet-500/10 to-violet-500/5', borderGlow: 'hover:shadow-violet-500/20', sparkline: [78,82,84,86,88,90,92,94,96,98,100, arptValue ? Math.round(arptValue) : 102], sparkColor: '#8b5cf6' },
+    { label: 'Conversion', value: `${conversionRate}%`, change: '+4.2%', up: true, sub: 'Trial → paid rate', icon: Icon3D_ConvRate, gradient: 'from-amber-500/10 to-amber-500/5', borderGlow: 'hover:shadow-amber-500/20', sparkline: [48,50,52,54,56,58,60,62,63,65,66,conversionRate], sparkColor: '#f59e0b' },
   ];
 
-  const revenueData = [
+  const revenueData = bAnalytics?.monthlyRevenue?.map((m) => ({ month: m.month, revenue: m.billed })) ?? [
     { month: 'Jan', revenue: 8200 }, { month: 'Feb', revenue: 8800 }, { month: 'Mar', revenue: 9400 },
     { month: 'Apr', revenue: 10200 }, { month: 'May', revenue: 10800 }, { month: 'Jun', revenue: 11150 },
     { month: 'Jul', revenue: 11600 }, { month: 'Aug', revenue: 11900 }, { month: 'Sep', revenue: 12000 },
@@ -298,7 +309,7 @@ export function PlansView() {
           <div className="relative flex flex-1 flex-col min-h-0">
             <div className="mb-1.5 flex items-center justify-between">
               <h3 className="text-[10px] font-semibold text-white">Revenue Split</h3>
-              <span className="text-[8px] font-bold text-emerald-400">$12.2K</span>
+              <span className="text-[8px] font-bold text-emerald-400">${totalRevenue > 0 ? (totalRevenue / 1000).toFixed(1) + 'K' : '0'}</span>
             </div>
             <div className="flex flex-1 flex-col gap-1.5 overflow-auto min-h-0">
               {plans.map(p => (

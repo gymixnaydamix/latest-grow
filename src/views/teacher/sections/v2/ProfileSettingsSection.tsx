@@ -1,7 +1,7 @@
 /* ─── Profile & Settings Section ──────────────────────────────────
  * Routes: my_profile (default) | preferences | notification_settings
  * ──────────────────────────────────────────────────────────────────── */
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import {
   Bell, BellRing, Camera, Check, Globe, GraduationCap,
   Mail, Moon, Monitor, Palette, Save, Settings,
@@ -15,12 +15,13 @@ import { Switch } from '@/components/ui/switch';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
-import { useUpdateTeacherProfile, useUpdateTeacherAvatar, useSaveTeacherPreferences } from '@/hooks/api/use-teacher';
+import { useUpdateTeacherProfile, useUpdateTeacherAvatar, useSaveTeacherPreferences, useTeacherProfile, useChangeTeacherPassword } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import {
   TeacherSectionShell, GlassCard, StatusBadge,
 } from './shared';
 import type { TeacherSectionProps } from './shared';
+import { Lock } from 'lucide-react';
 
 /* ── Default profile data (fallback) ── */
 const defaultProfile = {
@@ -64,12 +65,22 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
   const updateProfileMut = useUpdateTeacherProfile();
   const updateAvatarMut = useUpdateTeacherAvatar();
   const savePreferencesMut = useSaveTeacherPreferences();
+  const changePasswordMut = useChangeTeacherPassword();
+  const { data: apiProfileData } = useTeacherProfile();
+  const apiProfile = (apiProfileData as any)?.data as typeof defaultProfile | undefined;
+  const profile = apiProfile ?? defaultProfile;
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   /* ── Profile form state ── */
   const [isEditing, setIsEditing] = useState(false);
-  const [bio, setBio] = useState(defaultProfile.bio);
-  const [phone, setPhone] = useState(defaultProfile.phone);
-  const [subjectAreas, setSubjectAreas] = useState(defaultProfile.subjectAreas.join(', '));
+  const [bio, setBio] = useState(profile.bio);
+  const [phone, setPhone] = useState(profile.phone);
+  const [subjectAreas, setSubjectAreas] = useState(profile.subjectAreas.join(', '));
+
+  /* ── Password change state ── */
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
 
   /* ── Preferences state ── */
   const [darkMode, setDarkMode] = useState(true);
@@ -81,9 +92,9 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
   /* ── Notification state ── */
   const [notifications, setNotifications] = useState<NotifSetting[]>(defaultNotifications);
 
-  const firstName = user?.firstName ?? defaultProfile.firstName;
-  const lastName = user?.lastName ?? defaultProfile.lastName;
-  const email = user?.email ?? defaultProfile.email;
+  const firstName = user?.firstName ?? profile.firstName;
+  const lastName = user?.lastName ?? profile.lastName;
+  const email = user?.email ?? profile.email;
   const initials = `${firstName[0]}${lastName[0]}`;
 
   const toggleNotif = (id: string, channel: 'email' | 'push' | 'inApp') => {
@@ -97,10 +108,36 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
     updateProfileMut.mutate({ bio, phone, subjectAreas: subjectAreas.split(',').map(s => s.trim()).filter(Boolean) }, { onSuccess: () => notifySuccess('Profile updated', 'Your profile has been saved') });
   };
 
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('avatar', file);
+    updateAvatarMut.mutate(formData, { onSuccess: () => notifySuccess('Avatar updated', 'Profile picture updated') });
+  };
+
+  const handleChangePassword = () => {
+    if (!currentPassword || !newPassword) return;
+    if (newPassword !== confirmPassword) {
+      notifySuccess('Error', 'Passwords do not match');
+      return;
+    }
+    if (newPassword.length < 8) {
+      notifySuccess('Error', 'Password must be at least 8 characters');
+      return;
+    }
+    changePasswordMut.mutate({ currentPassword, newPassword }, {
+      onSuccess: () => {
+        notifySuccess('Password changed', 'Your password has been updated');
+        setCurrentPassword(''); setNewPassword(''); setConfirmPassword('');
+      },
+    });
+  };
+
   return (
     <TeacherSectionShell
       title="Profile & Settings"
-      description={`${firstName} ${lastName} · ${defaultProfile.department} Department`}
+      description={`${firstName} ${lastName} · ${profile.department} Department`}
     >
       {/* ── MY PROFILE VIEW ── */}
       {header === 'my_profile' && (
@@ -115,23 +152,30 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
                     {initials}
                   </AvatarFallback>
                 </Avatar>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
                 <button
                   className="absolute inset-0 flex items-center justify-center rounded-full bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity"
-                  onClick={() => { updateAvatarMut.mutate(new FormData(), { onSuccess: () => notifySuccess('Avatar updated', 'Profile picture updated') }); }}
+                  onClick={() => avatarInputRef.current?.click()}
                 >
-                  <Camera className="size-5 text-white/70" />
+                  <Camera className="size-5 text-foreground/70" />
                 </button>
               </div>
 
               {/* Info */}
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 mb-1">
-                  <h3 className="text-lg font-bold text-white/90">{firstName} {lastName}</h3>
-                  <StatusBadge status={defaultProfile.role} tone="info" />
+                  <h3 className="text-lg font-bold text-foreground">{firstName} {lastName}</h3>
+                  <StatusBadge status={profile.role} tone="info" />
                 </div>
-                <p className="text-sm text-white/40 mb-1">{email}</p>
+                <p className="text-sm text-muted-foreground mb-1">{email}</p>
                 <div className="flex flex-wrap gap-1.5 mt-2">
-                  {defaultProfile.subjectAreas.map(s => (
+                  {profile.subjectAreas.map(s => (
                     <Badge key={s} variant="outline" className="text-[10px] border-indigo-500/25 text-indigo-300/70">
                       {s}
                     </Badge>
@@ -157,39 +201,39 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
           <div className="grid gap-4 lg:grid-cols-2">
             {/* Left: Details */}
             <GlassCard>
-              <h4 className="text-sm font-semibold text-white/70 mb-4 flex items-center gap-2">
+              <h4 className="text-sm font-semibold text-foreground/70 mb-4 flex items-center gap-2">
                 <User className="size-4 text-indigo-400" /> Personal Information
               </h4>
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-wide mb-1">First Name</p>
-                    <p className="text-sm text-white/70">{firstName}</p>
+                    <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1">First Name</p>
+                    <p className="text-sm text-foreground/70">{firstName}</p>
                   </div>
                   <div>
-                    <p className="text-[10px] text-white/30 uppercase tracking-wide mb-1">Last Name</p>
-                    <p className="text-sm text-white/70">{lastName}</p>
+                    <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1">Last Name</p>
+                    <p className="text-sm text-foreground/70">{lastName}</p>
                   </div>
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wide mb-1">Email</p>
-                  <p className="text-sm text-white/70">{email}</p>
+                  <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1">Email</p>
+                  <p className="text-sm text-foreground/70">{email}</p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wide mb-1">Phone</p>
+                  <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1">Phone</p>
                   {isEditing ? (
-                    <Input value={phone} onChange={e => setPhone(e.target.value)} className="bg-white/3 border-white/8 text-white/80" />
+                    <Input value={phone} onChange={e => setPhone(e.target.value)} className="bg-card/80 border-border/60 text-foreground/80" />
                   ) : (
-                    <p className="text-sm text-white/70">{phone}</p>
+                    <p className="text-sm text-foreground/70">{phone}</p>
                   )}
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wide mb-1">Department</p>
-                  <p className="text-sm text-white/70">{defaultProfile.department}</p>
-                </div>
+                  <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1">Department</p>
+                    <p className="text-sm text-foreground/70">{profile.department}</p>
+                  </div>
                 <div>
-                  <p className="text-[10px] text-white/30 uppercase tracking-wide mb-1">Classroom</p>
-                  <p className="text-sm text-white/70">{defaultProfile.classroom}</p>
+                    <p className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1">Classroom</p>
+                    <p className="text-sm text-foreground/70">{profile.classroom}</p>
                 </div>
               </div>
             </GlassCard>
@@ -197,21 +241,21 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
             {/* Right: Bio + Certs */}
             <div className="space-y-4">
               <GlassCard>
-                <h4 className="text-sm font-semibold text-white/70 mb-3">Bio</h4>
+                <h4 className="text-sm font-semibold text-foreground/70 mb-3">Bio</h4>
                 {isEditing ? (
                   <Textarea
                     value={bio}
                     onChange={e => setBio(e.target.value)}
                     rows={4}
-                    className="bg-white/3 border-white/8 text-white/80 resize-none"
+                    className="bg-card/80 border-border/60 text-foreground/80 resize-none"
                   />
                 ) : (
-                  <p className="text-sm text-white/55 leading-relaxed">{bio}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{bio}</p>
                 )}
               </GlassCard>
 
               <GlassCard>
-                <h4 className="text-sm font-semibold text-white/70 mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-foreground/70 mb-3 flex items-center gap-2">
                   <Shield className="size-4 text-emerald-400" /> Subject Areas
                 </h4>
                 {isEditing ? (
@@ -219,11 +263,11 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
                     value={subjectAreas}
                     onChange={e => setSubjectAreas(e.target.value)}
                     placeholder="Comma-separated subjects"
-                    className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                    className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
                   />
                 ) : (
                   <div className="flex flex-wrap gap-1.5">
-                    {defaultProfile.subjectAreas.map(s => (
+                    {profile.subjectAreas.map(s => (
                       <Badge key={s} variant="outline" className="text-[10px] border-indigo-500/25 text-indigo-300/70">{s}</Badge>
                     ))}
                   </div>
@@ -231,12 +275,12 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
               </GlassCard>
 
               <GlassCard>
-                <h4 className="text-sm font-semibold text-white/70 mb-3 flex items-center gap-2">
+                <h4 className="text-sm font-semibold text-foreground/70 mb-3 flex items-center gap-2">
                   <GraduationCap className="size-4 text-amber-400" /> Certifications
                 </h4>
                 <div className="space-y-2">
-                  {defaultProfile.certifications.map(cert => (
-                    <div key={cert} className="flex items-center gap-2 text-xs text-white/50">
+                  {profile.certifications.map(cert => (
+                    <div key={cert} className="flex items-center gap-2 text-xs text-muted-foreground">
                       <Check className="size-3.5 text-emerald-400/70 shrink-0" />
                       {cert}
                     </div>
@@ -255,25 +299,25 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
           <GlassCard>
             <div className="flex items-center gap-2 mb-4">
               <Palette className="size-4 text-indigo-400" />
-              <h4 className="text-sm font-semibold text-white/70">Appearance</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Appearance</h4>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 px-4 py-3">
+              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/60 px-4 py-3">
                 <div className="flex items-center gap-3">
                   <Moon className="size-4 text-indigo-400" />
                   <div>
-                    <p className="text-sm text-white/70">Dark Mode</p>
-                    <p className="text-[11px] text-white/30">Use dark theme across the portal</p>
+                    <p className="text-sm text-foreground/70">Dark Mode</p>
+                    <p className="text-[11px] text-muted-foreground/70">Use dark theme across the portal</p>
                   </div>
                 </div>
                 <Switch checked={darkMode} onCheckedChange={setDarkMode} />
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 px-4 py-3">
+              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/60 px-4 py-3">
                 <div className="flex items-center gap-3">
                   <Monitor className="size-4 text-sky-400" />
                   <div>
-                    <p className="text-sm text-white/70">Compact View</p>
-                    <p className="text-[11px] text-white/30">Reduce spacing and show more content</p>
+                    <p className="text-sm text-foreground/70">Compact View</p>
+                    <p className="text-[11px] text-muted-foreground/70">Reduce spacing and show more content</p>
                   </div>
                 </div>
                 <Switch checked={compactView} onCheckedChange={setCompactView} />
@@ -285,25 +329,25 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
           <GlassCard>
             <div className="flex items-center gap-2 mb-4">
               <Shield className="size-4 text-emerald-400" />
-              <h4 className="text-sm font-semibold text-white/70">Accessibility</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Accessibility</h4>
             </div>
             <div className="space-y-4">
-              <div className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 px-4 py-3">
+              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/60 px-4 py-3">
                 <div className="flex items-center gap-3">
                   <Volume2 className="size-4 text-amber-400" />
                   <div>
-                    <p className="text-sm text-white/70">High Contrast</p>
-                    <p className="text-[11px] text-white/30">Increase contrast for better visibility</p>
+                    <p className="text-sm text-foreground/70">High Contrast</p>
+                    <p className="text-[11px] text-muted-foreground/70">Increase contrast for better visibility</p>
                   </div>
                 </div>
                 <Switch checked={highContrast} onCheckedChange={setHighContrast} />
               </div>
-              <div className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 px-4 py-3">
+              <div className="flex items-center justify-between rounded-lg border border-border/50 bg-card/60 px-4 py-3">
                 <div className="flex items-center gap-3">
                   <Settings className="size-4 text-pink-400" />
                   <div>
-                    <p className="text-sm text-white/70">Reduced Motion</p>
-                    <p className="text-[11px] text-white/30">Minimize animations and transitions</p>
+                    <p className="text-sm text-foreground/70">Reduced Motion</p>
+                    <p className="text-[11px] text-muted-foreground/70">Minimize animations and transitions</p>
                   </div>
                 </div>
                 <Switch checked={reducedMotion} onCheckedChange={setReducedMotion} />
@@ -315,7 +359,7 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
           <GlassCard>
             <div className="flex items-center gap-2 mb-4">
               <Globe className="size-4 text-cyan-400" />
-              <h4 className="text-sm font-semibold text-white/70">Language</h4>
+              <h4 className="text-sm font-semibold text-foreground/70">Language</h4>
             </div>
             <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
               {[
@@ -330,12 +374,66 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
                   className={`rounded-lg border px-4 py-3 text-sm font-medium transition-all ${
                     language === lang.code
                       ? 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30'
-                      : 'bg-white/2 text-white/40 border-white/6 hover:bg-white/4'
+                      : 'bg-card/60 text-muted-foreground border-border/50 hover:bg-muted/60'
                   }`}
                 >
                   {lang.label}
                 </button>
               ))}
+            </div>
+          </GlassCard>
+        </div>
+      )}
+
+      {/* ── PASSWORD / SECURITY VIEW ── */}
+      {header === 'preferences' && (
+        <div className="space-y-4 mt-6" data-animate>
+          <GlassCard>
+            <div className="flex items-center gap-2 mb-4">
+              <Lock className="size-4 text-rose-400" />
+              <h4 className="text-sm font-semibold text-foreground/70">Change Password</h4>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1 block">Current Password</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={e => setCurrentPassword(e.target.value)}
+                  className="w-full rounded-lg border border-border/60 bg-card/80 px-3 py-2 text-sm text-foreground/80 placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                  placeholder="Enter current password"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1 block">New Password</label>
+                <input
+                  type="password"
+                  value={newPassword}
+                  onChange={e => setNewPassword(e.target.value)}
+                  className="w-full rounded-lg border border-border/60 bg-card/80 px-3 py-2 text-sm text-foreground/80 placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                  placeholder="Enter new password (min 8 characters)"
+                />
+              </div>
+              <div>
+                <label className="text-[10px] text-muted-foreground/70 uppercase tracking-wide mb-1 block">Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={e => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-lg border border-border/60 bg-card/80 px-3 py-2 text-sm text-foreground/80 placeholder:text-muted-foreground/50 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                  placeholder="Confirm new password"
+                />
+              </div>
+              <div className="flex justify-end pt-2">
+                <Button
+                  size="sm"
+                  className="gap-1.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30"
+                  onClick={handleChangePassword}
+                  disabled={changePasswordMut.isPending || !currentPassword || !newPassword || !confirmPassword}
+                >
+                  <Lock className="size-3.5" /> {changePasswordMut.isPending ? 'Changing…' : 'Change Password'}
+                </Button>
+              </div>
             </div>
           </GlassCard>
         </div>
@@ -347,33 +445,33 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
           <GlassCard className="py-3! flex items-center gap-3">
             <BellRing className="size-5 text-indigo-400" />
             <div>
-              <h4 className="text-sm font-semibold text-white/70">Notification Preferences</h4>
-              <p className="text-[11px] text-white/30">Control how you receive notifications for each event type</p>
+              <h4 className="text-sm font-semibold text-foreground/70">Notification Preferences</h4>
+              <p className="text-[11px] text-muted-foreground/70">Control how you receive notifications for each event type</p>
             </div>
           </GlassCard>
 
           {/* Matrix Header */}
           <GlassCard className="p-0! overflow-hidden">
-            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/6">
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/50">
               <div className="col-span-6">
-                <span className="text-[10px] font-semibold text-white/30 uppercase tracking-wide">Event Type</span>
+                <span className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide">Event Type</span>
               </div>
               <div className="col-span-2 text-center">
                 <div className="flex flex-col items-center gap-0.5">
-                  <Mail className="size-3.5 text-white/30" />
-                  <span className="text-[9px] text-white/25">Email</span>
+                  <Mail className="size-3.5 text-muted-foreground/70" />
+                  <span className="text-[9px] text-muted-foreground/60">Email</span>
                 </div>
               </div>
               <div className="col-span-2 text-center">
                 <div className="flex flex-col items-center gap-0.5">
-                  <Smartphone className="size-3.5 text-white/30" />
-                  <span className="text-[9px] text-white/25">Push</span>
+                  <Smartphone className="size-3.5 text-muted-foreground/70" />
+                  <span className="text-[9px] text-muted-foreground/60">Push</span>
                 </div>
               </div>
               <div className="col-span-2 text-center">
                 <div className="flex flex-col items-center gap-0.5">
-                  <Bell className="size-3.5 text-white/30" />
-                  <span className="text-[9px] text-white/25">In-App</span>
+                  <Bell className="size-3.5 text-muted-foreground/70" />
+                  <span className="text-[9px] text-muted-foreground/60">In-App</span>
                 </div>
               </div>
             </div>
@@ -382,11 +480,11 @@ export function ProfileSettingsSection(_props: TeacherSectionProps) {
             {notifications.map(notif => (
               <div
                 key={notif.id}
-                className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/4 items-center hover:bg-white/2 transition-colors"
+                className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/30 items-center hover:bg-card/60 transition-colors"
               >
                 <div className="col-span-6">
-                  <p className="text-sm text-white/65">{notif.label}</p>
-                  <p className="text-[10px] text-white/25">{notif.description}</p>
+                  <p className="text-sm text-muted-foreground">{notif.label}</p>
+                  <p className="text-[10px] text-muted-foreground/60">{notif.description}</p>
                 </div>
                 <div className="col-span-2 flex justify-center">
                   <Switch

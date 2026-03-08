@@ -15,25 +15,10 @@ const PANEL_HEIGHT = { height: 'calc(100vh - 5.5rem)' };
 
 type MetricTone = 'neutral' | 'danger' | 'success' | 'warning';
 
-type ReadyMetric = {
-  status: 'ready';
-  label: string;
-  shortLabel?: string;
-  tone: MetricTone;
-};
-
-type LoadingMetric = {
-  status: 'loading';
-};
-
-type ErrorMetric = {
-  status: 'error';
-};
-
-type EmptyMetric = {
-  status: 'empty';
-};
-
+type ReadyMetric = { status: 'ready'; label: string; shortLabel?: string; tone: MetricTone };
+type LoadingMetric = { status: 'loading' };
+type ErrorMetric = { status: 'error' };
+type EmptyMetric = { status: 'empty' };
 type MetricState = ReadyMetric | LoadingMetric | ErrorMetric | EmptyMetric;
 
 interface ProviderSubNavProps {
@@ -56,13 +41,13 @@ function compactCount(value: number) {
 function metricClasses(tone: MetricTone) {
   switch (tone) {
     case 'danger':
-      return 'border-red-400/40 bg-red-500/15 text-red-100';
+      return 'border-danger/30 bg-danger-soft text-danger';
     case 'success':
-      return 'border-emerald-400/40 bg-emerald-500/15 text-emerald-100';
+      return 'border-success/30 bg-success-soft text-success';
     case 'warning':
-      return 'border-amber-400/40 bg-amber-500/15 text-amber-100';
+      return 'border-warning/30 bg-warning-soft text-warning';
     default:
-      return 'border-sky-400/40 bg-sky-500/15 text-sky-100';
+      return 'border-info/30 bg-info-soft text-info';
   }
 }
 
@@ -177,20 +162,16 @@ function useProviderSubNavMetrics() {
             },
           };
 
-    return {
-      ...homeMetrics,
-      ...tenantMetrics,
-    };
+    return { ...homeMetrics, ...tenantMetrics };
   }, [
-    homeQuery.data,
-    homeQuery.isError,
-    homeQuery.isLoading,
-    tenantsQuery.data,
-    tenantsQuery.isError,
-    tenantsQuery.isLoading,
+    homeQuery.data, homeQuery.isError, homeQuery.isLoading,
+    tenantsQuery.data, tenantsQuery.isError, tenantsQuery.isLoading,
   ]);
 }
 
+/* ------------------------------------------------------------------ */
+/*  MetricBadge                                                       */
+/* ------------------------------------------------------------------ */
 function MetricBadge({ itemId, metric, collapsed }: { itemId: string; metric: MetricState; collapsed: boolean }) {
   if (metric.status === 'error' || metric.status === 'empty') return null;
 
@@ -199,11 +180,11 @@ function MetricBadge({ itemId, metric, collapsed }: { itemId: string; metric: Me
       <span
         data-testid={`provider-subnav-metric-${itemId}`}
         className={cn(
-          'inline-flex shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5',
-          collapsed ? 'h-5 min-w-5 px-1.5' : 'h-6 min-w-[3.25rem] px-2',
+          'inline-flex shrink-0 items-center justify-center rounded-full border border-border/40 bg-muted',
+          collapsed ? 'h-5 min-w-5 px-1.5' : 'h-5 min-w-[2.5rem] px-2',
         )}
       >
-        <span className={cn('animate-pulse rounded-full bg-white/15', collapsed ? 'h-2 w-3' : 'h-2 w-8')} />
+        <span className={cn('animate-pulse rounded-full bg-muted-foreground/20', collapsed ? 'h-2 w-3' : 'h-2 w-6')} />
       </span>
     );
   }
@@ -214,7 +195,7 @@ function MetricBadge({ itemId, metric, collapsed }: { itemId: string; metric: Me
       className={cn(
         'inline-flex shrink-0 items-center justify-center rounded-full border font-semibold tracking-wide',
         metricClasses(metric.tone),
-        collapsed ? 'h-5 min-w-5 px-1.5 text-[10px]' : 'h-6 min-w-[3.25rem] px-2 text-[10px]',
+        collapsed ? 'h-5 min-w-5 px-1.5 text-[10px]' : 'h-5 min-w-[2.5rem] px-2 text-[10px]',
       )}
     >
       {collapsed ? metric.shortLabel ?? metric.label : metric.label}
@@ -222,6 +203,9 @@ function MetricBadge({ itemId, metric, collapsed }: { itemId: string; metric: Me
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  ProviderSubNavList — flat premium module items                    */
+/* ------------------------------------------------------------------ */
 function ProviderSubNavList({ items, parentLabel, collapsed, onItemClick }: ProviderSubNavListProps) {
   const { activeSubNav, setSubNav } = useNavigationStore();
   const navTo = useNavigate();
@@ -237,7 +221,7 @@ function ProviderSubNavList({ items, parentLabel, collapsed, onItemClick }: Prov
 
   return (
     <ScrollArea className="flex-1">
-      <div ref={listRef} className={cn('space-y-2', collapsed ? 'px-2 py-3' : 'p-3')}>
+      <div ref={listRef} className={cn('space-y-1', collapsed ? 'px-1.5 py-2' : 'p-2')}>
         {items.map((item) => {
           const isActive = activeSubNav === item.id;
           const Icon = item.icon;
@@ -257,48 +241,71 @@ function ProviderSubNavList({ items, parentLabel, collapsed, onItemClick }: Prov
               aria-label={item.label}
               aria-current={isActive ? 'page' : undefined}
               className={cn(
-                'group relative w-full overflow-hidden rounded-2xl border text-left transition-all duration-300 ease-out',
-                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/60',
+                'group relative w-full overflow-hidden rounded-xl border text-left transition-all duration-200',
+                'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40',
                 collapsed
-                  ? 'flex min-h-16 flex-col items-center justify-center gap-1.5 px-2 py-2'
-                  : 'flex items-start gap-3 px-3 py-3',
+                  ? 'flex min-h-14 flex-col items-center justify-center gap-1 px-1.5 py-2'
+                  : 'flex flex-col gap-2 px-3 py-2.5',
                 isActive
-                  ? 'border-sky-400/40 bg-[linear-gradient(180deg,rgba(14,165,233,0.18)_0%,rgba(15,23,42,0.94)_46%,rgba(15,23,42,0.88)_100%)] text-white shadow-[0_18px_40px_-24px_rgba(56,189,248,0.75)]'
-                  : 'border-slate-400/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.92)_0%,rgba(15,23,42,0.82)_100%)] text-slate-100 hover:-translate-y-0.5 hover:border-sky-400/20 hover:shadow-[0_18px_32px_-24px_rgba(15,23,42,0.9)]',
+                  ? 'border-primary/30 bg-primary/8 shadow-[var(--shadow-xs)]'
+                  : 'border-border/40 bg-card hover:border-border hover:bg-card/80 hover:shadow-[var(--shadow-xs)]',
               )}
             >
-              {isActive && (
-                <span
-                  className={cn(
-                    'absolute rounded-full bg-sky-300 shadow-[0_0_16px_rgba(125,211,252,0.9)]',
-                    collapsed ? 'left-1.5 top-1.5 size-1.5' : 'left-2 top-3 h-8 w-1',
-                  )}
-                />
+              {/* Active accent line */}
+              {isActive && !collapsed && (
+                <span className="absolute left-0 top-2 bottom-2 w-[2px] rounded-r-full bg-primary" />
+              )}
+              {isActive && collapsed && (
+                <span className="absolute left-1 top-1 size-1.5 rounded-full bg-primary" />
               )}
 
-              <div
-                className={cn(
-                  'relative flex shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-sky-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]',
-                  collapsed ? 'size-10' : 'size-11',
-                )}
-              >
-                {Icon ? <Icon className={collapsed ? 'size-4' : 'size-5'} /> : <PanelLeft className={collapsed ? 'size-4' : 'size-5'} />}
-              </div>
-
+              {/* Title row */}
               {collapsed ? (
-                <MetricBadge itemId={item.id} metric={metric} collapsed />
+                <>
+                  <p className={cn(
+                    'text-[9px] font-semibold leading-tight text-center line-clamp-2',
+                    isActive ? 'text-foreground' : 'text-muted-foreground',
+                  )}>
+                    {item.label}
+                  </p>
+                  {/* Icon capsule under name */}
+                  <div className={cn(
+                    'flex items-center justify-center rounded-lg border',
+                    isActive
+                      ? 'border-primary/20 bg-primary/10 text-primary'
+                      : 'border-border/40 bg-muted/50 text-muted-foreground',
+                    'size-8',
+                  )}>
+                    {Icon ? <Icon className="size-3.5" /> : <PanelLeft className="size-3.5" />}
+                  </div>
+                  <MetricBadge itemId={item.id} metric={metric} collapsed />
+                </>
               ) : (
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-start gap-2">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold tracking-tight text-white">{item.label}</p>
-                      <p className="mt-1 text-xs leading-5 text-slate-300/80">
-                        {item.description ?? `${parentLabel} overview`}
-                      </p>
-                    </div>
+                <>
+                  <div className="flex items-start justify-between gap-2">
+                    <p className={cn(
+                      'text-[13px] font-semibold leading-tight',
+                      isActive ? 'text-foreground' : 'text-foreground/80',
+                    )}>
+                      {item.label}
+                    </p>
                     <MetricBadge itemId={item.id} metric={metric} collapsed={false} />
                   </div>
-                </div>
+                  {/* Icon capsule under name */}
+                  <div className={cn(
+                    'flex items-center justify-center rounded-lg border self-start',
+                    isActive
+                      ? 'border-primary/20 bg-primary/10 text-primary'
+                      : 'border-border/40 bg-muted/50 text-muted-foreground',
+                    'size-9',
+                  )}>
+                    {Icon ? <Icon className="size-4" /> : <PanelLeft className="size-4" />}
+                  </div>
+                  {/* Description */}
+                  <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-2">
+                    {item.description ?? `${parentLabel} overview`}
+                  </p>
+                </>
               )}
             </button>
           );
@@ -310,7 +317,7 @@ function ProviderSubNavList({ items, parentLabel, collapsed, onItemClick }: Prov
                   <TooltipTrigger asChild>{button}</TooltipTrigger>
                   <TooltipContent side="right" sideOffset={12} className="max-w-56">
                     <p className="font-semibold">{item.label}</p>
-                    <p className="mt-1 text-[11px] text-background/80">{item.description ?? `${parentLabel} overview`}</p>
+                    <p className="mt-1 text-[11px] text-muted-foreground">{item.description ?? `${parentLabel} overview`}</p>
                   </TooltipContent>
                 </Tooltip>
               ) : (
@@ -324,6 +331,9 @@ function ProviderSubNavList({ items, parentLabel, collapsed, onItemClick }: Prov
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  ProviderSubNav — flat premium contextual modules panel            */
+/* ------------------------------------------------------------------ */
 export function ProviderSubNav({ items, parentLabel }: ProviderSubNavProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
@@ -332,11 +342,9 @@ export function ProviderSubNav({ items, parentLabel }: ProviderSubNavProps) {
 
   useEffect(() => {
     if (!mobileOpen) return undefined;
-
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setMobileOpen(false);
     };
-
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [mobileOpen]);
@@ -345,21 +353,23 @@ export function ProviderSubNav({ items, parentLabel }: ProviderSubNavProps) {
 
   return (
     <>
+      {/* Desktop panel */}
       <aside
         className={cn(
-          'relative hidden shrink-0 overflow-hidden rounded-[28px] border border-sky-400/15 bg-[linear-gradient(180deg,rgba(15,23,42,0.98)_0%,rgba(15,23,42,0.92)_100%)] text-slate-100 shadow-[0_24px_60px_-32px_rgba(15,23,42,0.95)] backdrop-blur-xl transition-[width] duration-300 ease-out lg:flex lg:flex-col',
-          collapsed ? 'w-20' : 'w-72',
+          'relative hidden shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card/80 text-foreground shadow-[var(--shadow-sm)] transition-[width] duration-300 ease-out lg:flex lg:flex-col',
+          collapsed ? 'w-20' : 'w-64',
         )}
         style={PANEL_HEIGHT}
         aria-label="Provider sub navigation"
       >
-        <div className={cn('border-b border-white/8', collapsed ? 'px-2 py-3' : 'px-3 py-3.5')}>
+        {/* Header */}
+        <div className={cn('border-b border-border/60', collapsed ? 'px-1.5 py-2' : 'px-3 py-2.5')}>
           <div className={cn('flex items-start', collapsed ? 'justify-center' : 'justify-between gap-3')}>
             {!collapsed && (
               <div className="min-w-0">
-                <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200/70">Provider Subnav</p>
-                <p className="mt-2 truncate text-sm font-semibold text-white">{parentLabel}</p>
-                <p className="mt-1 text-xs text-slate-300/75">{items.length} views available</p>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Subnav</p>
+                <p className="mt-1 truncate text-[13px] font-semibold text-foreground">{parentLabel}</p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">{items.length} views</p>
               </div>
             )}
 
@@ -367,11 +377,11 @@ export function ProviderSubNav({ items, parentLabel }: ProviderSubNavProps) {
               type="button"
               variant="ghost"
               size="icon-sm"
-              className="rounded-full border border-white/8 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+              className="rounded-lg border border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={() => setCollapsed((value) => !value)}
-              aria-label={collapsed ? 'Expand provider sub navigation' : 'Collapse provider sub navigation'}
+              aria-label={collapsed ? 'Expand sub navigation' : 'Collapse sub navigation'}
             >
-              {collapsed ? <PanelLeftOpen className="size-4" /> : <PanelLeftClose className="size-4" />}
+              {collapsed ? <PanelLeftOpen className="size-3.5" /> : <PanelLeftClose className="size-3.5" />}
             </Button>
           </div>
         </div>
@@ -379,38 +389,40 @@ export function ProviderSubNav({ items, parentLabel }: ProviderSubNavProps) {
         <ProviderSubNavList items={items} parentLabel={parentLabel} collapsed={collapsed} />
       </aside>
 
+      {/* Mobile trigger */}
       <Button
         type="button"
         size="icon"
         variant="secondary"
-        className="fixed bottom-20 left-4 z-40 border border-sky-400/20 bg-slate-950/90 text-sky-100 shadow-[0_18px_40px_-24px_rgba(15,23,42,0.9)] hover:bg-slate-900 lg:hidden"
+        className="fixed bottom-20 left-4 z-40 border border-border bg-card text-foreground shadow-[var(--shadow-sm)] hover:bg-muted lg:hidden"
         onClick={() => setMobileOpen(true)}
         aria-label="Open provider sub navigation"
       >
         <PanelLeft className="size-4" />
       </Button>
 
+      {/* Mobile drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <button
             type="button"
-            className="absolute inset-0 bg-slate-950/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-black/40"
             onClick={() => setMobileOpen(false)}
             aria-label="Close provider sub navigation"
           />
 
           <aside
-            className="absolute bottom-16 left-4 top-20 flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-[28px] border border-sky-400/20 bg-[linear-gradient(180deg,rgba(15,23,42,0.98)_0%,rgba(15,23,42,0.94)_100%)] text-slate-100 shadow-2xl"
+            className="absolute bottom-16 left-4 top-20 flex w-[calc(100vw-2rem)] max-w-sm flex-col overflow-hidden rounded-xl border border-border bg-card text-foreground shadow-xl"
             aria-label="Provider section navigation"
           >
-            <div className="border-b border-white/8 px-4 py-4">
+            <div className="border-b border-border px-3 py-3">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.28em] text-sky-200/70">Provider Subnav</p>
-                  <p className="mt-2 text-base font-semibold text-white">{parentLabel}</p>
-                  <p className="mt-1 text-xs text-slate-300/80">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Provider Subnav</p>
+                  <p className="mt-1 text-sm font-semibold text-foreground">{parentLabel}</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">
                     {activeItem?.label ?? parentLabel}
-                    {activeItem?.description ? ` · ${activeItem.description}` : ''}
+                    {activeItem?.description ? ` \u00B7 ${activeItem.description}` : ''}
                   </p>
                 </div>
 
@@ -418,7 +430,7 @@ export function ProviderSubNav({ items, parentLabel }: ProviderSubNavProps) {
                   type="button"
                   variant="ghost"
                   size="icon-sm"
-                  className="rounded-full border border-white/8 bg-white/5 text-slate-200 hover:bg-white/10 hover:text-white"
+                  className="rounded-lg border border-border/60 text-muted-foreground hover:bg-muted hover:text-foreground"
                   onClick={() => setMobileOpen(false)}
                   aria-label="Close provider section navigation"
                 >

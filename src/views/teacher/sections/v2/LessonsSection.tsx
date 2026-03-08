@@ -125,13 +125,13 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
   const renderCalendar = () => (
     <div className="space-y-4" data-animate>
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" className="text-white/40" onClick={() => setWeekOffset(o => o - 1)}>
+        <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setWeekOffset(o => o - 1)}>
           <ChevronLeft className="size-4" />
         </Button>
-        <span className="text-sm font-medium text-white/60">
+        <span className="text-sm font-medium text-muted-foreground">
           {weekDates[0]?.label} — {weekDates[4]?.label}
         </span>
-        <Button variant="ghost" size="icon" className="text-white/40" onClick={() => setWeekOffset(o => o + 1)}>
+        <Button variant="ghost" size="icon" className="text-muted-foreground" onClick={() => setWeekOffset(o => o + 1)}>
           <ChevronRight className="size-4" />
         </Button>
       </div>
@@ -140,19 +140,19 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
         {weekDates.map(day => {
           const plans = lessonPlans.filter(lp => lp.date === day.iso);
           return (
-            <div key={day.iso} className="rounded-xl border border-white/6 bg-white/3 p-3 min-h-[160px]">
-              <p className="text-[11px] font-medium text-white/40 mb-2">{day.label}</p>
+            <div key={day.iso} className="rounded-xl border border-border/50 bg-card/80 p-3 min-h-[160px]">
+              <p className="text-[11px] font-medium text-muted-foreground mb-2">{day.label}</p>
               {plans.length === 0 && (
-                <p className="text-[10px] text-white/20 italic">No lessons</p>
+                <p className="text-[10px] text-muted-foreground/50 italic">No lessons</p>
               )}
               {plans.map(lp => (
                 <div
                   key={lp.id}
-                  className="mb-1.5 rounded-lg border border-white/8 bg-white/4 p-2 cursor-pointer hover:bg-white/6 transition-colors"
+                  className="mb-1.5 rounded-lg border border-border/60 bg-muted/60 p-2 cursor-pointer hover:bg-muted/80 transition-colors"
                   onClick={() => notifySuccess('Lesson plan', `Viewing: ${lp.title}`)}
                 >
-                  <p className="text-[11px] font-medium text-white/70 truncate">{lp.title}</p>
-                  <p className="text-[9px] text-white/30">{lp.className}</p>
+                  <p className="text-[11px] font-medium text-foreground/70 truncate">{lp.title}</p>
+                  <p className="text-[9px] text-muted-foreground/70">{lp.className}</p>
                   <StatusBadge status={lp.status} tone={toneMap[lp.status] ?? 'neutral'} />
                 </div>
               ))}
@@ -167,22 +167,22 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
     <GlassCard data-animate>
       <div className="flex items-center gap-2 mb-5">
         <Plus className="size-4 text-indigo-400" />
-        <h3 className="text-sm font-semibold text-white/80">New Lesson Plan</h3>
+        <h3 className="text-sm font-semibold text-foreground/80">New Lesson Plan</h3>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Title</Label>
+          <Label className="text-xs text-muted-foreground">Title</Label>
           <Input
             value={formTitle}
             onChange={e => setFormTitle(e.target.value)}
             placeholder="e.g. Introduction to Derivatives"
-            className="border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+            className="border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Class</Label>
+          <Label className="text-xs text-muted-foreground">Class</Label>
           <Select value={formClass} onValueChange={setFormClass}>
-            <SelectTrigger className="border-white/8 bg-white/4 text-white/80">
+            <SelectTrigger className="border-border/60 bg-muted/60 text-foreground/80">
               <SelectValue placeholder="Select class" />
             </SelectTrigger>
             <SelectContent>
@@ -193,36 +193,36 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
           </Select>
         </div>
         <div className="space-y-2 sm:col-span-2">
-          <Label className="text-xs text-white/50">Learning Objectives</Label>
+          <Label className="text-xs text-muted-foreground">Learning Objectives</Label>
           <Textarea
             value={formObjectives}
             onChange={e => setFormObjectives(e.target.value)}
             placeholder="Students will be able to..."
             rows={3}
-            className="border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+            className="border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Resources (comma-separated)</Label>
+          <Label className="text-xs text-muted-foreground">Resources (comma-separated)</Label>
           <Input
             value={formResources}
             onChange={e => setFormResources(e.target.value)}
             placeholder="Textbook Ch. 4, Desmos Activity"
-            className="border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+            className="border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Duration (minutes)</Label>
+          <Label className="text-xs text-muted-foreground">Duration (minutes)</Label>
           <Input
             type="number"
             value={formDuration}
             onChange={e => setFormDuration(e.target.value)}
-            className="border-white/8 bg-white/4 text-white/80"
+            className="border-border/60 bg-muted/60 text-foreground/80"
           />
         </div>
       </div>
       <div className="mt-5 flex gap-2 justify-end">
-        <Button variant="ghost" className="text-white/40 hover:text-white/60" onClick={() => setHeader('my_lessons')}>Cancel</Button>
+        <Button variant="ghost" className="text-muted-foreground hover:text-muted-foreground" onClick={() => setHeader('my_lessons')}>Cancel</Button>
         <Button className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30" onClick={() => { createLessonMut.mutate({ title: formTitle, classId: formClass, objectives: formObjectives, resources: formResources, duration: formDuration, status: 'draft' }, { onSuccess: () => { notifySuccess('Draft saved', `"${formTitle}" saved as draft`); setHeader('my_lessons'); } }); }}>
           Save as Draft
         </Button>
@@ -241,7 +241,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
             key={f}
             variant="ghost"
             size="sm"
-            className={`text-xs capitalize ${lessonFilter === f ? 'bg-white/8 text-white/80' : 'text-white/35 hover:text-white/60'}`}
+            className={`text-xs capitalize ${lessonFilter === f ? 'bg-accent/60 text-foreground/80' : 'text-muted-foreground/80 hover:text-muted-foreground'}`}
             onClick={() => setLessonFilter(f)}
           >
             {f === 'all' ? 'All Plans' : f}
@@ -261,16 +261,16 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
       ) : (
         <div className="space-y-2">
           {filteredLessons.map(lp => (
-            <GlassCard key={lp.id} className="flex items-start gap-4 hover:bg-white/4 transition-colors cursor-pointer" onClick={() => notifySuccess('Lesson plan', `Viewing: ${lp.title}`)}>
+            <GlassCard key={lp.id} className="flex items-start gap-4 hover:bg-muted/60 transition-colors cursor-pointer" onClick={() => notifySuccess('Lesson plan', `Viewing: ${lp.title}`)}>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-1">
-                  <p className="text-sm font-medium text-white/80 truncate">{lp.title}</p>
+                  <p className="text-sm font-medium text-foreground/80 truncate">{lp.title}</p>
                   <StatusBadge status={lp.status} tone={toneMap[lp.status] ?? 'neutral'} />
                 </div>
-                <p className="text-xs text-white/40">{lp.className} · {formatDateLabel(lp.date)} · {lp.duration}</p>
+                <p className="text-xs text-muted-foreground">{lp.className} · {formatDateLabel(lp.date)} · {lp.duration}</p>
                 <div className="mt-2 flex flex-wrap gap-1">
                   {lp.objectives.map((obj, i) => (
-                    <span key={i} className="rounded-full border border-white/8 bg-white/4 px-2 py-0.5 text-[10px] text-white/40">
+                    <span key={i} className="rounded-full border border-border/60 bg-muted/60 px-2 py-0.5 text-[10px] text-muted-foreground">
                       {obj}
                     </span>
                   ))}
@@ -278,7 +278,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
               </div>
               <div className="flex gap-1.5 shrink-0">
                 {lp.resources.map((r, i) => (
-                  <Badge key={i} variant="outline" className="text-[9px] border-white/10 text-white/30">{r}</Badge>
+                  <Badge key={i} variant="outline" className="text-[9px] border-border/70 text-muted-foreground/70">{r}</Badge>
                 ))}
               </div>
             </GlassCard>
@@ -292,12 +292,12 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
     <div className="space-y-4" data-animate>
       <div className="flex items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
           <Input
             value={resourceSearch}
             onChange={e => setResourceSearch(e.target.value)}
             placeholder="Search resources..."
-            className="pl-9 border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+            className="pl-9 border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
           />
         </div>
         <Button size="sm" className="bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 text-xs" onClick={() => { uploadResourceMut.mutate({ title: 'New Resource', category: activeCategory ?? 'general', type: 'file' }, { onSuccess: () => notifySuccess('Uploaded', 'Resource uploaded to library') }); }}>
@@ -313,13 +313,13 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
             className={`flex items-center gap-2.5 rounded-xl border p-3 text-left transition-all ${
               activeCategory === cat.id
                 ? 'border-indigo-500/30 bg-indigo-500/10'
-                : 'border-white/6 bg-white/3 hover:bg-white/5'
+                : 'border-border/50 bg-card/80 hover:bg-muted/70'
             }`}
           >
             <span className={cat.color}>{cat.icon}</span>
             <div>
-              <p className="text-xs font-medium text-white/70">{cat.name}</p>
-              <p className="text-[10px] text-white/30">{cat.count} items</p>
+              <p className="text-xs font-medium text-foreground/70">{cat.name}</p>
+              <p className="text-[10px] text-muted-foreground/70">{cat.count} items</p>
             </div>
           </button>
         ))}
@@ -327,13 +327,13 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
 
       <div className="space-y-2">
         {filteredResources.map(r => (
-          <div key={r.id} className="flex items-center gap-3 rounded-xl border border-white/6 bg-white/3 px-4 py-3 hover:bg-white/5 transition-colors cursor-pointer" onClick={() => notifySuccess('Resource', `Opening: ${r.name}`)}>
-            <FileText className="size-4 text-white/25 shrink-0" />
+          <div key={r.id} className="flex items-center gap-3 rounded-xl border border-border/50 bg-card/80 px-4 py-3 hover:bg-muted/70 transition-colors cursor-pointer" onClick={() => notifySuccess('Resource', `Opening: ${r.name}`)}>
+            <FileText className="size-4 text-muted-foreground/60 shrink-0" />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-white/75 truncate">{r.name}</p>
-              <p className="text-[11px] text-white/30">{r.subject} · {formatDateLabel(r.date)}</p>
+              <p className="text-sm font-medium text-foreground/70 truncate">{r.name}</p>
+              <p className="text-[11px] text-muted-foreground/70">{r.subject} · {formatDateLabel(r.date)}</p>
             </div>
-            <Badge variant="outline" className="text-[9px] border-white/10 text-white/35">{r.format}</Badge>
+            <Badge variant="outline" className="text-[9px] border-border/70 text-muted-foreground/80">{r.format}</Badge>
           </div>
         ))}
       </div>
@@ -342,14 +342,21 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
 
   const renderCurriculumMap = () => {
     const mapData = standards.length > 0
-      ? standards.map(s => ({
-          standard: s.code ?? s.id,
-          title: s.title,
-          subject: s.subject ?? 'General',
-          coverage: Math.floor(Math.random() * 100),
-          lessons: Math.floor(Math.random() * 6),
-          status: Math.random() > 0.5 ? 'covered' as const : 'in-progress' as const,
-        }))
+      ? standards.map((s, i) => {
+          // Deterministic values based on index + code length
+          const seed = (s.code ?? s.id).length + i;
+          const coverage = Math.min(95, 30 + seed * 7 % 65);
+          const lessons = 1 + seed % 5;
+          const isCovered = coverage >= 60;
+          return {
+            standard: s.code ?? s.id,
+            title: s.title,
+            subject: s.subject ?? 'General',
+            coverage,
+            lessons,
+            status: isCovered ? 'covered' as const : 'in-progress' as const,
+          };
+        })
       : curriculumMapDemo;
 
     return (
@@ -365,33 +372,33 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-white/6">
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Standard</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Title</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Subject</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Coverage</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Lessons</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Status</th>
+                <tr className="border-b border-border/50">
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Standard</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Title</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Subject</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Coverage</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Lessons</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
                 </tr>
               </thead>
               <tbody>
                 {mapData.map((row, i) => (
-                  <tr key={i} className="border-b border-white/4 last:border-0">
+                  <tr key={i} className="border-b border-border/30 last:border-0">
                     <td className="py-3 text-xs font-mono text-indigo-400">{row.standard}</td>
-                    <td className="py-3 text-xs text-white/70">{row.title}</td>
-                    <td className="py-3 text-xs text-white/40">{row.subject}</td>
+                    <td className="py-3 text-xs text-foreground/70">{row.title}</td>
+                    <td className="py-3 text-xs text-muted-foreground">{row.subject}</td>
                     <td className="py-3">
                       <div className="flex items-center gap-2">
-                        <div className="h-1.5 w-16 rounded-full bg-white/8 overflow-hidden">
+                        <div className="h-1.5 w-16 rounded-full bg-accent/60 overflow-hidden">
                           <div
                             className={`h-full rounded-full ${row.coverage >= 80 ? 'bg-emerald-400' : row.coverage >= 40 ? 'bg-amber-400' : 'bg-rose-400'}`}
                             style={{ width: `${row.coverage}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-white/40">{row.coverage}%</span>
+                        <span className="text-[10px] text-muted-foreground">{row.coverage}%</span>
                       </div>
                     </td>
-                    <td className="py-3 text-xs text-white/50">{row.lessons}</td>
+                    <td className="py-3 text-xs text-muted-foreground">{row.lessons}</td>
                     <td className="py-3">
                       <StatusBadge
                         status={row.status === 'covered' ? 'Covered' : row.status === 'in-progress' ? 'In Progress' : 'Planned'}

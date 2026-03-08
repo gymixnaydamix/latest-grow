@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useChildStagger } from '@/hooks/use-animate';
@@ -35,6 +35,9 @@ interface SidebarNavListProps {
   onSectionClick?: () => void;
 }
 
+/* ------------------------------------------------------------------ */
+/*  SidebarNavList — renders all sections as compact nav items        */
+/* ------------------------------------------------------------------ */
 function SidebarNavList({ sections, compact, onSectionClick }: SidebarNavListProps) {
   const { activeSection, setSection } = useNavigationStore();
   const listRef = useChildStagger<HTMLDivElement>([], compact ? 'animate-slide-right' : 'animate-fade-right', 30);
@@ -49,7 +52,7 @@ function SidebarNavList({ sections, compact, onSectionClick }: SidebarNavListPro
       ref={listRef}
       className={cn(
         'flex flex-1 min-h-0',
-        compact ? 'flex-col justify-evenly py-0.5 items-center px-1 lg:items-stretch lg:px-1.5' : 'flex-col gap-1 p-2',
+        compact ? 'flex-col justify-evenly py-1 items-center px-1.5 lg:items-stretch lg:px-2' : 'flex-col gap-0.5 p-2',
       )}
     >
       {sections.map((section) => {
@@ -70,34 +73,37 @@ function SidebarNavList({ sections, compact, onSectionClick }: SidebarNavListPro
             className={cn(
               'group relative flex w-full rounded-lg transition-all duration-200',
               compact
-                ? 'flex-col items-center gap-px px-0.5 py-1 lg:flex-row-reverse lg:items-center lg:gap-2.5 lg:px-2.5 lg:py-1.5'
+                ? 'flex-col items-center gap-0.5 px-1 py-1.5 lg:flex-row-reverse lg:items-center lg:gap-2 lg:px-2.5 lg:py-1.5'
                 : 'items-center gap-2 px-3 py-2',
-              isActive ? 'bg-sidebar-accent/80 shadow-sm' : 'hover:bg-sidebar-accent/40',
+              isActive
+                ? 'bg-[var(--sidebar-accent)] text-white'
+                : 'text-[var(--text-soft)] hover:bg-white/5 hover:text-sidebar-foreground',
             )}
           >
+            {/* Active indicator — thin left accent */}
             {isActive && compact && (
-              <span className="absolute right-0.5 top-0.5 lg:left-1 lg:right-auto lg:top-1 size-1 rounded-full bg-primary shadow-[0_0_6px_var(--primary)]" />
+              <span className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[2px] rounded-r-full bg-sidebar-primary lg:left-0.5" />
             )}
 
             {CustomIcon ? (
               <CustomIcon
                 className={cn(
-                  'shrink-0 drop-shadow-sm transition-transform duration-200',
+                  'shrink-0 transition-all duration-200',
                   compact
                     ? isActive
-                      ? 'size-5'
-                      : 'size-4.5 group-hover:scale-110 lg:group-hover:scale-100'
+                      ? 'size-4.5'
+                      : 'size-4 opacity-60 group-hover:opacity-100'
                     : 'size-4.5',
                 )}
               />
             ) : (
               <FallbackIcon
                 className={cn(
-                  'shrink-0 transition-transform duration-200',
+                  'shrink-0 transition-all duration-200',
                   compact
                     ? isActive
-                      ? 'size-4 text-primary'
-                      : 'size-3.5 text-muted-foreground group-hover:scale-110 lg:group-hover:scale-100'
+                      ? 'size-4 text-sidebar-primary'
+                      : 'size-3.5 text-[var(--text-soft)] group-hover:text-sidebar-foreground'
                     : 'size-4',
                 )}
               />
@@ -105,11 +111,11 @@ function SidebarNavList({ sections, compact, onSectionClick }: SidebarNavListPro
 
             <span
               className={cn(
-                'truncate font-medium leading-none',
+                'truncate font-semibold leading-none',
                 compact
-                  ? 'w-full text-center text-[6.5px] lg:text-[9px] lg:text-left lg:flex-1'
+                  ? 'w-full text-center text-[7px] tracking-wide lg:text-[10px] lg:text-left lg:flex-1'
                   : 'text-xs',
-                isActive ? 'text-sidebar-foreground' : 'text-muted-foreground group-hover:text-sidebar-foreground',
+                isActive ? 'text-white' : 'text-[var(--text-soft)] group-hover:text-sidebar-foreground',
               )}
             >
               {section.label}
@@ -132,6 +138,9 @@ function SidebarNavList({ sections, compact, onSectionClick }: SidebarNavListPro
   );
 }
 
+/* ------------------------------------------------------------------ */
+/*  RightSidebar — deep graphite/navy premium navigation rail         */
+/* ------------------------------------------------------------------ */
 export function RightSidebar({ sections }: RightSidebarProps) {
   const role = useAuthStore((s) => s.user?.role);
   const isParentV2 = role === 'PARENT' && isParentPortalV2EnabledByDefault();
@@ -158,25 +167,30 @@ export function RightSidebar({ sections }: RightSidebarProps) {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, [isProvider, providerMobileOpen]);
 
+  /* Shared sidebar surface classes — deep graphite/navy, minimal */
+  const railClasses = cn(
+    'fixed right-2 z-30 hidden lg:flex lg:flex-col lg:overflow-hidden lg:transition-all lg:duration-300',
+    'rounded-xl border border-sidebar-border bg-sidebar text-sidebar-foreground shadow-[var(--shadow-md)]',
+    'w-16 lg:w-36',
+  );
+  const railStyle = { top: 'calc(4rem + 1.25rem)', height: 'calc(100vh - 4rem - 1.75rem)' };
+
+  /* Shared mobile drawer classes */
+  const mobileDrawerClasses = cn(
+    'flex w-72 flex-col rounded-xl border border-sidebar-border bg-sidebar p-2 text-sidebar-foreground shadow-xl',
+  );
+
   if (isParentV2) {
     return (
       <>
-        <aside
-          className={cn(
-            'fixed right-2 z-30 hidden lg:flex lg:flex-col lg:overflow-hidden lg:transition-all lg:duration-300',
-            'rounded-2xl border border-sidebar-border/60 bg-white backdrop-blur-2xl backdrop-saturate-150 text-sidebar-foreground shadow-(--card-glow)',
-            'w-36',
-          )}
-          style={{ top: 'calc(4rem + 1.25rem)', height: 'calc(100vh - 4rem - 1.75rem)' }}
-          aria-label="Parent navigation"
-        >
+        <aside className={railClasses} style={railStyle} aria-label="Parent navigation">
           <SidebarNavList sections={sections} compact />
         </aside>
 
         <Button
           type="button"
           size="icon"
-          className="fixed bottom-20 right-4 z-40 rounded-full lg:hidden"
+          className="fixed bottom-20 right-4 z-40 rounded-full bg-sidebar text-sidebar-foreground border border-sidebar-border hover:bg-sidebar/90 lg:hidden"
           onClick={() => setMobileRightNavOpen(true)}
           aria-label="Open parent navigation menu"
         >
@@ -191,18 +205,16 @@ export function RightSidebar({ sections }: RightSidebarProps) {
               onClick={() => setMobileRightNavOpen(false)}
               aria-label="Close parent navigation menu"
             />
-            <aside
-              className="absolute bottom-16 right-4 top-20 flex w-72 flex-col rounded-2xl border border-sidebar-border/60 bg-white p-2 text-sidebar-foreground shadow-xl backdrop-blur-xl"
-              aria-label="Parent floating navigation"
-            >
+            <aside className={cn('absolute bottom-16 right-4 top-20', mobileDrawerClasses)} aria-label="Parent floating navigation">
               <div className="mb-2 flex items-center justify-between px-2">
-                <p className="text-sm font-semibold">Parent Navigation</p>
+                <p className="text-sm font-semibold text-sidebar-foreground">Parent Navigation</p>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={() => setMobileRightNavOpen(false)}
                   aria-label="Close floating parent navigation"
+                  className="text-sidebar-foreground hover:bg-white/10"
                 >
                   <X className="size-4" />
                 </Button>
@@ -222,22 +234,14 @@ export function RightSidebar({ sections }: RightSidebarProps) {
   if (isProvider) {
     return (
       <>
-        <aside
-          className={cn(
-            'fixed right-2 z-30 hidden lg:flex lg:flex-col lg:overflow-hidden lg:transition-all lg:duration-300',
-            'rounded-2xl border border-sidebar-border/60 bg-white backdrop-blur-2xl backdrop-saturate-150 text-sidebar-foreground shadow-(--card-glow)',
-            'w-36',
-          )}
-          style={{ top: 'calc(4rem + 1.25rem)', height: 'calc(100vh - 4rem - 1.75rem)' }}
-          aria-label="Provider navigation"
-        >
+        <aside className={railClasses} style={railStyle} aria-label="Provider navigation">
           <SidebarNavList sections={sections} compact />
         </aside>
 
         <Button
           type="button"
           size="icon"
-          className="fixed bottom-20 right-4 z-40 rounded-full lg:hidden"
+          className="fixed bottom-20 right-4 z-40 rounded-full bg-sidebar text-sidebar-foreground border border-sidebar-border hover:bg-sidebar/90 lg:hidden"
           onClick={() => setProviderMobileOpen(true)}
           aria-label="Open provider navigation menu"
         >
@@ -252,18 +256,16 @@ export function RightSidebar({ sections }: RightSidebarProps) {
               onClick={() => setProviderMobileOpen(false)}
               aria-label="Close provider navigation menu"
             />
-            <aside
-              className="absolute bottom-16 right-4 top-20 flex w-80 flex-col rounded-2xl border border-sidebar-border/60 bg-white p-2 text-sidebar-foreground shadow-xl backdrop-blur-xl"
-              aria-label="Provider floating navigation"
-            >
+            <aside className={cn('absolute bottom-16 right-4 top-20', mobileDrawerClasses)} aria-label="Provider floating navigation">
               <div className="mb-2 flex items-center justify-between px-2">
-                <p className="text-sm font-semibold">Provider Console</p>
+                <p className="text-sm font-semibold text-sidebar-foreground">Provider Console</p>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
                   onClick={() => setProviderMobileOpen(false)}
                   aria-label="Close provider floating navigation"
+                  className="text-sidebar-foreground hover:bg-white/10"
                 >
                   <X className="size-4" />
                 </Button>
@@ -280,18 +282,10 @@ export function RightSidebar({ sections }: RightSidebarProps) {
     );
   }
 
+  /* Default (student/teacher/admin etc.) */
   return (
-    <aside
-      className={cn(
-        'fixed right-2 z-30 flex flex-col overflow-hidden transition-all duration-300',
-        'rounded-2xl border border-sidebar-border/60 bg-white backdrop-blur-2xl backdrop-saturate-150 text-sidebar-foreground',
-        'shadow-(--card-glow)',
-        'w-16 lg:w-36',
-      )}
-      style={{ top: 'calc(4rem + 1.25rem)', height: 'calc(100vh - 4rem - 1.75rem)' }}
-    >
+    <aside className={railClasses} style={railStyle}>
       <SidebarNavList sections={sections} compact />
     </aside>
   );
 }
-

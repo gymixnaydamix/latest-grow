@@ -1010,6 +1010,65 @@ export const providerController = {
     }
   },
 
+  async createMacro(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const data = providerConsoleService.createMacro({
+        name: getString(req.body?.name),
+        category: getString(req.body?.category),
+        template: getString(req.body?.template),
+        actions: Array.isArray(req.body?.actions) ? req.body.actions : [],
+        actorEmail: getActorEmail(req),
+        reason: req.body?.reason,
+      });
+      res.status(201).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteMacro(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const macroId = getString(req.params.macroId);
+      if (!macroId) throw new BadRequestError('macroId is required');
+      const data = providerConsoleService.deleteMacro({
+        macroId,
+        actorEmail: getActorEmail(req),
+        reason: req.body?.reason,
+      });
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async createKbArticle(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const data = providerConsoleService.createKbArticle({
+        title: getString(req.body?.title),
+        category: getString(req.body?.category),
+        body: getString(req.body?.body),
+        actorEmail: getActorEmail(req),
+        reason: req.body?.reason,
+      });
+      res.status(201).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async sendCsatSurvey(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const data = providerConsoleService.sendCsatSurvey({
+        tenantIds: Array.isArray(req.body?.tenantIds) ? req.body.tenantIds : [],
+        actorEmail: getActorEmail(req),
+        reason: req.body?.reason,
+      });
+      res.json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
   /* ═══════════════════════════════════════════════════════════════════
    *  INCIDENTS / MAINTENANCE
    * ═══════════════════════════════════════════════════════════════════ */
@@ -1550,6 +1609,93 @@ export const providerController = {
         success: true,
         data: { id: randomUUID(), threadId: req.body?.threadId, body: req.body?.body, sentAt: new Date().toISOString() },
       });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /* ── Email Messages ── */
+
+  async listEmailMessages(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const folder = (req.query.folder as string) || 'ALL';
+      res.json({ success: true, data: providerConsoleService.listEmailMessages(folder) });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async getEmailMessage(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const messageId = getString(req.params.messageId);
+      if (!messageId) throw new BadRequestError('messageId is required');
+      const bundle = providerConsoleService.listEmailMessages('ALL') as { messages: Array<Record<string, unknown>> };
+      const message = bundle.messages.find((m) => m.id === messageId);
+      if (!message) throw new BadRequestError('Message not found');
+      res.json({ success: true, data: message });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async composeEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { to, cc, bcc, subject, body, folder } = req.body ?? {};
+      const isDraft = folder === 'DRAFTS';
+      res.status(201).json({
+        success: true,
+        data: {
+          id: randomUUID(),
+          from: 'provider@growyourneed.dev',
+          fromName: 'GrowYourNeed Support',
+          to: to ?? [],
+          cc: cc ?? [],
+          bcc: bcc ?? [],
+          subject: subject ?? '',
+          body: body ?? '',
+          folder: isDraft ? 'DRAFTS' : 'SENT',
+          isRead: true,
+          isStarred: false,
+          hasAttachments: false,
+          attachments: [],
+          labels: [],
+          replyToId: req.body?.replyToId ?? null,
+          forwardedFromId: req.body?.forwardedFromId ?? null,
+          sentAt: isDraft ? null : new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async updateEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const messageId = getString(req.params.messageId);
+      if (!messageId) throw new BadRequestError('messageId is required');
+      res.json({
+        success: true,
+        data: {
+          id: messageId,
+          isRead: req.body?.isRead,
+          isStarred: req.body?.isStarred,
+          folder: req.body?.folder,
+          labels: req.body?.labels,
+          updatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async deleteEmail(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const messageId = getString(req.params.messageId);
+      if (!messageId) throw new BadRequestError('messageId is required');
+      res.json({ success: true, data: { id: messageId, deleted: true } });
     } catch (error) {
       next(error);
     }

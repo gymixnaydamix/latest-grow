@@ -2,8 +2,8 @@
 import { useNavigationStore } from '@/store/navigation.store';
 import { useConciergeStore } from '@/store/concierge.store';
 import { useAIChat } from '@/hooks/api/use-ai';
-// useProviderHome available for todayChips when API is ready
-import { useProviderHome as _useProviderHome } from '@/hooks/api';
+// Wire provider home data for dynamic todayChips
+import { useProviderHome } from '@/hooks/api';
 import {
   ConciergeLayout, ConciergeChatView, ConciergeSearchResultsPanel,
   ConciergeHistoryTimeline, ConciergeQuickLaunchBoard, ConciergeTodayTimeline,
@@ -13,6 +13,7 @@ import {
   Database, Code2, Megaphone, Server, Search, Users, FileText,
   Settings, Lock,
 } from 'lucide-react';
+import { notifySuccess } from '@/lib/notify';
 import type { ConciergeMessage, ConciergeContextField } from '@/store/concierge.store';
 import type { TodayChip } from '@/components/concierge/shared/ConciergeTodayStrip';
 
@@ -76,50 +77,51 @@ const starterMessages: ConciergeMessage[] = [
 ];
 
 /* ── Quick actions ── */
+const nav = () => useNavigationStore.getState();
 const quickActions = [
-  { id: 'qa1', label: 'Open Tenant Control', icon: Building2 },
-  { id: 'qa2', label: 'Create/Provision School', icon: Users },
-  { id: 'qa3', label: 'Change Plan/Billing', icon: CreditCard },
-  { id: 'qa4', label: 'Resolve Support Escalation', icon: ShieldAlert },
-  { id: 'qa5', label: 'Declare Incident', icon: Siren },
-  { id: 'qa6', label: 'Launch Release', icon: Rocket },
-  { id: 'qa7', label: 'Change Feature Flag', icon: ToggleRight },
-  { id: 'qa8', label: 'Run Data Export', icon: Database },
-  { id: 'qa9', label: 'Assign Dev Task', icon: Code2 },
-  { id: 'qa10', label: 'Broadcast Tenant Notice', icon: Megaphone },
+  { id: 'qa1', label: 'Open Tenant Control', icon: Building2, onClick: () => { nav().setSection('provider_tenants'); nav().setHeader('tenants_directory'); } },
+  { id: 'qa2', label: 'Create/Provision School', icon: Users, onClick: () => { nav().setSection('provider_onboarding'); nav().setHeader('onboarding_wizard'); } },
+  { id: 'qa3', label: 'Change Plan/Billing', icon: CreditCard, onClick: () => { nav().setSection('provider_billing'); nav().setHeader('billing_plans'); } },
+  { id: 'qa4', label: 'Resolve Support Escalation', icon: ShieldAlert, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_requests_escalations'); } },
+  { id: 'qa5', label: 'Declare Incident', icon: Siren, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_incidents'); } },
+  { id: 'qa6', label: 'Launch Release', icon: Rocket, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_releases'); } },
+  { id: 'qa7', label: 'Change Feature Flag', icon: ToggleRight, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_feature_flags'); } },
+  { id: 'qa8', label: 'Run Data Export', icon: Database, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_data_ops'); } },
+  { id: 'qa9', label: 'Assign Dev Task', icon: Code2, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_dev_tasks'); } },
+  { id: 'qa10', label: 'Broadcast Tenant Notice', icon: Megaphone, onClick: () => { nav().setHeader('c_comms'); } },
 ];
 
 /* ── Quick launch sections ── */
 const launchSections = [
   { title: 'Tenant Control', actions: [
-    { id: 'l1', label: 'Open tenant dashboard', icon: Building2 },
-    { id: 'l2', label: 'Provision new school', icon: Users },
-    { id: 'l3', label: 'Suspend tenant', icon: Lock },
-    { id: 'l4', label: 'Configure modules', icon: Settings },
+    { id: 'l1', label: 'Open tenant dashboard', icon: Building2, onClick: () => { nav().setSection('provider_tenants'); nav().setHeader('tenants_directory'); } },
+    { id: 'l2', label: 'Provision new school', icon: Users, onClick: () => { nav().setSection('provider_onboarding'); nav().setHeader('onboarding_wizard'); } },
+    { id: 'l3', label: 'Suspend tenant', icon: Lock, onClick: () => { nav().setHeader('c_tenants'); nav().setSubNav('c_tenant_actions'); } },
+    { id: 'l4', label: 'Configure modules', icon: Settings, onClick: () => { nav().setSection('provider_tenants'); nav().setHeader('tenants_directory'); nav().setSubNav('tenants_profiles'); } },
   ]},
   { title: 'Platform Operations', actions: [
-    { id: 'l5', label: 'View support queue', icon: ShieldAlert },
-    { id: 'l6', label: 'Declare incident', icon: Siren },
-    { id: 'l7', label: 'Review data requests', icon: Database },
-    { id: 'l8', label: 'Run compliance audit', icon: FileText },
+    { id: 'l5', label: 'View support queue', icon: ShieldAlert, onClick: () => { nav().setHeader('c_operations'); } },
+    { id: 'l6', label: 'Declare incident', icon: Siren, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_incidents'); } },
+    { id: 'l7', label: 'Review data requests', icon: Database, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_data_ops'); } },
+    { id: 'l8', label: 'Run compliance audit', icon: FileText, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_security_compliance'); } },
   ]},
   { title: 'Billing & Commercial', actions: [
-    { id: 'l9', label: 'Change tenant plan', icon: CreditCard },
-    { id: 'l10', label: 'Review failed payments', icon: CreditCard },
-    { id: 'l11', label: 'Generate invoice batch', icon: FileText },
-    { id: 'l12', label: 'Send billing notice', icon: Megaphone },
+    { id: 'l9', label: 'Change tenant plan', icon: CreditCard, onClick: () => { nav().setSection('provider_billing'); nav().setHeader('billing_plans'); } },
+    { id: 'l10', label: 'Review failed payments', icon: CreditCard, onClick: () => { nav().setSection('provider_billing'); nav().setHeader('billing_dunning'); } },
+    { id: 'l11', label: 'Generate invoice batch', icon: FileText, onClick: () => { nav().setSection('provider_billing'); nav().setHeader('billing_invoices'); } },
+    { id: 'l12', label: 'Send billing notice', icon: Megaphone, onClick: () => { nav().setHeader('c_comms'); nav().setSubNav('c_tenant_notices'); } },
   ]},
   { title: 'Development & Release', actions: [
-    { id: 'l13', label: 'Launch release', icon: Rocket },
-    { id: 'l14', label: 'Toggle feature flag', icon: ToggleRight },
-    { id: 'l15', label: 'Check environment health', icon: Server },
-    { id: 'l16', label: 'Assign dev task', icon: Code2 },
+    { id: 'l13', label: 'Launch release', icon: Rocket, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_releases'); } },
+    { id: 'l14', label: 'Toggle feature flag', icon: ToggleRight, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_feature_flags'); } },
+    { id: 'l15', label: 'Check environment health', icon: Server, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_environments'); } },
+    { id: 'l16', label: 'Assign dev task', icon: Code2, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_dev_tasks'); } },
   ]},
   { title: 'Governance', actions: [
-    { id: 'l17', label: 'Run data export', icon: Database },
-    { id: 'l18', label: 'Process deletion request', icon: FileText },
-    { id: 'l19', label: 'Review audit trail', icon: Search },
-    { id: 'l20', label: 'Manage permissions', icon: Lock },
+    { id: 'l17', label: 'Run data export', icon: Database, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_data_ops'); } },
+    { id: 'l18', label: 'Process deletion request', icon: FileText, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_data_ops'); } },
+    { id: 'l19', label: 'Review audit trail', icon: Search, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_audit_center'); } },
+    { id: 'l20', label: 'Manage permissions', icon: Lock, onClick: () => { nav().setHeader('c_settings'); } },
   ]},
 ];
 
@@ -140,7 +142,22 @@ export function ProviderConciergeAssistant() {
   const { messages, addMessage, history } = useConciergeStore();
   const aiChat = useAIChat();
 
-  const todayChips = FALLBACK_TODAY_CHIPS;
+  const homeQuery = useProviderHome();
+  const homeData = homeQuery.data;
+
+  /* Build todayChips from live home data when available */
+  const todayChips: TodayChip[] = homeData
+    ? [
+        { id: 't1', count: homeData.tenantHealthWatchlist?.length ?? 0, label: 'Tenants need attention' },
+        { id: 't2', count: homeData.billingExceptions?.length ?? 0, label: 'Failed billing' },
+        { id: 't3', count: homeData.actionInbox?.filter((a) => (a as any).priority === 'URGENT').length ?? 0, label: 'Urgent escalations' },
+        { id: 't4', count: homeData.systemHealth?.activeIncidents ?? 0, label: 'Active incident' },
+        { id: 't5', count: homeData.onboardingPipeline?.length ?? 0, label: 'Staged releases' },
+        { id: 't6', count: homeData.actionInbox?.filter((a) => (a as any).type === 'FLAG').length ?? 0, label: 'Pending flags' },
+        { id: 't7', count: homeData.actionInbox?.filter((a) => (a as any).type === 'DATA_REQUEST').length ?? 0, label: 'Data requests' },
+        { id: 't8', count: homeData.systemHealth?.queueBacklog ?? 0, label: 'Blocked dev tasks' },
+      ].filter((c) => c.count > 0)
+    : FALLBACK_TODAY_CHIPS;
   const slashCommands = FALLBACK_SLASH_CMDS;
 
   const content = (() => {
@@ -148,7 +165,9 @@ export function ProviderConciergeAssistant() {
       case 'c_quick_actions':
         return <ConciergeQuickLaunchBoard sections={launchSections} />;
       case 'c_today':
-        return <ConciergeTodayTimeline items={todayTimelineItems} />;
+        return <ConciergeTodayTimeline items={todayTimelineItems} onAction={(id, action) => {
+          notifySuccess(`${action} triggered`, `Action "${action}" executed for item ${id}`);
+        }} />;
       case 'c_search':
         return <ConciergeSearchResultsPanel />;
       case 'c_history':
@@ -159,10 +178,10 @@ export function ProviderConciergeAssistant() {
             greeting="Good morning, Provider Admin"
             contextSummary="All Tenants · Production · 6 tenants need attention"
             suggestions={[
-              { label: 'Open tenant control', icon: Building2 },
-              { label: 'Launch release', icon: Rocket },
-              { label: 'Declare incident', icon: Siren },
-              { label: 'Toggle feature flag', icon: ToggleRight },
+              { label: 'Open tenant control', icon: Building2, onClick: () => { nav().setHeader('c_tenants'); } },
+              { label: 'Launch release', icon: Rocket, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_releases'); } },
+              { label: 'Declare incident', icon: Siren, onClick: () => { nav().setHeader('c_operations'); nav().setSubNav('c_incidents'); } },
+              { label: 'Toggle feature flag', icon: ToggleRight, onClick: () => { nav().setHeader('c_development'); nav().setSubNav('c_feature_flags'); } },
             ]}
             quickActions={quickActions}
             todayChips={todayChips}

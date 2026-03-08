@@ -15,7 +15,7 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCourses } from '@/hooks/api';
-import { useTeacherSchedule, useTeacherActionItems } from '@/hooks/api/use-teacher';
+import { useTeacherSchedule, useTeacherActionItems, useTeacherStudentAlerts, useTeacherGradingQueue } from '@/hooks/api/use-teacher';
 import { useAuthStore } from '@/store/auth.store';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course } from '@root/types';
@@ -38,6 +38,8 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
   const { data: coursesRes } = useCourses(schoolId);
   const { data: apiSchedule } = useTeacherSchedule();
   const { data: apiActionItems } = useTeacherActionItems();
+  const { data: apiStudentAlerts } = useTeacherStudentAlerts();
+  const { data: apiGradingQueue } = useTeacherGradingQueue();
   const courses: Course[] = coursesRes ?? [];
   const teacherCourses = teacherId ? courses.filter(c => c.teacherId === teacherId) : courses;
 
@@ -87,7 +89,13 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
   const apiActions = (apiActionItems as any)?.data as any[] | undefined;
   const actionItems = apiActions?.length ? apiActions : FALLBACK_actionItemsDemo;
   const urgentActions = actionItems.filter((a: any) => a.priority === 'HIGH');
-  const ungradedCount = FALLBACK_gradingQueueDemo.reduce((sum, g) => sum + g.submitted, 0);
+
+  const apiAlertsData = (apiStudentAlerts as any)?.data as typeof FALLBACK_studentAlertsDemo | undefined;
+  const studentAlerts = apiAlertsData?.length ? apiAlertsData : FALLBACK_studentAlertsDemo;
+
+  const apiGradingData = (apiGradingQueue as any)?.data as typeof FALLBACK_gradingQueueDemo | undefined;
+  const gradingQueue = apiGradingData?.length ? apiGradingData : FALLBACK_gradingQueueDemo;
+  const ungradedCount = gradingQueue.reduce((sum, g) => sum + g.submitted, 0);
 
   // Current/next period detection
   const currentPeriodIdx = schedule.findIndex(s => {
@@ -104,7 +112,7 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
     meeting: { bg: 'bg-amber-500/8', border: 'border-amber-500/20', text: 'text-amber-400', icon: <Users className="size-4" /> },
     prep: { bg: 'bg-emerald-500/8', border: 'border-emerald-500/20', text: 'text-emerald-400', icon: <Edit3 className="size-4" /> },
     duty: { bg: 'bg-orange-500/8', border: 'border-orange-500/20', text: 'text-orange-400', icon: <Star className="size-4" /> },
-    break: { bg: 'bg-white/3', border: 'border-white/6', text: 'text-white/30', icon: <Coffee className="size-4" /> },
+    break: { bg: 'bg-card/80', border: 'border-border/50', text: 'text-muted-foreground/70', icon: <Coffee className="size-4" /> },
   };
 
   const navigateTo = (section: string, header?: string) => {
@@ -131,7 +139,7 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
         <MetricCard label="Classes Today" value={classCount} accent="#818cf8" />
         <MetricCard label="Students" value={totalStudents} accent="#34d399" />
         <MetricCard label="To Grade" value={ungradedCount} accent="#f472b6" trend="down" />
-        <MetricCard label="Alerts" value={FALLBACK_studentAlertsDemo.filter(a => a.severity === 'high').length} accent="#fbbf24" />
+        <MetricCard label="Alerts" value={studentAlerts.filter(a => a.severity === 'high').length} accent="#fbbf24" />
       </div>
 
       {/* ── Main Content: Schedule + Actions ── */}
@@ -143,12 +151,12 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
             <div className="flex items-center justify-between mb-4">
               <div className="flex items-center gap-2">
                 <Calendar className="size-4 text-indigo-400" />
-                <h3 className="text-sm font-semibold text-white/80">Today&apos;s Timeline</h3>
+                <h3 className="text-sm font-semibold text-foreground/80">Today&apos;s Timeline</h3>
               </div>
               <Button
                 variant="ghost"
                 size="sm"
-                className="text-xs text-white/40 hover:text-white/60"
+                className="text-xs text-muted-foreground hover:text-muted-foreground"
                 onClick={() => navigateTo('my_classes', 'class_timetable')}
               >
                 Full timetable <ChevronRight className="ml-1 size-3" />
@@ -164,25 +172,25 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
                     className={`group relative flex items-center gap-3 rounded-xl border px-4 py-3 transition-all ${
                       isCurrent
                         ? 'border-indigo-500/40 bg-indigo-500/10 ring-1 ring-indigo-500/20'
-                        : `${style.border} ${style.bg} hover:bg-white/4`
+                        : `${style.border} ${style.bg} hover:bg-muted/60`
                     }`}
                   >
                     {isCurrent && (
                       <div className="absolute -left-0.5 top-1/2 -translate-y-1/2 h-6 w-1 rounded-full bg-indigo-400" />
                     )}
-                    <span className="w-[110px] shrink-0 text-xs font-mono text-white/35">
+                    <span className="w-[110px] shrink-0 text-xs font-mono text-muted-foreground/80">
                       {item.time} – {item.endTime}
                     </span>
                     <div className={`shrink-0 ${style.text}`}>{style.icon}</div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-white/80 truncate">{item.title}</p>
-                      {item.room && <p className="text-[11px] text-white/30">{item.room}{item.studentCount ? ` · ${item.studentCount} students` : ''}</p>}
+                      <p className="text-sm font-medium text-foreground/80 truncate">{item.title}</p>
+                      {item.room && <p className="text-[11px] text-muted-foreground/70">{item.room}{item.studentCount ? ` · ${item.studentCount} students` : ''}</p>}
                     </div>
                     {item.type === 'class' && (
                       <Button
                         variant="ghost"
                         size="sm"
-                        className="text-[10px] text-white/30 opacity-0 group-hover:opacity-100 transition-opacity"
+                        className="text-[10px] text-muted-foreground/70 opacity-0 group-hover:opacity-100 transition-opacity"
                         onClick={() => navigateTo('attendance', 'take_attendance')}
                       >
                         Attendance <ArrowRight className="ml-1 size-3" />
@@ -204,16 +212,16 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
           <GlassCard>
             <div className="flex items-center gap-2 mb-3">
               <Zap className="size-4 text-amber-400" />
-              <h3 className="text-sm font-semibold text-white/80">Action Required</h3>
+              <h3 className="text-sm font-semibold text-foreground/80">Action Required</h3>
               <Badge variant="outline" className="ml-auto text-[9px] border-amber-500/30 text-amber-400">{actionItems.length}</Badge>
             </div>
             <div className="space-y-2">
               {actionItems.slice(0, 5).map((a: any) => (
-                <div key={a.id} className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/2 p-3">
+                <div key={a.id} className="flex items-start gap-3 rounded-lg border border-border/40 bg-card/60 p-3">
                   <div className={`mt-0.5 size-2 rounded-full shrink-0 ${a.priority === 'HIGH' ? 'bg-rose-400' : a.priority === 'MEDIUM' ? 'bg-amber-400' : 'bg-emerald-400'}`} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-white/70 truncate">{a.title}</p>
-                    <p className="text-[10px] text-white/30">{a.dueBy}</p>
+                    <p className="text-xs font-medium text-foreground/70 truncate">{a.title}</p>
+                    <p className="text-[10px] text-muted-foreground/70">{a.dueBy}</p>
                   </div>
                 </div>
               ))}
@@ -224,21 +232,21 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
           <GlassCard>
             <div className="flex items-center gap-2 mb-3">
               <AlertTriangle className="size-4 text-rose-400" />
-              <h3 className="text-sm font-semibold text-white/80">Student Alerts</h3>
+              <h3 className="text-sm font-semibold text-foreground/80">Student Alerts</h3>
             </div>
             <div className="space-y-2">
-              {FALLBACK_studentAlertsDemo.slice(0, 4).map(al => (
-                <div key={al.id} className="flex items-start gap-3 rounded-lg border border-white/5 bg-white/2 p-3">
-                  <Avatar className="size-7 border border-white/10 shrink-0">
+              {studentAlerts.slice(0, 4).map(al => (
+                <div key={al.id} className="flex items-start gap-3 rounded-lg border border-border/40 bg-card/60 p-3">
+                  <Avatar className="size-7 border border-border/70 shrink-0">
                     <AvatarFallback className={`text-[9px] ${al.severity === 'high' ? 'bg-rose-500/10 text-rose-400' : al.severity === 'medium' ? 'bg-amber-500/10 text-amber-400' : 'bg-sky-500/10 text-sky-400'}`}>
                       {al.studentInitials}
                     </AvatarFallback>
                   </Avatar>
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-medium text-white/70">{al.studentName}</p>
-                    <p className="text-[10px] text-white/30 line-clamp-1">{al.alert}</p>
+                    <p className="text-xs font-medium text-foreground/70">{al.studentName}</p>
+                    <p className="text-[10px] text-muted-foreground/70 line-clamp-1">{al.alert}</p>
                   </div>
-                  <span className="text-[9px] text-white/20 shrink-0">{al.timestamp}</span>
+                  <span className="text-[9px] text-muted-foreground/50 shrink-0">{al.timestamp}</span>
                 </div>
               ))}
             </div>
@@ -251,31 +259,31 @@ export function TodaySection({ schoolId, teacherId }: TeacherSectionProps) {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <ClipboardList className="size-4 text-pink-400" />
-            <h3 className="text-sm font-semibold text-white/80">Grading Queue</h3>
-            <Badge variant="outline" className="text-[9px] border-pink-500/30 text-pink-400">{FALLBACK_gradingQueueDemo.length} items</Badge>
+            <h3 className="text-sm font-semibold text-foreground/80">Grading Queue</h3>
+            <Badge variant="outline" className="text-[9px] border-pink-500/30 text-pink-400">{gradingQueue.length} items</Badge>
           </div>
           <Button
             variant="ghost"
             size="sm"
-            className="text-xs text-white/40 hover:text-white/60"
+            className="text-xs text-muted-foreground hover:text-muted-foreground"
             onClick={() => navigateTo('gradebook', 'grade_entry')}
           >
             Open Gradebook <ChevronRight className="ml-1 size-3" />
           </Button>
         </div>
         <div className="space-y-2">
-          {FALLBACK_gradingQueueDemo.map(g => (
-            <div key={g.id} className="flex items-center gap-4 rounded-xl border border-white/5 bg-white/2 px-4 py-3">
+          {gradingQueue.map(g => (
+            <div key={g.id} className="flex items-center gap-4 rounded-xl border border-border/40 bg-card/60 px-4 py-3">
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-white/75 truncate">{g.assignment}</p>
-                <p className="text-[11px] text-white/30">{g.className} · {g.dueDate}</p>
+                <p className="text-sm font-medium text-foreground/70 truncate">{g.assignment}</p>
+                <p className="text-[11px] text-muted-foreground/70">{g.className} · {g.dueDate}</p>
               </div>
               <div className="text-right shrink-0">
-                <span className="text-sm font-semibold text-white/70">{g.submitted}/{g.total}</span>
-                <p className="text-[10px] text-white/25">submitted</p>
+                <span className="text-sm font-semibold text-foreground/70">{g.submitted}/{g.total}</span>
+                <p className="text-[10px] text-muted-foreground/60">submitted</p>
               </div>
               <Progress value={(g.submitted / g.total) * 100} className="w-20 h-1.5" />
-              <Badge variant="outline" className="text-[9px] border-white/10 text-white/40">{g.type}</Badge>
+              <Badge variant="outline" className="text-[9px] border-border/70 text-muted-foreground">{g.type}</Badge>
             </div>
           ))}
         </div>

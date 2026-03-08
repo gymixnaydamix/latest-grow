@@ -56,6 +56,7 @@ import {
   useResolveTenantMaintenanceAction,
   useBulkUpdateTenantStatus,
   useExportTenants,
+  useStartProviderDataImport,
   type TenantLifecycleEvent,
   type TenantTrialInfo,
   type TenantMaintenanceAction,
@@ -206,7 +207,7 @@ function TenantDirectoryView() {
         actions={
           <div className="flex flex-wrap gap-2">
             <select
-              className="h-7 rounded-md border border-indigo-500/30 bg-slate-800 px-2 text-xs text-slate-100"
+              className="h-7 rounded-md border border-border bg-muted px-2 text-xs text-foreground"
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
             >
@@ -217,7 +218,7 @@ function TenantDirectoryView() {
               <option value="SUSPENDED">Suspended</option>
             </select>
             <select
-              className="h-7 rounded-md border border-indigo-500/30 bg-slate-800 px-2 text-xs text-slate-100"
+              className="h-7 rounded-md border border-border bg-muted px-2 text-xs text-foreground"
               value={stageFilter}
               onChange={(e) => setStageFilter(e.target.value)}
             >
@@ -229,7 +230,7 @@ function TenantDirectoryView() {
             </select>
             {countryOptions.length > 1 && (
               <select
-                className="h-7 rounded-md border border-indigo-500/30 bg-slate-800 px-2 text-xs text-slate-100"
+                className="h-7 rounded-md border border-border bg-muted px-2 text-xs text-foreground"
                 value={countryFilter}
                 onChange={(e) => setCountryFilter(e.target.value)}
               >
@@ -238,9 +239,9 @@ function TenantDirectoryView() {
               </select>
             )}
             <div className="relative">
-              <Search className="absolute left-2 top-2 size-3 text-slate-400" />
+              <Search className="absolute left-2 top-2 size-3 text-muted-foreground" />
               <Input
-                className="h-7 w-36 border-indigo-500/30 bg-slate-800 pl-7 text-xs text-slate-100 lg:w-44"
+                className="h-7 w-36 border-border bg-muted pl-7 text-xs text-foreground lg:w-44"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Filter tenants…"
@@ -267,14 +268,14 @@ function TenantDirectoryView() {
 
       {/* KPI strip */}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
-        <StatCard label="Total Tenants" value={String(tenants.length)} sub="Schools registered" gradient="from-indigo-500/10 to-indigo-500/5" />
-        <StatCard label="Active" value={String(tenants.filter((t) => t.status === 'ACTIVE').length)} sub="Fully operational" gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="Trial" value={String(tenants.filter((t) => t.status === 'TRIAL').length)} sub="Evaluating" gradient="from-blue-500/10 to-blue-500/5" />
-        <StatCard label="Payment Due" value={String(tenants.filter((t) => t.status === 'PAYMENT_DUE').length)} sub="At risk" gradient="from-amber-500/10 to-amber-500/5" />
-        <StatCard label="Suspended" value={String(tenants.filter((t) => t.status === 'SUSPENDED').length)} sub="Needs action" gradient="from-red-500/10 to-red-500/5" />
-        <StatCard label="Health" value={`${pctHealthy}%`} sub={`${healthyCount} healthy`} gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="Total Users" value={totalUsers > 999 ? `${(totalUsers / 1000).toFixed(1)}k` : String(totalUsers)} sub="All roles" gradient="from-violet-500/10 to-violet-500/5" />
-        <StatCard label="Storage" value={`${totalStorage.toFixed(0)} GB`} sub="Used" gradient="from-sky-500/10 to-sky-500/5" />
+        <StatCard label="Total Tenants" value={String(tenants.length)} sub="Schools registered" gradient="from-indigo-500/12 via-indigo-400/6 to-transparent" borderAccent="border-indigo-500/20" />
+        <StatCard label="Active" value={String(tenants.filter((t) => t.status === 'ACTIVE').length)} sub="Fully operational" gradient="from-emerald-500/12 via-emerald-400/6 to-transparent" borderAccent="border-emerald-500/20" />
+        <StatCard label="Trial" value={String(tenants.filter((t) => t.status === 'TRIAL').length)} sub="Evaluating" gradient="from-blue-500/12 via-blue-400/6 to-transparent" borderAccent="border-blue-500/20" />
+        <StatCard label="Payment Due" value={String(tenants.filter((t) => t.status === 'PAYMENT_DUE').length)} sub="At risk" gradient="from-amber-500/12 via-amber-400/6 to-transparent" borderAccent="border-amber-500/20" />
+        <StatCard label="Suspended" value={String(tenants.filter((t) => t.status === 'SUSPENDED').length)} sub="Needs action" gradient="from-red-500/12 via-red-400/6 to-transparent" borderAccent="border-red-500/20" />
+        <StatCard label="Health" value={`${pctHealthy}%`} sub={`${healthyCount} healthy`} gradient="from-emerald-500/12 via-emerald-400/6 to-transparent" borderAccent="border-emerald-500/20" />
+        <StatCard label="Total Users" value={totalUsers > 999 ? `${(totalUsers / 1000).toFixed(1)}k` : String(totalUsers)} sub="All roles" gradient="from-violet-500/12 via-violet-400/6 to-transparent" borderAccent="border-violet-500/20" />
+        <StatCard label="Storage" value={`${totalStorage.toFixed(0)} GB`} sub="Used" gradient="from-sky-500/12 via-sky-400/6 to-transparent" borderAccent="border-sky-500/20" />
       </div>
 
       {getContent()}
@@ -328,7 +329,7 @@ function AllTenantsTable({
           type="checkbox"
           checked={selectedIds.has(t.id)}
           onChange={() => toggleSelect(t.id)}
-          className="size-3.5 rounded border-slate-500 bg-slate-800"
+          className="size-3.5 rounded border-border bg-muted"
         />
       ),
     },
@@ -337,14 +338,14 @@ function AllTenantsTable({
       label: 'Tenant',
       render: (t) => (
         <div className="min-w-0">
-          <button className="font-semibold text-slate-100 hover:text-indigo-200 truncate block" onClick={() => onOpen(t.id)}>
+          <button className="font-semibold text-foreground hover:text-primary truncate block" onClick={() => onOpen(t.id)}>
             {t.name}
           </button>
-          <p className="text-slate-400 text-[10px] flex items-center gap-1">
+          <p className="text-muted-foreground text-[10px] flex items-center gap-1">
             <Globe2 className="size-2.5" />{t.domain}
-            {t.customDomain && <span className="text-indigo-300/50">· {t.customDomain}</span>}
+            {t.customDomain && <span className="text-primary/50">· {t.customDomain}</span>}
           </p>
-          <p className="text-slate-500 text-[10px]">{t.country} · ID: {t.externalId}</p>
+          <p className="text-muted-foreground/70 text-[10px]">{t.country} · ID: {t.externalId}</p>
         </div>
       ),
       sortKey: (t) => t.name.toLowerCase(),
@@ -354,8 +355,8 @@ function AllTenantsTable({
       label: 'Plan',
       render: (t) => (
         <div>
-          <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-bold text-indigo-200 border border-indigo-500/30">{t.planCode}</span>
-          <p className="text-[10px] text-slate-400 mt-0.5">{t.onboardingStage}</p>
+          <span className="rounded bg-indigo-500/15 px-1.5 py-0.5 text-[10px] font-bold text-indigo-700 dark:text-indigo-200 border border-indigo-500/30">{t.planCode}</span>
+          <p className="text-[10px] text-muted-foreground mt-0.5">{t.onboardingStage}</p>
         </div>
       ),
       sortKey: (t) => t.planCode,
@@ -370,8 +371,8 @@ function AllTenantsTable({
             <StatusBadge status={t.status} />
             <StatusBadge status={t.health} />
           </div>
-          <p className="text-[10px] text-slate-400">
-            Billing: <span className={t.billingStatus === 'GOOD' ? 'text-emerald-300' : t.billingStatus === 'FAILED' ? 'text-red-300' : 'text-amber-300'}>{t.billingStatus}</span>
+          <p className="text-[10px] text-muted-foreground">
+            Billing: <span className={t.billingStatus === 'GOOD' ? 'text-emerald-600 dark:text-emerald-300' : t.billingStatus === 'FAILED' ? 'text-red-600 dark:text-red-300' : 'text-amber-600 dark:text-amber-300'}>{t.billingStatus}</span>
           </p>
         </div>
       ),
@@ -382,8 +383,8 @@ function AllTenantsTable({
       label: 'Admin',
       render: (t) => (
         <div>
-          <p className="text-slate-200 text-[11px]">{t.adminName}</p>
-          <p className="text-[10px] text-slate-400 flex items-center gap-1"><Mail className="size-2.5" />{t.adminEmail}</p>
+          <p className="text-foreground/90 text-[11px]">{t.adminName}</p>
+          <p className="text-[10px] text-muted-foreground flex items-center gap-1"><Mail className="size-2.5" />{t.adminEmail}</p>
         </div>
       ),
       sortKey: (t) => t.adminName.toLowerCase(),
@@ -394,8 +395,8 @@ function AllTenantsTable({
       label: 'Users',
       render: (t) => (
         <div>
-          <p className="font-semibold text-slate-100">{totalUserCount(t).toLocaleString()}</p>
-          <p className="text-[10px] text-slate-400">{t.activeStudents}S · {t.activeTeachers}T · {t.activeParents}P</p>
+          <p className="font-semibold text-foreground">{totalUserCount(t).toLocaleString()}</p>
+          <p className="text-[10px] text-muted-foreground">{t.activeStudents}S · {t.activeTeachers}T · {t.activeParents}P</p>
         </div>
       ),
       sortKey: (t) => totalUserCount(t),
@@ -406,8 +407,8 @@ function AllTenantsTable({
       label: 'Modules',
       render: (t) => (
         <div className="flex items-center gap-1">
-          <span className="rounded bg-slate-700 px-1.5 py-0.5 text-[10px] font-bold text-slate-200">{t.modules.length}</span>
-          <span className="text-[10px] text-slate-400 hidden xl:inline truncate max-w-[80px]">{t.modules.slice(0, 2).join(', ')}{t.modules.length > 2 ? '…' : ''}</span>
+          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-foreground/90">{t.modules.length}</span>
+          <span className="text-[10px] text-muted-foreground hidden xl:inline truncate max-w-[80px]">{t.modules.slice(0, 2).join(', ')}{t.modules.length > 2 ? '…' : ''}</span>
         </div>
       ),
       sortKey: (t) => t.modules.length,
@@ -420,10 +421,10 @@ function AllTenantsTable({
         const pct = storagePercent(t);
         return (
           <div className="flex items-center gap-2">
-            <div className="h-1.5 w-14 rounded-full bg-slate-700">
+            <div className="h-1.5 w-14 rounded-full bg-muted">
               <div className={`h-full rounded-full ${pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-sky-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
             </div>
-            <span className="text-[10px] text-slate-300">{t.storageUsedGb}/{t.storageLimitGb}GB</span>
+            <span className="text-[10px] text-foreground/80">{t.storageUsedGb}/{t.storageLimitGb}GB</span>
           </div>
         );
       },
@@ -434,7 +435,7 @@ function AllTenantsTable({
       key: 'lastLogin',
       label: 'Last Active',
       render: (t) => (
-        <span className="text-[10px] text-slate-400">{relativeTime(t.lastLoginAt)}</span>
+        <span className="text-[10px] text-muted-foreground">{relativeTime(t.lastLoginAt)}</span>
       ),
       sortKey: (t) => new Date(t.lastLoginAt).getTime(),
       hideOnMobile: true,
@@ -445,7 +446,7 @@ function AllTenantsTable({
       render: (t) => (
         t.incidentsOpen > 0
           ? <span className="flex items-center gap-1 text-red-300 text-[10px]"><AlertTriangle className="size-3" />{t.incidentsOpen}</span>
-          : <span className="text-[10px] text-slate-500">0</span>
+          : <span className="text-[10px] text-muted-foreground/70">0</span>
       ),
       sortKey: (t) => t.incidentsOpen,
       hideOnMobile: true,
@@ -480,7 +481,7 @@ function AllTenantsTable({
           <span className="text-xs font-semibold text-indigo-200">{selectedIds.size} selected</span>
           <Button size="sm" className="h-6 text-[10px] bg-red-500/20 text-red-100 hover:bg-red-500/30" onClick={() => handleBulkAction('SUSPENDED')}>Suspend Selected</Button>
           <Button size="sm" className="h-6 text-[10px] bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30" onClick={() => handleBulkAction('ACTIVE')}>Activate Selected</Button>
-          <Button size="sm" variant="outline" className="h-6 text-[10px] border-slate-500/30" onClick={() => setSelectedIds(new Set())}>
+          <Button size="sm" variant="outline" className="h-6 text-[10px] border-border" onClick={() => setSelectedIds(new Set())}>
             <X className="mr-0.5 size-3" />Clear
           </Button>
           {bulkUpdate.isPending && <Loader2 className="size-3 animate-spin text-indigo-300" />}
@@ -548,10 +549,10 @@ function LifecycleStatesView({
     SUSPENDED: 'border-red-500/30 bg-red-500/5',
   };
   const stateText: Record<string, string> = {
-    TRIAL: 'text-blue-300',
-    ACTIVE: 'text-emerald-300',
-    PAYMENT_DUE: 'text-amber-300',
-    SUSPENDED: 'text-red-300',
+    TRIAL: 'text-blue-700 dark:text-blue-300',
+    ACTIVE: 'text-emerald-700 dark:text-emerald-300',
+    PAYMENT_DUE: 'text-amber-700 dark:text-amber-300',
+    SUSPENDED: 'text-red-700 dark:text-red-300',
   };
   const stateIcons: Record<string, React.ElementType> = {
     TRIAL: Clock,
@@ -564,24 +565,24 @@ function LifecycleStatesView({
     <div className="space-y-3">
       {/* Lifecycle KPIs */}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-8">
-        <StatCard label="Trial" value={String(trialCount)} sub="Evaluating" gradient="from-blue-500/10 to-blue-500/5" />
-        <StatCard label="Active" value={String(activeCount)} sub="Operational" gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="Payment Due" value={String(dueCount)} sub="At risk" gradient="from-amber-500/10 to-amber-500/5" />
-        <StatCard label="Suspended" value={String(suspendedCount)} sub="Frozen" gradient="from-red-500/10 to-red-500/5" />
-        <StatCard label="Conversion" value={`${conversionRate}%`} sub="Trial → Active" gradient="from-violet-500/10 to-violet-500/5" />
-        <StatCard label="Trials Expiring" value={String(trials.filter((tr) => tr.daysRemaining <= 7).length)} sub="Within 7 days" gradient="from-orange-500/10 to-orange-500/5" />
-        <StatCard label="Transitions" value={String(events.length)} sub="Last 30 days" gradient="from-sky-500/10 to-sky-500/5" />
-        <StatCard label="Churn Risk" value={String(dueCount + suspendedCount)} sub="Needs attention" gradient="from-red-500/10 to-red-500/5" />
+        <StatCard label="Trial" value={String(trialCount)} sub="Evaluating" gradient="from-blue-500/12 via-blue-400/6 to-transparent" borderAccent="border-blue-500/20" />
+        <StatCard label="Active" value={String(activeCount)} sub="Operational" gradient="from-emerald-500/12 via-emerald-400/6 to-transparent" borderAccent="border-emerald-500/20" />
+        <StatCard label="Payment Due" value={String(dueCount)} sub="At risk" gradient="from-amber-500/12 via-amber-400/6 to-transparent" borderAccent="border-amber-500/20" />
+        <StatCard label="Suspended" value={String(suspendedCount)} sub="Frozen" gradient="from-red-500/12 via-red-400/6 to-transparent" borderAccent="border-red-500/20" />
+        <StatCard label="Conversion" value={`${conversionRate}%`} sub="Trial → Active" gradient="from-violet-500/12 via-violet-400/6 to-transparent" borderAccent="border-violet-500/20" />
+        <StatCard label="Trials Expiring" value={String(trials.filter((tr) => tr.daysRemaining <= 7).length)} sub="Within 7 days" gradient="from-orange-500/12 via-orange-400/6 to-transparent" borderAccent="border-orange-500/20" />
+        <StatCard label="Transitions" value={String(events.length)} sub="Last 30 days" gradient="from-sky-500/12 via-sky-400/6 to-transparent" borderAccent="border-sky-500/20" />
+        <StatCard label="Churn Risk" value={String(dueCount + suspendedCount)} sub="Needs attention" gradient="from-red-500/12 via-red-400/6 to-transparent" borderAccent="border-red-500/20" />
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-xl border border-slate-500/20 bg-slate-800/40 p-1">
+      <div className="flex gap-1 rounded-xl border border-border bg-muted/40 p-1">
         {(['overview', 'trials', 'transitions', 'dunning'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors capitalize ${
-              activeTab === tab ? 'bg-indigo-500/20 text-indigo-200' : 'text-slate-400 hover:text-slate-200'
+              activeTab === tab ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab}
@@ -595,27 +596,27 @@ function LifecycleStatesView({
           {Array.from(statusGroups.entries()).map(([status, group]) => {
             const Icon = stateIcons[status] ?? Activity;
             return (
-              <div key={status} className={`rounded-2xl border ${stateColors[status] ?? 'border-slate-500/20 bg-slate-900/70'} p-3`}>
+              <div key={status} className={`rounded-2xl border ${stateColors[status] ?? 'border-border bg-muted/60'} p-3`}>
                 <div className="flex items-center justify-between mb-2">
-                  <h4 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${stateText[status] ?? 'text-slate-300'}`}>
+                  <h4 className={`text-xs font-bold uppercase tracking-widest flex items-center gap-1.5 ${stateText[status] ?? 'text-foreground/80'}`}>
                     <Icon className="size-3.5" />
-                    {status.replace('_', ' ')} <span className="ml-1 text-slate-400">({group.length})</span>
+                    {status.replace('_', ' ')} <span className="ml-1 text-muted-foreground">({group.length})</span>
                   </h4>
                 </div>
                 <div className="space-y-2 max-h-[400px] overflow-y-auto">
                   {group.map((t) => (
-                    <div key={t.id} className="rounded-lg border border-slate-500/20 bg-slate-800/70 p-2.5 text-xs">
+                    <div key={t.id} className="rounded-lg border border-border/60 bg-muted/50 p-2.5 text-xs">
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
-                          <p className="font-semibold text-slate-100 truncate">{t.name}</p>
-                          <p className="text-slate-400 text-[10px]">{t.domain} · {t.planCode}</p>
-                          <p className="text-slate-500 text-[10px]">Admin: {t.adminEmail}</p>
-                          <p className="text-slate-500 text-[10px]">Users: {t.activeStudents + t.activeTeachers + t.activeParents} · Storage: {t.storageUsedGb}GB</p>
+                          <p className="font-semibold text-foreground truncate">{t.name}</p>
+                          <p className="text-muted-foreground text-[10px]">{t.domain} · {t.planCode}</p>
+                          <p className="text-muted-foreground/70 text-[10px]">Admin: {t.adminEmail}</p>
+                          <p className="text-muted-foreground/70 text-[10px]">Users: {t.activeStudents + t.activeTeachers + t.activeParents} · Storage: {t.storageUsedGb}GB</p>
                         </div>
                         <StatusBadge status={t.health} />
                       </div>
                       <div className="mt-2 flex items-center justify-between">
-                        <span className="text-[10px] text-slate-500">{relativeTime(t.lastLoginAt)}</span>
+                        <span className="text-[10px] text-muted-foreground/70">{relativeTime(t.lastLoginAt)}</span>
                         <div className="flex gap-1">
                           {status === 'TRIAL' && (
                             <Button size="sm" className="h-5 text-[10px] bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30 px-1.5" onClick={() => onStatusChange(t.id, 'ACTIVE', t.name)}>
@@ -646,7 +647,7 @@ function LifecycleStatesView({
                       </div>
                     </div>
                   ))}
-                  {group.length === 0 && <p className="text-[10px] text-slate-400 py-2">No tenants in this state.</p>}
+                  {group.length === 0 && <p className="text-[10px] text-muted-foreground py-2">No tenants in this state.</p>}
                 </div>
               </div>
             );
@@ -659,25 +660,25 @@ function LifecycleStatesView({
         <Panel title="Trial Accounts" subtitle={`${trials.length} active trials`} accentBorder="border-blue-500/20">
           <div className="space-y-2">
             {trials.length > 0 ? trials.map((trial) => {
-              const urgency = trial.daysRemaining <= 3 ? 'border-red-500/20 bg-red-500/5' : trial.daysRemaining <= 7 ? 'border-amber-500/20 bg-amber-500/5' : 'border-slate-500/20 bg-slate-800/60';
+              const urgency = trial.daysRemaining <= 3 ? 'border-red-500/20 bg-red-500/5' : trial.daysRemaining <= 7 ? 'border-amber-500/20 bg-amber-500/5' : 'border-border bg-muted/50';
               return (
                 <div key={trial.tenantId} className={`rounded-lg border ${urgency} px-3 py-2.5 text-xs`}>
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="font-semibold text-slate-100">{trial.tenantName}</p>
-                      <p className="text-slate-400 text-[10px]">{trial.domain} · {trial.planCode} · {trial.adminEmail}</p>
-                      <p className="text-slate-500 text-[10px]">{trial.activeUsers} active users · Started {new Date(trial.trialStartedAt).toLocaleDateString()}</p>
+                      <p className="font-semibold text-foreground">{trial.tenantName}</p>
+                      <p className="text-muted-foreground text-[10px]">{trial.domain} · {trial.planCode} · {trial.adminEmail}</p>
+                      <p className="text-muted-foreground/70 text-[10px]">{trial.activeUsers} active users · Started {new Date(trial.trialStartedAt).toLocaleDateString()}</p>
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
                       <div className="text-right">
                         <p className={`text-sm font-bold ${trial.daysRemaining <= 3 ? 'text-red-300' : trial.daysRemaining <= 7 ? 'text-amber-300' : 'text-blue-300'}`}>
                           {trial.daysRemaining}d left
                         </p>
-                        <p className="text-[10px] text-slate-400">Expires {new Date(trial.trialEndsAt).toLocaleDateString()}</p>
+                        <p className="text-[10px] text-muted-foreground">Expires {new Date(trial.trialEndsAt).toLocaleDateString()}</p>
                       </div>
                       <div className="text-right">
-                        <p className="text-sm font-bold text-violet-300">{Math.round(trial.conversionProbability * 100)}%</p>
-                        <p className="text-[10px] text-slate-400">Conversion</p>
+                        <p className="text-sm font-bold text-violet-600 dark:text-violet-300">{Math.round(trial.conversionProbability * 100)}%</p>
+                        <p className="text-[10px] text-muted-foreground">Conversion</p>
                       </div>
                       <Button size="sm" className="h-6 text-[10px] bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30" onClick={() => onStatusChange(trial.tenantId, 'ACTIVE', trial.tenantName)}>
                         Convert
@@ -692,8 +693,8 @@ function LifecycleStatesView({
                 <div key={t.id} className="rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2.5 text-xs">
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
-                      <p className="font-semibold text-slate-100">{t.name}</p>
-                      <p className="text-slate-400 text-[10px]">{t.domain} · {t.planCode} · {t.adminEmail}</p>
+                      <p className="font-semibold text-foreground">{t.name}</p>
+                      <p className="text-muted-foreground text-[10px]">{t.domain} · {t.planCode} · {t.adminEmail}</p>
                     </div>
                     <Button size="sm" className="h-6 text-[10px] bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30" onClick={() => onStatusChange(t.id, 'ACTIVE', t.name)}>
                       Convert to Active
@@ -714,17 +715,17 @@ function LifecycleStatesView({
         <Panel title="Lifecycle Transitions" subtitle={`${events.length} recent transitions`} accentBorder="border-indigo-500/20">
           <div className="space-y-1">
             {events.length > 0 ? events.slice(0, 50).map((evt) => (
-              <div key={evt.id} className="flex items-center gap-3 rounded-lg border border-slate-500/20 bg-slate-800/60 px-3 py-2 text-xs">
+              <div key={evt.id} className="flex items-center gap-3 rounded-lg border border-border/60 bg-muted/50 px-3 py-2 text-xs">
                 <div className="flex items-center gap-2 shrink-0">
                   <StatusBadge status={evt.fromStatus} />
-                  <ArrowRight className="size-3 text-slate-500" />
+                  <ArrowRight className="size-3 text-muted-foreground/70" />
                   <StatusBadge status={evt.toStatus} />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-semibold text-slate-100 truncate">{evt.tenantName}</p>
-                  <p className="text-slate-400 text-[10px]">By {evt.actor} · {evt.reason}</p>
+                  <p className="font-semibold text-foreground truncate">{evt.tenantName}</p>
+                  <p className="text-muted-foreground text-[10px]">By {evt.actor} · {evt.reason}</p>
                 </div>
-                <span className="text-[10px] text-slate-500 shrink-0">{relativeTime(evt.createdAt)}</span>
+                <span className="text-[10px] text-muted-foreground/70 shrink-0">{relativeTime(evt.createdAt)}</span>
               </div>
             )) : (
               <EmptyState icon={Activity} title="No Transitions" description="Lifecycle transitions will appear here as tenants change states." />
@@ -741,9 +742,9 @@ function LifecycleStatesView({
               {(statusGroups.get('PAYMENT_DUE') ?? []).map((t) => (
                 <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-amber-500/15 bg-amber-500/5 px-3 py-2 text-xs">
                   <div>
-                    <p className="font-semibold text-slate-100">{t.name}</p>
-                    <p className="text-slate-400 text-[10px]">{t.domain} · {t.planCode} · Billing: {t.billingStatus}</p>
-                    <p className="text-slate-500 text-[10px]">{t.activeStudents + t.activeTeachers + t.activeParents} users depend on this account</p>
+                    <p className="font-semibold text-foreground">{t.name}</p>
+                    <p className="text-muted-foreground text-[10px]">{t.domain} · {t.planCode} · Billing: {t.billingStatus}</p>
+                    <p className="text-muted-foreground/70 text-[10px]">{t.activeStudents + t.activeTeachers + t.activeParents} users depend on this account</p>
                   </div>
                   <div className="flex gap-1">
                     <Button size="sm" className="h-6 text-[10px] bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30" onClick={() => onStatusChange(t.id, 'ACTIVE', t.name)}>
@@ -755,7 +756,7 @@ function LifecycleStatesView({
                   </div>
                 </div>
               ))}
-              {dueCount === 0 && <p className="text-xs text-slate-400 py-2">No tenants have outstanding payments.</p>}
+              {dueCount === 0 && <p className="text-xs text-muted-foreground py-2">No tenants have outstanding payments.</p>}
             </div>
           </Panel>
           <Panel title="Suspended Accounts" subtitle={`${suspendedCount} frozen accounts`} accentBorder="border-red-500/20">
@@ -763,8 +764,8 @@ function LifecycleStatesView({
               {(statusGroups.get('SUSPENDED') ?? []).map((t) => (
                 <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-red-500/15 bg-red-500/5 px-3 py-2 text-xs">
                   <div>
-                    <p className="font-semibold text-slate-100">{t.name}</p>
-                    <p className="text-slate-400 text-[10px]">{t.domain} · Last login: {relativeTime(t.lastLoginAt)}</p>
+                    <p className="font-semibold text-foreground">{t.name}</p>
+                    <p className="text-muted-foreground text-[10px]">{t.domain} · Last login: {relativeTime(t.lastLoginAt)}</p>
                   </div>
                   <div className="flex gap-1">
                     <Button size="sm" className="h-6 text-[10px] bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30" onClick={() => onStatusChange(t.id, 'ACTIVE', t.name)}>
@@ -773,7 +774,7 @@ function LifecycleStatesView({
                   </div>
                 </div>
               ))}
-              {suspendedCount === 0 && <p className="text-xs text-slate-400 py-2">No suspended accounts.</p>}
+              {suspendedCount === 0 && <p className="text-xs text-muted-foreground py-2">No suspended accounts.</p>}
             </div>
           </Panel>
         </div>
@@ -867,7 +868,7 @@ function TenantProfileView({
                 <Button size="sm" className="h-7 bg-emerald-500/20 text-emerald-100 hover:bg-emerald-500/30 text-xs" onClick={saveEdit} disabled={updateProfile.isPending}>
                   {updateProfile.isPending ? <RefreshCw className="mr-1 size-3 animate-spin" /> : <CheckCircle2 className="mr-1 size-3" />}Save
                 </Button>
-                <Button size="sm" className="h-7 bg-slate-500/20 text-slate-100 hover:bg-slate-500/30 text-xs" onClick={() => setEditing(false)}>
+                <Button size="sm" className="h-7 bg-muted text-foreground hover:bg-muted/80 text-xs" onClick={() => setEditing(false)}>
                   <X className="mr-1 size-3" />Cancel
                 </Button>
               </div>
@@ -875,33 +876,33 @@ function TenantProfileView({
           }
         >
           <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
-            <div className="rounded-lg border border-slate-500/20 bg-slate-800/60 p-2.5">
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-1">Status</p>
+            <div className="rounded-lg border border-border/60 bg-muted/50 p-2.5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Status</p>
               <StatusBadge status={tenant.status} />
             </div>
-            <div className="rounded-lg border border-slate-500/20 bg-slate-800/60 p-2.5">
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-1">Health</p>
+            <div className="rounded-lg border border-border/60 bg-muted/50 p-2.5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Health</p>
               <StatusBadge status={tenant.health} />
             </div>
-            <div className="rounded-lg border border-slate-500/20 bg-slate-800/60 p-2.5">
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-1">Billing</p>
+            <div className="rounded-lg border border-border/60 bg-muted/50 p-2.5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Billing</p>
               <StatusBadge status={tenant.billingStatus === 'GOOD' ? 'ACTIVE' : tenant.billingStatus === 'FAILED' ? 'FAILED' : 'WARNING'} />
             </div>
-            <div className="rounded-lg border border-slate-500/20 bg-slate-800/60 p-2.5">
-              <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-1">Onboarding</p>
-              <span className="text-sm font-semibold text-slate-100">{tenant.onboardingStage}</span>
+            <div className="rounded-lg border border-border/60 bg-muted/50 p-2.5">
+              <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1">Onboarding</p>
+              <span className="text-sm font-semibold text-foreground">{tenant.onboardingStage}</span>
             </div>
           </div>
         </Panel>
 
         {/* Profile tabs */}
-        <div className="flex gap-1 rounded-xl border border-slate-500/20 bg-slate-800/40 p-1">
+        <div className="flex gap-1 rounded-xl border border-border bg-muted/40 p-1">
           {(['info', 'modules', 'security', 'technical'] as const).map((tab) => (
             <button
               key={tab}
               onClick={() => setProfileTab(tab)}
               className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors capitalize ${
-                profileTab === tab ? 'bg-indigo-500/20 text-indigo-200' : 'text-slate-400 hover:text-slate-200'
+                profileTab === tab ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
               {tab}
@@ -916,24 +917,24 @@ function TenantProfileView({
               <div className="space-y-2.5 text-xs">
                 {editing ? (
                   <>
-                    <div><Label className="text-[10px] text-slate-400 mb-1">School Name</Label><Input value={editForm.name ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} className="h-7 text-xs" /></div>
-                    <div><Label className="text-[10px] text-slate-400 mb-1">Domain</Label><Input value={editForm.domain ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, domain: e.target.value }))} className="h-7 text-xs" /></div>
-                    <div><Label className="text-[10px] text-slate-400 mb-1">Custom Domain</Label><Input value={editForm.customDomain ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, customDomain: e.target.value }))} className="h-7 text-xs" /></div>
-                    <div><Label className="text-[10px] text-slate-400 mb-1">Country</Label><Input value={editForm.country ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, country: e.target.value }))} className="h-7 text-xs" /></div>
-                    <div><Label className="text-[10px] text-slate-400 mb-1">Timezone</Label><Input value={editForm.timezone ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, timezone: e.target.value }))} className="h-7 text-xs" /></div>
-                    <div><Label className="text-[10px] text-slate-400 mb-1">Locale</Label><Input value={editForm.locale ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, locale: e.target.value }))} className="h-7 text-xs" /></div>
+                    <div><Label className="text-[10px] text-muted-foreground mb-1">School Name</Label><Input value={editForm.name ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, name: e.target.value }))} className="h-7 text-xs" /></div>
+                    <div><Label className="text-[10px] text-muted-foreground mb-1">Domain</Label><Input value={editForm.domain ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, domain: e.target.value }))} className="h-7 text-xs" /></div>
+                    <div><Label className="text-[10px] text-muted-foreground mb-1">Custom Domain</Label><Input value={editForm.customDomain ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, customDomain: e.target.value }))} className="h-7 text-xs" /></div>
+                    <div><Label className="text-[10px] text-muted-foreground mb-1">Country</Label><Input value={editForm.country ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, country: e.target.value }))} className="h-7 text-xs" /></div>
+                    <div><Label className="text-[10px] text-muted-foreground mb-1">Timezone</Label><Input value={editForm.timezone ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, timezone: e.target.value }))} className="h-7 text-xs" /></div>
+                    <div><Label className="text-[10px] text-muted-foreground mb-1">Locale</Label><Input value={editForm.locale ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, locale: e.target.value }))} className="h-7 text-xs" /></div>
                   </>
                 ) : (
                   <>
                     <ProfileRow label="School Name" value={tenant.name} />
-                    <ProfileRow label="Domain" value={tenant.domain} icon={<Globe2 className="size-3 text-slate-500" />} />
-                    <ProfileRow label="Custom Domain" value={tenant.customDomain ?? 'Not configured'} icon={<ExternalLink className="size-3 text-slate-500" />} />
-                    <ProfileRow label="Country" value={tenant.country} icon={<MapPin className="size-3 text-slate-500" />} />
-                    <ProfileRow label="Plan" value={tenant.planCode} icon={<Tag className="size-3 text-slate-500" />} />
-                    <ProfileRow label="External ID" value={tenant.externalId ?? '—'} icon={<Key className="size-3 text-slate-500" />} />
+                    <ProfileRow label="Domain" value={tenant.domain} icon={<Globe2 className="size-3 text-muted-foreground" />} />
+                    <ProfileRow label="Custom Domain" value={tenant.customDomain ?? 'Not configured'} icon={<ExternalLink className="size-3 text-muted-foreground" />} />
+                    <ProfileRow label="Country" value={tenant.country} icon={<MapPin className="size-3 text-muted-foreground" />} />
+                    <ProfileRow label="Plan" value={tenant.planCode} icon={<Tag className="size-3 text-muted-foreground" />} />
+                    <ProfileRow label="External ID" value={tenant.externalId ?? '—'} icon={<Key className="size-3 text-muted-foreground" />} />
                     {detail?.timezone && <ProfileRow label="Timezone" value={detail.timezone} />}
                     {detail?.locale && <ProfileRow label="Locale" value={detail.locale} />}
-                    {detail?.dataRegion && <ProfileRow label="Data Region" value={detail.dataRegion} icon={<Server className="size-3 text-slate-500" />} />}
+                    {detail?.dataRegion && <ProfileRow label="Data Region" value={detail.dataRegion} icon={<Server className="size-3 text-muted-foreground" />} />}
                   </>
                 )}
               </div>
@@ -941,8 +942,8 @@ function TenantProfileView({
 
             <Panel title="Contacts" accentBorder="border-indigo-500/20">
               <div className="space-y-3">
-                <div className="rounded-lg border border-slate-500/20 bg-slate-800/60 p-2.5">
-                  <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Admin Contact</p>
+                <div className="rounded-lg border border-border/60 bg-muted/50 p-2.5">
+                  <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">Admin Contact</p>
                   {editing ? (
                     <div className="space-y-2">
                       <Input value={editForm.adminName ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, adminName: e.target.value }))} placeholder="Admin name" className="h-7 text-xs" />
@@ -950,32 +951,32 @@ function TenantProfileView({
                     </div>
                   ) : (
                     <div className="text-xs space-y-1">
-                      <p className="text-slate-100 font-semibold">{tenant.adminName}</p>
-                      <p className="text-slate-300">{tenant.adminEmail}</p>
-                      <p className="text-slate-500 text-[10px]">Last login: {new Date(tenant.lastLoginAt).toLocaleString()}</p>
+                      <p className="text-foreground font-semibold">{tenant.adminName}</p>
+                      <p className="text-foreground/80">{tenant.adminEmail}</p>
+                      <p className="text-muted-foreground/70 text-[10px]">Last login: {new Date(tenant.lastLoginAt).toLocaleString()}</p>
                     </div>
                   )}
                 </div>
                 {(detail?.billingContact || editing) && (
-                  <div className="rounded-lg border border-slate-500/20 bg-slate-800/60 p-2.5">
-                    <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Billing Contact</p>
+                  <div className="rounded-lg border border-border/60 bg-muted/50 p-2.5">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">Billing Contact</p>
                     {editing ? (
                       <Input value={editForm.billingContactEmail ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, billingContactEmail: e.target.value }))} placeholder="Billing email" className="h-7 text-xs" />
                     ) : (
                       <div className="text-xs space-y-1">
-                        <p className="text-slate-100 font-semibold">{detail?.billingContact ?? '—'}</p>
+                        <p className="text-foreground font-semibold">{detail?.billingContact ?? '—'}</p>
                       </div>
                     )}
                   </div>
                 )}
                 {(detail?.technicalContact || editing) && (
-                  <div className="rounded-lg border border-slate-500/20 bg-slate-800/60 p-2.5">
-                    <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-1.5">Technical Contact</p>
+                  <div className="rounded-lg border border-border/60 bg-muted/50 p-2.5">
+                    <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">Technical Contact</p>
                     {editing ? (
                       <Input value={editForm.technicalContactEmail ?? ''} onChange={(e) => setEditForm((p) => ({ ...p, technicalContactEmail: e.target.value }))} placeholder="Tech email" className="h-7 text-xs" />
                     ) : (
                       <div className="text-xs space-y-1">
-                        <p className="text-slate-100 font-semibold">{detail?.technicalContact ?? '—'}</p>
+                        <p className="text-foreground font-semibold">{detail?.technicalContact ?? '—'}</p>
                       </div>
                     )}
                   </div>
@@ -986,9 +987,9 @@ function TenantProfileView({
             {/* User breakdown */}
             <Panel title="Users" subtitle={`${totalUsers} total`} accentBorder="border-indigo-500/20">
               <div className="grid grid-cols-3 gap-2 mb-3">
-                <StatCard label="Students" value={String(tenant.activeStudents)} gradient="from-blue-500/10 to-blue-500/5" />
-                <StatCard label="Teachers" value={String(tenant.activeTeachers)} gradient="from-violet-500/10 to-violet-500/5" />
-                <StatCard label="Parents" value={String(tenant.activeParents)} gradient="from-emerald-500/10 to-emerald-500/5" />
+                <StatCard label="Students" value={String(tenant.activeStudents)} gradient="from-blue-500/12 via-blue-400/6 to-transparent" borderAccent="border-blue-500/20" />
+                <StatCard label="Teachers" value={String(tenant.activeTeachers)} gradient="from-violet-500/12 via-violet-400/6 to-transparent" borderAccent="border-violet-500/20" />
+                <StatCard label="Parents" value={String(tenant.activeParents)} gradient="from-emerald-500/12 via-emerald-400/6 to-transparent" borderAccent="border-emerald-500/20" />
               </div>
               {totalUsers > 0 && (
                 <div className="flex h-2 rounded-full overflow-hidden gap-0.5">
@@ -1005,17 +1006,17 @@ function TenantProfileView({
                 <div className="flex items-center gap-3">
                   <HardDrive className={`size-4 ${storagePct > 90 ? 'text-red-400' : storagePct > 70 ? 'text-amber-400' : 'text-sky-400'}`} />
                   <div className="flex-1">
-                    <div className="h-3 rounded-full bg-slate-700">
+                    <div className="h-3 rounded-full bg-muted">
                       <div
                         className={`h-full rounded-full transition-all ${storagePct > 90 ? 'bg-red-500' : storagePct > 70 ? 'bg-amber-500' : 'bg-sky-500'}`}
                         style={{ width: `${storagePct}%` }}
                       />
                     </div>
                   </div>
-                  <span className={`text-sm font-bold ${storagePct > 90 ? 'text-red-300' : 'text-slate-100'}`}>{Math.round(storagePct)}%</span>
+                  <span className={`text-sm font-bold ${storagePct > 90 ? 'text-red-600 dark:text-red-300' : 'text-foreground'}`}>{Math.round(storagePct)}%</span>
                 </div>
                 {detail?.backupFrequency && (
-                  <div className="text-[10px] text-slate-400">
+                  <div className="text-[10px] text-muted-foreground">
                     Backup: {detail.backupFrequency}{detail.lastBackupAt && ` · Last: ${new Date(detail.lastBackupAt).toLocaleString()}`}
                   </div>
                 )}
@@ -1030,10 +1031,10 @@ function TenantProfileView({
                     rows={3}
                     value={editForm.notes ?? ''}
                     onChange={(e) => setEditForm((p) => ({ ...p, notes: e.target.value }))}
-                    className="w-full rounded-lg border border-slate-500/20 bg-slate-900/70 px-3 py-2 text-xs text-slate-100 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                    className="w-full rounded-lg border border-border bg-muted/80 px-3 py-2 text-xs text-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary/40"
                   />
                 ) : (
-                  <p className="text-xs text-slate-300 whitespace-pre-wrap">{detail?.notes}</p>
+                  <p className="text-xs text-foreground/80 whitespace-pre-wrap">{detail?.notes}</p>
                 )}
               </Panel>
             )}
@@ -1048,11 +1049,11 @@ function TenantProfileView({
                 const enabled = tenant.modules.includes(mod);
                 return (
                   <div key={mod} className={`flex items-center justify-between rounded-lg border px-3 py-2.5 transition-colors ${
-                    enabled ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-slate-500/20 bg-slate-800/40'
+                    enabled ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-border/60 bg-muted/40'
                   }`}>
                     <div className="flex items-center gap-2">
-                      <Database className={`size-3.5 ${enabled ? 'text-indigo-300' : 'text-slate-500'}`} />
-                      <span className={`text-xs font-semibold ${enabled ? 'text-indigo-200' : 'text-slate-400'}`}>{mod}</span>
+                      <Database className={`size-3.5 ${enabled ? 'text-indigo-600 dark:text-indigo-300' : 'text-muted-foreground'}`} />
+                      <span className={`text-xs font-semibold ${enabled ? 'text-indigo-700 dark:text-indigo-200' : 'text-muted-foreground'}`}>{mod}</span>
                     </div>
                     <Switch
                       checked={enabled}
@@ -1071,24 +1072,24 @@ function TenantProfileView({
           <div className="grid gap-3 md:grid-cols-2">
             <Panel title="Security Settings" accentBorder="border-indigo-500/20">
               <div className="space-y-3">
-                <div className="flex items-center justify-between rounded-lg border border-slate-500/20 bg-slate-800/60 p-3">
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/50 p-3">
                   <div className="flex items-center gap-2">
-                    <Shield className="size-4 text-emerald-400" />
-                    <span className="text-xs font-semibold text-slate-100">SSO Enabled</span>
+                    <Shield className="size-4 text-emerald-500 dark:text-emerald-400" />
+                    <span className="text-xs font-semibold text-foreground">SSO Enabled</span>
                   </div>
                   <StatusBadge status={detail?.ssoEnabled ? 'ACTIVE' : 'DISABLED'} />
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-slate-500/20 bg-slate-800/60 p-3">
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/50 p-3">
                   <div className="flex items-center gap-2">
-                    <Key className="size-4 text-violet-400" />
-                    <span className="text-xs font-semibold text-slate-100">MFA Enforced</span>
+                    <Key className="size-4 text-violet-500 dark:text-violet-400" />
+                    <span className="text-xs font-semibold text-foreground">MFA Enforced</span>
                   </div>
                   <StatusBadge status={detail?.mfaEnforced ? 'ACTIVE' : 'DISABLED'} />
                 </div>
-                <div className="flex items-center justify-between rounded-lg border border-slate-500/20 bg-slate-800/60 p-3">
+                <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/50 p-3">
                   <div className="flex items-center gap-2">
-                    <Globe2 className="size-4 text-sky-400" />
-                    <span className="text-xs font-semibold text-slate-100">API Access</span>
+                    <Globe2 className="size-4 text-sky-500 dark:text-sky-400" />
+                    <span className="text-xs font-semibold text-foreground">API Access</span>
                   </div>
                   <StatusBadge status={detail?.apiAccess ? 'ACTIVE' : 'DISABLED'} />
                 </div>
@@ -1098,7 +1099,7 @@ function TenantProfileView({
             <Panel title="Access & Compliance" accentBorder="border-indigo-500/20">
               <div className="space-y-2.5 text-xs">
                 <ProfileRow label="SLA Level" value={detail?.slaLevel ?? '—'} />
-                <ProfileRow label="Data Region" value={detail?.dataRegion ?? '—'} icon={<Server className="size-3 text-slate-500" />} />
+                <ProfileRow label="Data Region" value={detail?.dataRegion ?? '—'} icon={<Server className="size-3 text-muted-foreground" />} />
                 <ProfileRow label="Custom Branding" value={detail?.customBranding ? 'Enabled' : 'Disabled'} />
                 <ProfileRow label="Open Incidents" value={String(tenant.incidentsOpen)} />
               </div>
@@ -1111,10 +1112,10 @@ function TenantProfileView({
           <div className="grid gap-3 md:grid-cols-2">
             <Panel title="Technical Details" accentBorder="border-indigo-500/20">
               <div className="space-y-2.5 text-xs">
-                <ProfileRow label="Tenant ID" value={tenant.id} icon={<Copy className="size-3 text-slate-500 cursor-pointer hover:text-slate-300" />} />
+                <ProfileRow label="Tenant ID" value={tenant.id} icon={<Copy className="size-3 text-muted-foreground cursor-pointer hover:text-foreground" />} />
                 <ProfileRow label="External ID" value={tenant.externalId ?? '—'} />
-                <ProfileRow label="Domain" value={tenant.domain} icon={<Globe2 className="size-3 text-slate-500" />} />
-                {tenant.customDomain && <ProfileRow label="Custom Domain" value={tenant.customDomain} icon={<ExternalLink className="size-3 text-slate-500" />} />}
+                <ProfileRow label="Domain" value={tenant.domain} icon={<Globe2 className="size-3 text-muted-foreground" />} />
+                {tenant.customDomain && <ProfileRow label="Custom Domain" value={tenant.customDomain} icon={<ExternalLink className="size-3 text-muted-foreground" />} />}
                 <ProfileRow label="Timezone" value={detail?.timezone ?? '—'} />
                 <ProfileRow label="Locale" value={detail?.locale ?? '—'} />
               </div>
@@ -1122,10 +1123,10 @@ function TenantProfileView({
 
             <Panel title="Infrastructure" accentBorder="border-indigo-500/20">
               <div className="space-y-2.5 text-xs">
-                <ProfileRow label="Data Region" value={detail?.dataRegion ?? '—'} icon={<Server className="size-3 text-slate-500" />} />
+                <ProfileRow label="Data Region" value={detail?.dataRegion ?? '—'} icon={<Server className="size-3 text-muted-foreground" />} />
                 <ProfileRow label="Backup Frequency" value={detail?.backupFrequency ?? '—'} />
                 <ProfileRow label="Last Backup" value={detail?.lastBackupAt ? new Date(detail.lastBackupAt).toLocaleString() : '—'} />
-                <ProfileRow label="Storage" value={`${tenant.storageUsedGb} / ${tenant.storageLimitGb} GB`} icon={<HardDrive className="size-3 text-slate-500" />} />
+                <ProfileRow label="Storage" value={`${tenant.storageUsedGb} / ${tenant.storageLimitGb} GB`} icon={<HardDrive className="size-3 text-muted-foreground" />} />
               </div>
             </Panel>
 
@@ -1133,7 +1134,7 @@ function TenantProfileView({
               <Panel title="Tags" accentBorder="border-indigo-500/20" className="md:col-span-2">
                 <div className="flex flex-wrap gap-1.5">
                   {detail.tags.map((tag: string) => (
-                    <span key={tag} className="rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-[10px] text-indigo-200 border border-indigo-500/30">{tag}</span>
+                    <span key={tag} className="rounded-full bg-indigo-500/15 px-2.5 py-0.5 text-[10px] text-indigo-700 dark:text-indigo-200 border border-indigo-500/30">{tag}</span>
                   ))}
                 </div>
               </Panel>
@@ -1149,8 +1150,8 @@ function TenantProfileView({
 function ProfileRow({ label, value, icon }: { label: string; value: string; icon?: React.ReactNode }) {
   return (
     <div className="flex items-center justify-between gap-2">
-      <span className="text-slate-400 flex items-center gap-1.5">{label}</span>
-      <span className="text-slate-100 flex items-center gap-1.5 text-right font-medium truncate max-w-[60%]">{value}{icon}</span>
+      <span className="text-muted-foreground flex items-center gap-1.5">{label}</span>
+      <span className="text-foreground flex items-center gap-1.5 text-right font-medium truncate max-w-[60%]">{value}{icon}</span>
     </div>
   );
 }
@@ -1161,7 +1162,7 @@ function TenantSidebar({ tenants, selectedId, onSelect }: { tenants: TenantRecor
   const filteredSidebar = tenants.filter((t) => t.name.toLowerCase().includes(sidebarSearch.toLowerCase()) || t.domain.toLowerCase().includes(sidebarSearch.toLowerCase()));
 
   return (
-    <div className="rounded-2xl border border-slate-500/20 bg-slate-900/70 p-2 h-fit max-h-[calc(100vh-200px)] overflow-hidden flex flex-col">
+    <div className="rounded-2xl border border-border bg-card p-2 h-fit max-h-[calc(100vh-200px)] overflow-hidden flex flex-col">
       <Input placeholder="Filter tenants…" value={sidebarSearch} onChange={(e) => setSidebarSearch(e.target.value)} className="h-7 text-xs mb-2" />
       <div className="overflow-y-auto space-y-0.5 flex-1">
         {filteredSidebar.map((t) => (
@@ -1170,18 +1171,18 @@ function TenantSidebar({ tenants, selectedId, onSelect }: { tenants: TenantRecor
             onClick={() => onSelect(t.id)}
             className={`w-full text-left rounded-lg px-2.5 py-2 text-xs transition-colors ${
               t.id === selectedId
-                ? 'bg-indigo-500/15 border border-indigo-500/30 text-indigo-100'
-                : 'hover:bg-slate-800/70 text-slate-300 border border-transparent'
+                ? 'bg-primary/10 border border-primary/30 text-primary'
+                : 'hover:bg-muted/60 text-foreground/80 border border-transparent'
             }`}
           >
             <p className="font-semibold truncate">{t.name}</p>
             <div className="flex items-center gap-1.5 mt-0.5">
               <StatusBadge status={t.status} />
-              <span className="text-[10px] text-slate-500 truncate">{t.domain}</span>
+              <span className="text-[10px] text-muted-foreground truncate">{t.domain}</span>
             </div>
           </button>
         ))}
-        {filteredSidebar.length === 0 && <p className="text-[10px] text-slate-400 p-2 text-center">No tenants found.</p>}
+        {filteredSidebar.length === 0 && <p className="text-[10px] text-muted-foreground p-2 text-center">No tenants found.</p>}
       </div>
     </div>
   );
@@ -1228,10 +1229,10 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
   };
 
   const priorityColors: Record<string, string> = {
-    CRITICAL: 'border-red-500/30 bg-red-500/5 text-red-200',
-    HIGH: 'border-orange-500/30 bg-orange-500/5 text-orange-200',
-    NORMAL: 'border-amber-500/30 bg-amber-500/5 text-amber-200',
-    LOW: 'border-blue-500/30 bg-blue-500/5 text-blue-200',
+    CRITICAL: 'border-red-500/30 bg-red-500/5 text-red-700 dark:text-red-300',
+    HIGH: 'border-orange-500/30 bg-orange-500/5 text-orange-700 dark:text-orange-300',
+    NORMAL: 'border-amber-500/30 bg-amber-500/5 text-amber-700 dark:text-amber-300',
+    LOW: 'border-blue-500/30 bg-blue-500/5 text-blue-700 dark:text-blue-300',
   };
   const actionTypes: TenantMaintenanceAction['actionType'][] = ['HEALTH_CHECK', 'DATA_REPAIR', 'STORAGE_CLEANUP', 'CERTIFICATE_RENEWAL', 'BACKUP_RESTORE', 'DNS_UPDATE', 'MODULE_PATCH', 'ESCALATION'];
   const priorities: TenantMaintenanceAction['priority'][] = ['CRITICAL', 'HIGH', 'NORMAL', 'LOW'];
@@ -1240,22 +1241,22 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
     <div className="space-y-3">
       {/* Maintenance KPIs */}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-6">
-        <StatCard label="Critical" value={String(criticalTenants.length)} sub="Immediate attention" gradient="from-red-500/10 to-red-500/5" />
-        <StatCard label="Warnings" value={String(warningTenants.length)} sub="Monitoring" gradient="from-amber-500/10 to-amber-500/5" />
-        <StatCard label="Pending" value={String(pendingActions.length)} sub="Active tasks" gradient="from-orange-500/10 to-orange-500/5" />
-        <StatCard label="Failed" value={String(failedActions.length)} sub="Needs review" gradient="from-sky-500/10 to-sky-500/5" />
-        <StatCard label="Completed" value={String(completedActions.length)} sub="Resolved" gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="Total Open" value={String(tenants.reduce((sum, t) => sum + t.incidentsOpen, 0))} sub="Incidents" gradient="from-violet-500/10 to-violet-500/5" />
+        <StatCard label="Critical" value={String(criticalTenants.length)} sub="Immediate attention" gradient="from-red-500/12 via-red-400/6 to-transparent" borderAccent="border-red-500/20" />
+        <StatCard label="Warnings" value={String(warningTenants.length)} sub="Monitoring" gradient="from-amber-500/12 via-amber-400/6 to-transparent" borderAccent="border-amber-500/20" />
+        <StatCard label="Pending" value={String(pendingActions.length)} sub="Active tasks" gradient="from-orange-500/12 via-orange-400/6 to-transparent" borderAccent="border-orange-500/20" />
+        <StatCard label="Failed" value={String(failedActions.length)} sub="Needs review" gradient="from-sky-500/12 via-sky-400/6 to-transparent" borderAccent="border-sky-500/20" />
+        <StatCard label="Completed" value={String(completedActions.length)} sub="Resolved" gradient="from-emerald-500/12 via-emerald-400/6 to-transparent" borderAccent="border-emerald-500/20" />
+        <StatCard label="Total Open" value={String(tenants.reduce((sum, t) => sum + t.incidentsOpen, 0))} sub="Incidents" gradient="from-violet-500/12 via-violet-400/6 to-transparent" borderAccent="border-violet-500/20" />
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-xl border border-slate-500/20 bg-slate-800/40 p-1">
+      <div className="flex gap-1 rounded-xl border border-border bg-muted/40 p-1">
         {(['overview', 'actions', 'create'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setMaintTab(tab)}
             className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors capitalize ${
-              maintTab === tab ? 'bg-indigo-500/20 text-indigo-200' : 'text-slate-400 hover:text-slate-200'
+              maintTab === tab ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab === 'create' ? 'New Action' : tab}
@@ -1269,11 +1270,11 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
           <Panel title="Critical & Incident Tenants" subtitle={`${criticalTenants.length} tenants need immediate attention`} accentBorder="border-red-500/20">
             <div className="space-y-2">
               {criticalTenants.map((t) => (
-                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-red-500/15 bg-slate-800/60 px-3 py-2.5 text-xs gap-2">
+                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-red-500/15 bg-muted/50 px-3 py-2.5 text-xs gap-2">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-100">{t.name}</p>
-                    <p className="text-slate-400">{t.domain} · {t.planCode}</p>
-                    <p className="text-slate-500 text-[10px]">{t.incidentsOpen} open incident{t.incidentsOpen !== 1 ? 's' : ''} · Health: {t.health} · Last login: {relativeTime(t.lastLoginAt)}</p>
+                    <p className="font-semibold text-foreground">{t.name}</p>
+                    <p className="text-muted-foreground">{t.domain} · {t.planCode}</p>
+                    <p className="text-muted-foreground/70 text-[10px]">{t.incidentsOpen} open incident{t.incidentsOpen !== 1 ? 's' : ''} · Health: {t.health} · Last login: {relativeTime(t.lastLoginAt)}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <StatusBadge status={t.health} />
@@ -1295,10 +1296,10 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
           <Panel title="Warning State" subtitle={`${warningTenants.length} tenants with warnings`} accentBorder="border-amber-500/20">
             <div className="space-y-2">
               {warningTenants.map((t) => (
-                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-amber-500/15 bg-slate-800/60 px-3 py-2 text-xs gap-2">
+                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between rounded-lg border border-amber-500/15 bg-muted/50 px-3 py-2 text-xs gap-2">
                   <div>
-                    <p className="font-semibold text-slate-100">{t.name}</p>
-                    <p className="text-slate-400">{t.planCode} · Storage: {t.storageUsedGb}/{t.storageLimitGb} GB · Users: {t.activeStudents + t.activeTeachers + t.activeParents}</p>
+                    <p className="font-semibold text-foreground">{t.name}</p>
+                    <p className="text-muted-foreground">{t.planCode} · Storage: {t.storageUsedGb}/{t.storageLimitGb} GB · Users: {t.activeStudents + t.activeTeachers + t.activeParents}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <StatusBadge status="WARNING" />
@@ -1312,7 +1313,7 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
                   </div>
                 </div>
               ))}
-              {warningTenants.length === 0 && <p className="text-xs text-slate-400 py-2">No warnings.</p>}
+              {warningTenants.length === 0 && <p className="text-xs text-muted-foreground py-2">No warnings.</p>}
             </div>
           </Panel>
         </div>
@@ -1325,17 +1326,17 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
             <Panel title="Active / Pending" subtitle={`${pendingActions.length} actions in progress`} accentBorder="border-orange-500/20">
               <div className="space-y-2">
                 {pendingActions.map((action) => (
-                  <div key={action.id} className={`rounded-lg border ${priorityColors[action.priority] ?? 'border-slate-500/20'} px-3 py-2.5 text-xs`}>
+                  <div key={action.id} className={`rounded-lg border ${priorityColors[action.priority] ?? 'border-border'} px-3 py-2.5 text-xs`}>
                     <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-2">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="font-bold text-slate-100">{action.actionType.replace(/_/g, ' ')}</span>
+                          <span className="font-bold text-foreground">{action.actionType.replace(/_/g, ' ')}</span>
                           <StatusBadge status={action.priority} />
                           <StatusBadge status={action.status} />
                         </div>
-                        <p className="text-slate-300">{action.tenantName}</p>
-                        <p className="text-slate-400 mt-0.5">{action.description}</p>
-                        {action.assignedTo && <p className="text-slate-500 text-[10px] mt-0.5">Assigned: {action.assignedTo} · Created: {relativeTime(action.createdAt)}</p>}
+                        <p className="text-foreground/80">{action.tenantName}</p>
+                        <p className="text-muted-foreground mt-0.5">{action.description}</p>
+                        {action.assignedTo && <p className="text-muted-foreground/70 text-[10px] mt-0.5">Assigned: {action.assignedTo} · Created: {relativeTime(action.createdAt)}</p>}
                       </div>
                       <div className="flex flex-col gap-1 shrink-0 items-end">
                         <Input
@@ -1364,15 +1365,15 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
             <Panel title="Failed Actions" subtitle={`${failedActions.length} actions need review`} accentBorder="border-red-500/20">
               <div className="space-y-2">
                 {failedActions.map((action) => (
-                  <div key={action.id} className="rounded-lg border border-red-500/15 bg-slate-800/60 px-3 py-2.5 text-xs">
+                  <div key={action.id} className="rounded-lg border border-red-500/15 bg-muted/50 px-3 py-2.5 text-xs">
                     <div className="flex items-center gap-2 mb-1">
-                      <XCircle className="size-3 text-red-400" />
-                      <span className="font-bold text-slate-100">{action.actionType.replace(/_/g, ' ')}</span>
+                      <XCircle className="size-3 text-red-500 dark:text-red-400" />
+                      <span className="font-bold text-foreground">{action.actionType.replace(/_/g, ' ')}</span>
                       <StatusBadge status={action.priority} />
                       <StatusBadge status="FAILED" />
                     </div>
-                    <p className="text-slate-300">{action.tenantName} — {action.description}</p>
-                    <p className="text-red-300 text-[10px] mt-0.5">Created: {relativeTime(action.createdAt)}</p>
+                    <p className="text-foreground/80">{action.tenantName} — {action.description}</p>
+                    <p className="text-red-600 dark:text-red-300 text-[10px] mt-0.5">Created: {relativeTime(action.createdAt)}</p>
                   </div>
                 ))}
               </div>
@@ -1383,14 +1384,14 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
             <Panel title="Recently Completed" subtitle={`${completedActions.length} resolved actions`} accentBorder="border-emerald-500/20">
               <div className="space-y-2">
                 {completedActions.slice(0, 20).map((action) => (
-                  <div key={action.id} className="rounded-lg border border-emerald-500/15 bg-slate-800/40 px-3 py-2 text-xs opacity-80">
+                  <div key={action.id} className="rounded-lg border border-emerald-500/15 bg-muted/40 px-3 py-2 text-xs opacity-80">
                     <div className="flex items-center gap-2">
-                      <CheckCircle2 className="size-3 text-emerald-400" />
-                      <span className="font-semibold text-slate-200">{action.actionType.replace(/_/g, ' ')}</span>
-                      <span className="text-slate-400">— {action.tenantName}</span>
-                      {action.completedAt && <span className="text-slate-500 ml-auto text-[10px]">{relativeTime(action.completedAt)}</span>}
+                      <CheckCircle2 className="size-3 text-emerald-500 dark:text-emerald-400" />
+                      <span className="font-semibold text-foreground/90">{action.actionType.replace(/_/g, ' ')}</span>
+                      <span className="text-muted-foreground">— {action.tenantName}</span>
+                      {action.completedAt && <span className="text-muted-foreground/70 ml-auto text-[10px]">{relativeTime(action.completedAt)}</span>}
                     </div>
-                    {action.resolution && <p className="text-slate-400 text-[10px] mt-0.5 ml-5">Resolution: {action.resolution}</p>}
+                    {action.resolution && <p className="text-muted-foreground text-[10px] mt-0.5 ml-5">Resolution: {action.resolution}</p>}
                   </div>
                 ))}
               </div>
@@ -1406,11 +1407,11 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
         <Panel title="New Maintenance Action" subtitle="Schedule a service operation for a tenant" accentBorder="border-indigo-500/20">
           <div className="grid gap-3 md:grid-cols-2 max-w-3xl">
             <div>
-              <Label className="text-[10px] text-slate-400 mb-1 block">Tenant *</Label>
+              <Label className="text-[10px] text-muted-foreground mb-1 block">Tenant *</Label>
               <select
                 value={newAction.tenantId}
                 onChange={(e) => setNewAction((n) => ({ ...n, tenantId: e.target.value }))}
-                className="w-full h-8 rounded-lg border border-slate-500/20 bg-slate-900/70 px-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                className="w-full h-8 rounded-lg border border-border bg-muted/80 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               >
                 <option value="">Select tenant…</option>
                 {tenants.map((t) => (
@@ -1420,11 +1421,11 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
             </div>
 
             <div>
-              <Label className="text-[10px] text-slate-400 mb-1 block">Action Type *</Label>
+              <Label className="text-[10px] text-muted-foreground mb-1 block">Action Type *</Label>
               <select
                 value={newAction.actionType}
                 onChange={(e) => setNewAction((n) => ({ ...n, actionType: e.target.value as TenantMaintenanceAction['actionType'] }))}
-                className="w-full h-8 rounded-lg border border-slate-500/20 bg-slate-900/70 px-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                className="w-full h-8 rounded-lg border border-border bg-muted/80 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               >
                 {actionTypes.map((at) => (
                   <option key={at} value={at}>{at.replace(/_/g, ' ')}</option>
@@ -1433,11 +1434,11 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
             </div>
 
             <div>
-              <Label className="text-[10px] text-slate-400 mb-1 block">Priority</Label>
+              <Label className="text-[10px] text-muted-foreground mb-1 block">Priority</Label>
               <select
                 value={newAction.priority}
                 onChange={(e) => setNewAction((n) => ({ ...n, priority: e.target.value as TenantMaintenanceAction['priority'] }))}
-                className="w-full h-8 rounded-lg border border-slate-500/20 bg-slate-900/70 px-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                className="w-full h-8 rounded-lg border border-border bg-muted/80 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               >
                 {priorities.map((p) => (
                   <option key={p} value={p}>{p}</option>
@@ -1446,7 +1447,7 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
             </div>
 
             <div>
-              <Label className="text-[10px] text-slate-400 mb-1 block">Schedule (optional)</Label>
+              <Label className="text-[10px] text-muted-foreground mb-1 block">Schedule (optional)</Label>
               <Input
                 type="datetime-local"
                 value={newAction.scheduledAt}
@@ -1456,12 +1457,12 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
             </div>
 
             <div className="md:col-span-2">
-              <Label className="text-[10px] text-slate-400 mb-1 block">Description *</Label>
+              <Label className="text-[10px] text-muted-foreground mb-1 block">Description *</Label>
               <textarea
                 rows={3}
                 value={newAction.description}
                 onChange={(e) => setNewAction((n) => ({ ...n, description: e.target.value }))}
-                className="w-full rounded-lg border border-slate-500/20 bg-slate-900/70 px-3 py-2 text-xs text-slate-100 resize-none focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                className="w-full rounded-lg border border-border bg-muted/80 px-3 py-2 text-xs text-foreground resize-none focus:outline-none focus:ring-1 focus:ring-primary/40"
                 placeholder="Describe the maintenance action…"
               />
             </div>
@@ -1475,7 +1476,7 @@ function MaintenanceView({ tenants }: { tenants: TenantRecord[] }) {
                 {createAction.isPending ? <RefreshCw className="mr-1 size-3 animate-spin" /> : <Wrench className="mr-1 size-3" />}
                 Create Action
               </Button>
-              <Button className="h-8 bg-slate-500/20 text-slate-100 hover:bg-slate-500/30 text-xs" onClick={() => setMaintTab('overview')}>
+              <Button className="h-8 bg-muted text-foreground hover:bg-muted/80 text-xs" onClick={() => setMaintTab('overview')}>
                 Cancel
               </Button>
             </div>
@@ -1495,6 +1496,7 @@ function BulkActionsView() {
   const tenants = (tenantsQuery.data ?? []) as TenantRecord[];
   const bulkUpdate = useBulkUpdateTenantStatus();
   const exportMutation = useExportTenants();
+  const importMutation = useStartProviderDataImport();
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [filterStatus, setFilterStatus] = useState<string>('ALL');
   const [targetStatus, setTargetStatus] = useState<string>('ACTIVE');
@@ -1522,9 +1524,21 @@ function BulkActionsView() {
         <Panel title="Bulk Import" accentBorder="border-indigo-500/20">
           <div className="flex flex-col items-center gap-3 py-4">
             <Upload className="size-8 text-indigo-400" />
-            <p className="text-xs text-slate-400">Upload CSV to create multiple tenants</p>
-            <Button size="sm" className="h-8 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/30">
-              <Upload className="mr-1 size-3" />Upload CSV
+            <p className="text-xs text-muted-foreground">Upload CSV to create multiple tenants</p>
+            <Button size="sm" className="h-8 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/30" disabled={importMutation.isPending} onClick={() => {
+              const input = document.createElement('input');
+              input.type = 'file';
+              input.accept = '.csv';
+              input.onchange = () => {
+                const file = input.files?.[0];
+                if (!file) return;
+                const reason = reasonPrompt('Bulk import tenants from CSV');
+                if (!reason) return;
+                importMutation.mutate({ type: 'CSV', config: { fileName: file.name, size: file.size }, reason });
+              };
+              input.click();
+            }}>
+              {importMutation.isPending ? <RefreshCw className="mr-1 size-3 animate-spin" /> : <Upload className="mr-1 size-3" />}Upload CSV
             </Button>
           </div>
         </Panel>
@@ -1532,7 +1546,7 @@ function BulkActionsView() {
         <Panel title="Bulk Export" accentBorder="border-indigo-500/20">
           <div className="flex flex-col items-center gap-3 py-4">
             <Download className="size-8 text-indigo-400" />
-            <p className="text-xs text-slate-400">Export tenant data to CSV/JSON</p>
+            <p className="text-xs text-muted-foreground">Export tenant data to CSV/JSON</p>
             <div className="flex gap-1.5">
               <Button size="sm" className="h-8 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/30" onClick={() => exportMutation.mutate({ format: 'CSV' })} disabled={exportMutation.isPending}>
                 {exportMutation.isPending ? <RefreshCw className="mr-1 size-3 animate-spin" /> : <Download className="mr-1 size-3" />}CSV
@@ -1547,12 +1561,12 @@ function BulkActionsView() {
         <Panel title="Bulk Status Change" accentBorder="border-indigo-500/20">
           <div className="flex flex-col items-center gap-3 py-4">
             <Filter className="size-8 text-indigo-400" />
-            <p className="text-xs text-slate-400">{selectedIds.size} tenant{selectedIds.size !== 1 ? 's' : ''} selected</p>
+            <p className="text-xs text-muted-foreground">{selectedIds.size} tenant{selectedIds.size !== 1 ? 's' : ''} selected</p>
             <div className="flex gap-1.5">
               <select
                 value={targetStatus}
                 onChange={(e) => setTargetStatus(e.target.value)}
-                className="h-8 rounded-lg border border-slate-500/20 bg-slate-900/70 px-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+                className="h-8 rounded-lg border border-border bg-muted/80 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
               >
                 <option value="ACTIVE">Set Active</option>
                 <option value="SUSPENDED">Suspend</option>
@@ -1571,7 +1585,7 @@ function BulkActionsView() {
           <select
             value={filterStatus}
             onChange={(e) => { setFilterStatus(e.target.value); clearAll(); }}
-            className="h-7 rounded-lg border border-slate-500/20 bg-slate-900/70 px-2 text-xs text-slate-100 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+            className="h-7 rounded-lg border border-border bg-muted/80 px-2 text-xs text-foreground focus:outline-none focus:ring-1 focus:ring-primary/40"
           >
             <option value="ALL">All Statuses</option>
             <option value="TRIAL">Trial</option>
@@ -1579,7 +1593,7 @@ function BulkActionsView() {
             <option value="PAYMENT_DUE">Payment Due</option>
             <option value="SUSPENDED">Suspended</option>
           </select>
-          <Button size="sm" className="h-7 text-[10px] bg-slate-500/20 text-slate-100 hover:bg-slate-500/30" onClick={selectedIds.size === filtered.length ? clearAll : selectAll}>
+          <Button size="sm" className="h-7 text-[10px] bg-muted text-foreground hover:bg-muted/80" onClick={selectedIds.size === filtered.length ? clearAll : selectAll}>
             {selectedIds.size === filtered.length ? 'Deselect All' : 'Select All'}
           </Button>
         </div>
@@ -1587,18 +1601,18 @@ function BulkActionsView() {
         <div className="space-y-1 max-h-[400px] overflow-y-auto">
           {filtered.map((t) => (
             <label key={t.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-xs cursor-pointer transition-colors ${
-              selectedIds.has(t.id) ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-slate-500/20 bg-slate-800/60 hover:bg-slate-800/80'
+              selectedIds.has(t.id) ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-border/60 bg-muted/50 hover:bg-muted/60'
             }`}>
               <input type="checkbox" checked={selectedIds.has(t.id)} onChange={() => toggleId(t.id)} className="size-3.5 rounded accent-indigo-500" />
               <div className="flex-1 min-w-0">
-                <p className="font-semibold text-slate-100 truncate">{t.name}</p>
-                <p className="text-slate-400">{t.domain}</p>
+                <p className="font-semibold text-foreground truncate">{t.name}</p>
+                <p className="text-muted-foreground">{t.domain}</p>
               </div>
               <StatusBadge status={t.status} />
-              <span className="text-slate-400">{t.activeStudents + t.activeTeachers + t.activeParents} users</span>
+              <span className="text-muted-foreground">{t.activeStudents + t.activeTeachers + t.activeParents} users</span>
             </label>
           ))}
-          {filtered.length === 0 && <p className="text-xs text-slate-400 py-2">No tenants match the filter.</p>}
+          {filtered.length === 0 && <p className="text-xs text-muted-foreground py-2">No tenants match the filter.</p>}
         </div>
       </Panel>
     </SectionShell>
@@ -1622,17 +1636,17 @@ function TenantUsersView() {
   const columns: ColumnDef<TenantRecord>[] = useMemo(() => [
     { key: 'name', label: 'Tenant', render: (t) => (
       <div className="min-w-0">
-        <p className="font-semibold text-slate-100 truncate">{t.name}</p>
-        <p className="text-[10px] text-slate-400 truncate">{t.domain}</p>
+        <p className="font-semibold text-foreground truncate">{t.name}</p>
+        <p className="text-[10px] text-muted-foreground truncate">{t.domain}</p>
       </div>
     )},
-    { key: 'students', label: 'Students', render: (t) => <span className="text-blue-300 font-bold">{t.activeStudents}</span> },
-    { key: 'teachers', label: 'Teachers', render: (t) => <span className="text-violet-300 font-bold">{t.activeTeachers}</span> },
-    { key: 'parents', label: 'Parents', render: (t) => <span className="text-emerald-300 font-bold">{t.activeParents}</span> },
-    { key: 'total', label: 'Total', render: (t) => <span className="font-bold text-slate-100">{t.activeStudents + t.activeTeachers + t.activeParents}</span> },
+    { key: 'students', label: 'Students', render: (t) => <span className="text-blue-600 dark:text-blue-300 font-bold">{t.activeStudents}</span> },
+    { key: 'teachers', label: 'Teachers', render: (t) => <span className="text-violet-600 dark:text-violet-300 font-bold">{t.activeTeachers}</span> },
+    { key: 'parents', label: 'Parents', render: (t) => <span className="text-emerald-600 dark:text-emerald-300 font-bold">{t.activeParents}</span> },
+    { key: 'total', label: 'Total', render: (t) => <span className="font-bold text-foreground">{t.activeStudents + t.activeTeachers + t.activeParents}</span> },
     { key: 'distribution', label: 'Distribution', render: (t) => {
       const total = t.activeStudents + t.activeTeachers + t.activeParents;
-      if (total === 0) return <span className="text-slate-500 text-[10px]">No users</span>;
+      if (total === 0) return <span className="text-muted-foreground/70 text-[10px]">No users</span>;
       return (
         <div className="flex h-1.5 w-20 rounded-full overflow-hidden gap-px">
           {t.activeStudents > 0 && <div className="bg-blue-500 rounded-full" style={{ width: `${(t.activeStudents / total) * 100}%` }} />}
@@ -1641,7 +1655,7 @@ function TenantUsersView() {
         </div>
       );
     }},
-    { key: 'plan', label: 'Plan', render: (t) => <span className="rounded bg-slate-700/80 px-2 py-0.5 text-[10px] text-slate-300">{t.planCode}</span> },
+    { key: 'plan', label: 'Plan', render: (t) => <span className="rounded bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">{t.planCode}</span> },
     { key: 'status', label: 'Status', render: (t) => <StatusBadge status={t.status} /> },
   ], []);
 
@@ -1649,18 +1663,18 @@ function TenantUsersView() {
     <SectionShell>
       <SectionPageHeader icon={Users} title="Per-Tenant User Management" description="User counts, roles, and access across all tenants" accent={accent} />
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-6">
-        <StatCard label="Total Users" value={String(totalUsers)} sub="All tenants" gradient="from-indigo-500/10 to-indigo-500/5" />
-        <StatCard label="Students" value={String(totalStudents)} sub={`${totalUsers > 0 ? Math.round((totalStudents / totalUsers) * 100) : 0}% of total`} gradient="from-blue-500/10 to-blue-500/5" />
-        <StatCard label="Teachers" value={String(totalTeachers)} sub={`${totalUsers > 0 ? Math.round((totalTeachers / totalUsers) * 100) : 0}% of total`} gradient="from-violet-500/10 to-violet-500/5" />
-        <StatCard label="Parents" value={String(totalParents)} sub={`${totalUsers > 0 ? Math.round((totalParents / totalUsers) * 100) : 0}% of total`} gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="Avg per Tenant" value={String(avgPerTenant)} sub="Users" gradient="from-sky-500/10 to-sky-500/5" />
-        <StatCard label="Largest" value={maxTenant ? String(maxTenant.activeStudents + maxTenant.activeTeachers + maxTenant.activeParents) : '0'} sub={maxTenant?.name ?? '—'} gradient="from-amber-500/10 to-amber-500/5" />
+        <StatCard label="Total Users" value={String(totalUsers)} sub="All tenants" gradient="from-indigo-500/12 via-indigo-400/6 to-transparent" borderAccent="border-indigo-500/20" />
+        <StatCard label="Students" value={String(totalStudents)} sub={`${totalUsers > 0 ? Math.round((totalStudents / totalUsers) * 100) : 0}% of total`} gradient="from-blue-500/12 via-blue-400/6 to-transparent" borderAccent="border-blue-500/20" />
+        <StatCard label="Teachers" value={String(totalTeachers)} sub={`${totalUsers > 0 ? Math.round((totalTeachers / totalUsers) * 100) : 0}% of total`} gradient="from-violet-500/12 via-violet-400/6 to-transparent" borderAccent="border-violet-500/20" />
+        <StatCard label="Parents" value={String(totalParents)} sub={`${totalUsers > 0 ? Math.round((totalParents / totalUsers) * 100) : 0}% of total`} gradient="from-emerald-500/12 via-emerald-400/6 to-transparent" borderAccent="border-emerald-500/20" />
+        <StatCard label="Avg per Tenant" value={String(avgPerTenant)} sub="Users" gradient="from-sky-500/12 via-sky-400/6 to-transparent" borderAccent="border-sky-500/20" />
+        <StatCard label="Largest" value={maxTenant ? String(maxTenant.activeStudents + maxTenant.activeTeachers + maxTenant.activeParents) : '0'} sub={maxTenant?.name ?? '—'} gradient="from-amber-500/12 via-amber-400/6 to-transparent" borderAccent="border-amber-500/20" />
       </div>
 
       {/* Global distribution bar */}
       {totalUsers > 0 && (
-        <div className="rounded-xl border border-slate-500/20 bg-slate-900/70 p-3">
-          <p className="text-[10px] uppercase tracking-widest text-slate-400 mb-2">Global User Distribution</p>
+        <div className="rounded-xl border border-border bg-muted/50 p-3">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-2">Global User Distribution</p>
           <div className="flex h-4 rounded-full overflow-hidden gap-0.5">
             <div className="bg-blue-500 rounded-l-full flex items-center justify-center" style={{ width: `${(totalStudents / totalUsers) * 100}%` }}>
               {totalStudents / totalUsers > 0.1 && <span className="text-[9px] font-bold text-white">{Math.round((totalStudents / totalUsers) * 100)}% S</span>}
@@ -1717,10 +1731,10 @@ function TenantFlagsView() {
     <SectionShell>
       <SectionPageHeader icon={Flag} title="Feature Flags" description="Per-tenant feature toggles and rollout control" accent={accent} />
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
-        <StatCard label="Feature Flags" value={String(flags.length)} sub="Defined" gradient="from-indigo-500/10 to-indigo-500/5" />
-        <StatCard label="Global Active" value={String(globalActive)} sub="Fully rolled out" gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="Partial Rollout" value={String(partialRollout)} sub="In progress" gradient="from-amber-500/10 to-amber-500/5" />
-        <StatCard label="Tenants" value={String(tenants.length)} sub="Total" gradient="from-sky-500/10 to-sky-500/5" />
+        <StatCard label="Feature Flags" value={String(flags.length)} sub="Defined" gradient="from-indigo-500/12 via-indigo-400/6 to-transparent" borderAccent="border-indigo-500/20" />
+        <StatCard label="Global Active" value={String(globalActive)} sub="Fully rolled out" gradient="from-emerald-500/12 via-emerald-400/6 to-transparent" borderAccent="border-emerald-500/20" />
+        <StatCard label="Partial Rollout" value={String(partialRollout)} sub="In progress" gradient="from-amber-500/12 via-amber-400/6 to-transparent" borderAccent="border-amber-500/20" />
+        <StatCard label="Tenants" value={String(tenants.length)} sub="Total" gradient="from-sky-500/12 via-sky-400/6 to-transparent" borderAccent="border-sky-500/20" />
       </div>
       <Panel title="Feature Flag Registry" subtitle={`${flags.length} flags · Click to expand per-tenant controls`} accentBorder="border-indigo-500/20">
         <div className="space-y-2">
@@ -1728,39 +1742,39 @@ function TenantFlagsView() {
             const stats = getFlagStats(flag.moduleCode);
             const isExpanded = expandedFlag === flag.key;
             return (
-              <div key={flag.key} className="rounded-lg border border-slate-500/20 bg-slate-800/60 overflow-hidden">
+              <div key={flag.key} className="rounded-lg border border-border/60 bg-muted/50 overflow-hidden">
                 <button
-                  className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2.5 text-xs text-left hover:bg-slate-800/80 transition-colors"
+                  className="w-full flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3 py-2.5 text-xs text-left hover:bg-muted/70 transition-colors"
                   onClick={() => setExpandedFlag(isExpanded ? null : flag.key)}
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-semibold text-slate-100">{flag.label}</span>
-                      <span className="rounded bg-slate-700 px-2 py-0.5 font-mono text-[10px] text-slate-400">{flag.moduleCode}</span>
+                      <span className="font-semibold text-foreground">{flag.label}</span>
+                      <span className="rounded bg-muted px-2 py-0.5 font-mono text-[10px] text-muted-foreground">{flag.moduleCode}</span>
                     </div>
-                    <p className="text-slate-400 mt-0.5">{flag.description}</p>
+                    <p className="text-muted-foreground mt-0.5">{flag.description}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className={`font-bold ${stats.enabled === stats.total && stats.total > 0 ? 'text-emerald-300' : stats.enabled > 0 ? 'text-amber-300' : 'text-slate-400'}`}>
+                    <span className={`font-bold ${stats.enabled === stats.total && stats.total > 0 ? 'text-emerald-600 dark:text-emerald-300' : stats.enabled > 0 ? 'text-amber-600 dark:text-amber-300' : 'text-muted-foreground'}`}>
                       {stats.enabled}/{stats.total}
                     </span>
-                    <div className="h-1.5 w-20 rounded-full bg-slate-700">
-                      <div className={`h-full rounded-full ${stats.pct === 100 ? 'bg-emerald-500' : stats.pct > 0 ? 'bg-amber-500' : 'bg-slate-600'}`} style={{ width: `${stats.pct}%` }} />
+                    <div className="h-1.5 w-20 rounded-full bg-muted">
+                      <div className={`h-full rounded-full ${stats.pct === 100 ? 'bg-emerald-500' : stats.pct > 0 ? 'bg-amber-500' : 'bg-muted-foreground/30'}`} style={{ width: `${stats.pct}%` }} />
                     </div>
-                    <span className="text-[10px] text-slate-400">{stats.pct}%</span>
+                    <span className="text-[10px] text-muted-foreground">{stats.pct}%</span>
                   </div>
                 </button>
                 {isExpanded && (
-                  <div className="border-t border-slate-500/20 px-3 py-2 bg-slate-900/50 max-h-[300px] overflow-y-auto">
+                  <div className="border-t border-border px-3 py-2 bg-muted/30 max-h-[300px] overflow-y-auto">
                     <div className="space-y-1">
                       {tenants.map((t) => {
                         const enabled = t.modules.includes(flag.moduleCode);
                         return (
-                          <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs hover:bg-slate-800/50">
+                          <div key={t.id} className="flex items-center justify-between gap-2 rounded-lg px-2.5 py-1.5 text-xs hover:bg-muted/60">
                             <div className="flex items-center gap-2 min-w-0">
                               <StatusBadge status={t.status} />
-                              <span className="text-slate-100 truncate font-medium">{t.name}</span>
-                              <span className="text-slate-500 text-[10px] truncate">{t.domain}</span>
+                              <span className="text-foreground truncate font-medium">{t.name}</span>
+                              <span className="text-muted-foreground/70 text-[10px] truncate">{t.domain}</span>
                             </div>
                             <Switch
                               checked={enabled}
@@ -1770,7 +1784,7 @@ function TenantFlagsView() {
                           </div>
                         );
                       })}
-                      {tenants.length === 0 && <p className="text-[10px] text-slate-400 py-2">No tenants available.</p>}
+                      {tenants.length === 0 && <p className="text-[10px] text-muted-foreground py-2">No tenants available.</p>}
                     </div>
                   </div>
                 )}
@@ -1819,22 +1833,22 @@ function TenantUsageView() {
     <SectionShell>
       <SectionPageHeader icon={Gauge} title="Tenant Usage Analytics" description="Storage, activity, modules, and resource consumption" accent={accent} />
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4 xl:grid-cols-6">
-        <StatCard label="Storage Used" value={`${totalStorage.toFixed(1)} GB`} sub={`of ${totalLimit} GB total`} gradient="from-blue-500/10 to-blue-500/5" />
-        <StatCard label="Utilization" value={totalLimit > 0 ? `${Math.round((totalStorage / totalLimit) * 100)}%` : '0%'} sub="Global usage" gradient="from-violet-500/10 to-violet-500/5" />
-        <StatCard label="Near Limit" value={String(overThreshold)} sub=">80% storage" gradient="from-amber-500/10 to-amber-500/5" />
-        <StatCard label="Total Users" value={String(totalUsers)} sub="All tenants" gradient="from-indigo-500/10 to-indigo-500/5" />
-        <StatCard label="Avg Modules" value={String(avgModules)} sub="Per tenant" gradient="from-sky-500/10 to-sky-500/5" />
-        <StatCard label="Inactive" value={String(inactiveTenants.length)} sub=">14 days" gradient="from-red-500/10 to-red-500/5" />
+        <StatCard label="Storage Used" value={`${totalStorage.toFixed(1)} GB`} sub={`of ${totalLimit} GB total`} gradient="from-blue-500/12 via-blue-400/6 to-transparent" borderAccent="border-blue-500/20" />
+        <StatCard label="Utilization" value={totalLimit > 0 ? `${Math.round((totalStorage / totalLimit) * 100)}%` : '0%'} sub="Global usage" gradient="from-violet-500/12 via-violet-400/6 to-transparent" borderAccent="border-violet-500/20" />
+        <StatCard label="Near Limit" value={String(overThreshold)} sub=">80% storage" gradient="from-amber-500/12 via-amber-400/6 to-transparent" borderAccent="border-amber-500/20" />
+        <StatCard label="Total Users" value={String(totalUsers)} sub="All tenants" gradient="from-indigo-500/12 via-indigo-400/6 to-transparent" borderAccent="border-indigo-500/20" />
+        <StatCard label="Avg Modules" value={String(avgModules)} sub="Per tenant" gradient="from-sky-500/12 via-sky-400/6 to-transparent" borderAccent="border-sky-500/20" />
+        <StatCard label="Inactive" value={String(inactiveTenants.length)} sub=">14 days" gradient="from-red-500/12 via-red-400/6 to-transparent" borderAccent="border-red-500/20" />
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 rounded-xl border border-slate-500/20 bg-slate-800/40 p-1">
+      <div className="flex gap-1 rounded-xl border border-border bg-muted/40 p-1">
         {(['storage', 'activity', 'modules'] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setUsageTab(tab)}
             className={`flex-1 rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors capitalize ${
-              usageTab === tab ? 'bg-indigo-500/20 text-indigo-200' : 'text-slate-400 hover:text-slate-200'
+              usageTab === tab ? 'bg-primary/15 text-primary' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             {tab}
@@ -1849,14 +1863,14 @@ function TenantUsageView() {
             {[...tenants].sort((a, b) => (b.storageLimitGb > 0 ? b.storageUsedGb / b.storageLimitGb : 0) - (a.storageLimitGb > 0 ? a.storageUsedGb / a.storageLimitGb : 0)).map((t) => {
               const pct = t.storageLimitGb > 0 ? (t.storageUsedGb / t.storageLimitGb) * 100 : 0;
               return (
-                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-slate-500/20 bg-slate-800/60 px-3 py-2 text-xs">
+                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/50 px-3 py-2 text-xs">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-100 truncate">{t.name}</p>
-                    <p className="text-slate-400 text-[10px]">{t.planCode} · {t.activeStudents + t.activeTeachers + t.activeParents} users · Last: {relativeTime(t.lastLoginAt)}</p>
+                    <p className="font-semibold text-foreground truncate">{t.name}</p>
+                    <p className="text-muted-foreground text-[10px]">{t.planCode} · {t.activeStudents + t.activeTeachers + t.activeParents} users · Last: {relativeTime(t.lastLoginAt)}</p>
                   </div>
                   <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-slate-300 text-[11px]">{t.storageUsedGb}/{t.storageLimitGb} GB</span>
-                    <div className="h-2 w-28 rounded-full bg-slate-700">
+                    <span className="text-foreground/80 text-[11px]">{t.storageUsedGb}/{t.storageLimitGb} GB</span>
+                    <div className="h-2 w-28 rounded-full bg-muted">
                       <div className={`h-full rounded-full transition-all ${pct > 90 ? 'bg-red-500' : pct > 70 ? 'bg-amber-500' : 'bg-sky-500'}`} style={{ width: `${Math.min(pct, 100)}%` }} />
                     </div>
                     <span className={`w-10 text-right font-mono text-[11px] font-bold ${pct > 90 ? 'text-red-300' : pct > 70 ? 'text-amber-300' : 'text-sky-300'}`}>{Math.round(pct)}%</span>
@@ -1878,10 +1892,10 @@ function TenantUsageView() {
                 {inactiveTenants.sort((a, b) => new Date(a.lastLoginAt).getTime() - new Date(b.lastLoginAt).getTime()).map((t) => {
                   const daysSince = Math.round((Date.now() - new Date(t.lastLoginAt).getTime()) / (1000 * 60 * 60 * 24));
                   return (
-                    <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-red-500/15 bg-slate-800/60 px-3 py-2 text-xs">
+                    <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-red-500/15 bg-muted/50 px-3 py-2 text-xs">
                       <div>
-                        <p className="font-semibold text-slate-100">{t.name}</p>
-                        <p className="text-slate-400">{t.domain} · {t.planCode} · {t.activeStudents + t.activeTeachers + t.activeParents} users</p>
+                        <p className="font-semibold text-foreground">{t.name}</p>
+                        <p className="text-muted-foreground">{t.domain} · {t.planCode} · {t.activeStudents + t.activeTeachers + t.activeParents} users</p>
                       </div>
                       <span className="text-red-300 font-bold shrink-0">{daysSince}d ago</span>
                     </div>
@@ -1893,14 +1907,14 @@ function TenantUsageView() {
           <Panel title="Recent Activity" subtitle="All tenants by last login" accentBorder="border-indigo-500/20">
             <div className="space-y-1.5">
               {byActivity.map((t) => (
-                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-slate-500/20 bg-slate-800/60 px-3 py-2 text-xs">
+                <div key={t.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-border/60 bg-muted/50 px-3 py-2 text-xs">
                   <div className="min-w-0">
-                    <p className="font-semibold text-slate-100 truncate">{t.name}</p>
-                    <p className="text-slate-400 text-[10px]">{t.domain}</p>
+                    <p className="font-semibold text-foreground truncate">{t.name}</p>
+                    <p className="text-muted-foreground text-[10px]">{t.domain}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
                     <StatusBadge status={t.status} />
-                    <span className="text-slate-300 text-[10px]">{relativeTime(t.lastLoginAt)}</span>
+                    <span className="text-muted-foreground text-[10px]">{relativeTime(t.lastLoginAt)}</span>
                   </div>
                 </div>
               ))}
@@ -1917,14 +1931,14 @@ function TenantUsageView() {
             {moduleFrequency.map(([mod, count]) => {
               const pct = tenants.length > 0 ? Math.round((count / tenants.length) * 100) : 0;
               return (
-                <div key={mod} className="flex items-center justify-between gap-3 rounded-lg border border-slate-500/20 bg-slate-800/60 px-3 py-2 text-xs">
+                <div key={mod} className="flex items-center justify-between gap-3 rounded-lg border border-border/60 bg-muted/50 px-3 py-2 text-xs">
                   <div className="flex items-center gap-2">
                     <Database className="size-3.5 text-indigo-400" />
-                    <span className="font-semibold text-slate-100">{mod}</span>
+                    <span className="font-semibold text-foreground">{mod}</span>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="text-slate-300">{count}/{tenants.length} tenants</span>
-                    <div className="h-1.5 w-24 rounded-full bg-slate-700">
+                    <span className="text-muted-foreground">{count}/{tenants.length} tenants</span>
+                    <div className="h-1.5 w-24 rounded-full bg-muted">
                       <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
                     </div>
                     <span className="w-10 text-right font-mono text-indigo-300 text-[11px] font-bold">{pct}%</span>

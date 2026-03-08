@@ -290,6 +290,7 @@ function OAuthAppsView() {
   const [appName, setAppName] = useState('');
   const [appRedirects, setAppRedirects] = useState('');
   const [appScopes, setAppScopes] = useState('');
+  const [manageId, setManageId] = useState<string | null>(null);
 
   return (
     <SectionShell>
@@ -335,7 +336,9 @@ function OAuthAppsView() {
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
                   <StatusBadge status={app.status} />
-                  <Button size="sm" variant="outline" className="h-6 text-[10px] border-blue-500/30">Manage</Button>
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] border-blue-500/30" onClick={() => setManageId(manageId === app.id ? null : app.id)}>
+                    {manageId === app.id ? 'Close' : 'Manage'}
+                  </Button>
                 </div>
               </div>
               <div className="mt-2 flex flex-wrap gap-1">
@@ -345,6 +348,28 @@ function OAuthAppsView() {
                 <span className="text-[10px] text-slate-400 ml-2">Created: {app.createdAt}</span>
                 {app.requestCount != null && <span className="text-[10px] text-slate-400 ml-2">Requests: {app.requestCount}</span>}
               </div>
+              {manageId === app.id && (
+                <div className="mt-3 rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 space-y-2">
+                  <div className="grid gap-2 text-[10px]">
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Client ID</span>
+                      <span className="font-mono text-slate-100">{app.clientId}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Redirect URIs</span>
+                      <span className="text-slate-100">{app.redirectUris.join(', ') || '—'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Scopes</span>
+                      <span className="text-slate-100">{app.scopes.join(', ') || '—'}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-400">Status</span>
+                      <StatusBadge status={app.status} />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>

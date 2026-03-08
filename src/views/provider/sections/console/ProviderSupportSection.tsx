@@ -8,6 +8,7 @@ import {
   Loader2,
   MessageSquare,
   Star,
+  Trash2,
   TrendingUp,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -23,8 +24,13 @@ import {
   useProviderSupportExtras,
   useUpdateProviderMacro,
   useUpdateProviderKbArticle,
+  useCreateProviderMacro,
+  useDeleteProviderMacro,
+  useCreateProviderKbArticle,
+  useSendProviderCsatSurvey,
 } from '@/hooks/api/use-provider-console';
 import type { SupportTicketDTO } from '@root/types';
+import { notifySuccess } from '@/lib/notify';
 import {
   EmptyState,
   Panel,
@@ -285,9 +291,15 @@ function MacrosView() {
   const { data: extras, isLoading } = useProviderSupportExtras();
   const macros = extras?.macros ?? [];
   const updateMacro = useUpdateProviderMacro();
+  const createMacro = useCreateProviderMacro();
+  const deleteMacro = useDeleteProviderMacro();
   const [editId, setEditId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editTemplate, setEditTemplate] = useState('');
+  const [showNew, setShowNew] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newCategory, setNewCategory] = useState('general');
+  const [newTemplate, setNewTemplate] = useState('');
 
   const handleSave = (id: string) => {
     const reason = reasonPrompt('Update macro');
@@ -298,8 +310,38 @@ function MacrosView() {
   return (
     <SectionShell>
       <SectionPageHeader icon={Bot} title="Support Macros" description="Canned responses and automation templates" accent={accent} actions={
-        <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30">+ New Macro</Button>
+        <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" onClick={() => setShowNew((p) => !p)}>+ New Macro</Button>
       } />
+
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
+        <StatCard label="Total Macros" value={String(macros.length)} sub="Active" gradient="from-violet-500/10 to-violet-500/5" />
+        <StatCard label="Total Uses" value={String(macros.reduce((s, m) => s + m.usageCount, 0))} sub="All-time" gradient="from-blue-500/10 to-blue-500/5" />
+        <StatCard label="Categories" value={String(new Set(macros.map((m) => m.category)).size)} sub="Organized" gradient="from-emerald-500/10 to-emerald-500/5" />
+        <StatCard label="Most Used" value={macros.length > 0 ? macros.reduce((top, m) => m.usageCount > top.usageCount ? m : top, macros[0]).name : '—'} sub={macros.length > 0 ? `${macros.reduce((top, m) => m.usageCount > top.usageCount ? m : top, macros[0]).usageCount}×` : ''} gradient="from-cyan-500/10 to-cyan-500/5" />
+      </div>
+
+      {showNew && (
+        <Panel title="Create Macro" accentBorder="border-violet-500/20">
+          <div className="grid gap-2 md:grid-cols-3">
+            <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="Macro name" className="h-8 border-slate-500/40 bg-slate-700 text-xs text-slate-100" />
+            <select className="h-8 rounded-md border border-slate-500/40 bg-slate-700 px-2 text-xs text-slate-100" value={newCategory} onChange={(e) => setNewCategory(e.target.value)}>
+              <option value="general">General</option><option value="billing">Billing</option><option value="technical">Technical</option><option value="onboarding">Onboarding</option>
+            </select>
+            <textarea value={newTemplate} onChange={(e) => setNewTemplate(e.target.value)} rows={2} placeholder="Response template…" className="w-full rounded-md border border-slate-500/40 bg-slate-700 px-2 py-1 text-xs text-slate-100 resize-none col-span-full md:col-span-1" />
+          </div>
+          <div className="mt-2 flex gap-2 justify-end">
+            <Button size="sm" className="h-7 bg-slate-700 text-slate-200 hover:bg-slate-600" onClick={() => setShowNew(false)}>Cancel</Button>
+            <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" onClick={() => {
+              if (!newName.trim() || !newTemplate.trim()) return;
+              const reason = reasonPrompt('Create macro');
+              if (!reason) return;
+              createMacro.mutate({ name: newName, category: newCategory, template: newTemplate, reason }, { onSuccess: () => { setShowNew(false); setNewName(''); setNewTemplate(''); } });
+            }} disabled={!newName.trim() || !newTemplate.trim() || createMacro.isPending}>
+              {createMacro.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : null}Create
+            </Button>
+          </div>
+        </Panel>
+      )}
 
       <Panel title="Macros Library" subtitle={`${macros.length} macros`} accentBorder="border-violet-500/20">
         {isLoading ? (
@@ -328,16 +370,23 @@ function MacrosView() {
                       <Badge className="border text-[10px] border-violet-500/30 text-violet-300">{macro.category}</Badge>
                     </div>
                     <p className="text-xs text-slate-300 leading-relaxed">{macro.template}</p>
-                    {macro.actions.length > 0 && (
+                    {(macro.actions?.length ?? 0) > 0 && (
                       <div className="mt-1 flex flex-wrap gap-1">
-                        {macro.actions.map((a) => <Badge key={a} className="text-[10px] border-slate-500/30 text-slate-400">{a}</Badge>)}
+                        {macro.actions!.map((a) => <Badge key={a} className="text-[10px] border-slate-500/30 text-slate-400">{a}</Badge>)}
                       </div>
                     )}
                     <div className="mt-2 flex items-center justify-between">
                       <span className="text-[10px] text-slate-400">Used {macro.usageCount}× · Last {new Date(macro.lastUsed).toLocaleDateString()}</span>
                       <div className="flex gap-2">
                         <Button size="sm" variant="outline" className="h-6 text-[10px] border-violet-500/30" onClick={() => { setEditId(macro.id); setEditName(macro.name); setEditTemplate(macro.template); }}>Edit</Button>
-                        <Button size="sm" variant="outline" className="h-6 text-[10px] border-violet-500/30">Use</Button>
+                        <Button size="sm" variant="outline" className="h-6 text-[10px] border-violet-500/30" onClick={() => { navigator.clipboard.writeText(macro.template); notifySuccess('Macro template copied to clipboard'); }}>Use</Button>
+                        <Button size="sm" variant="outline" className="h-6 text-[10px] border-red-500/30 text-red-400 hover:bg-red-500/10" onClick={() => {
+                          const reason = reasonPrompt('Delete macro');
+                          if (!reason) return;
+                          deleteMacro.mutate({ macroId: macro.id, reason });
+                        }} disabled={deleteMacro.isPending}>
+                          {deleteMacro.isPending ? <Loader2 className="size-3 animate-spin" /> : <Trash2 className="size-3" />}
+                        </Button>
                       </div>
                     </div>
                   </>
@@ -401,6 +450,11 @@ function KnowledgeBaseView() {
   const accent = getAccent('provider_support');
   const { data: extras, isLoading } = useProviderSupportExtras();
   const articles = extras?.kbArticles ?? [];
+  const createArticle = useCreateProviderKbArticle();
+  const [showNew, setShowNew] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newCategory, setNewCategory] = useState('general');
+  const [newBody, setNewBody] = useState('');
 
   const totalViews = articles.reduce((s, a) => s + a.views, 0);
   const avgHelpful = articles.length > 0 ? Math.round(articles.reduce((s, a) => s + a.helpfulPct, 0) / articles.length) : 0;
@@ -408,8 +462,31 @@ function KnowledgeBaseView() {
   return (
     <SectionShell>
       <SectionPageHeader icon={BookOpen} title="Knowledge Base" description="Self-service help articles and documentation" accent={accent} actions={
-        <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30">+ New Article</Button>
+        <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" onClick={() => setShowNew((p) => !p)}>+ New Article</Button>
       } />
+
+      {showNew && (
+        <Panel title="Create Article" accentBorder="border-violet-500/20">
+          <div className="grid gap-2 md:grid-cols-2">
+            <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="Article title" className="h-8 border-slate-500/40 bg-slate-700 text-xs text-slate-100" />
+            <select className="h-8 rounded-md border border-slate-500/40 bg-slate-700 px-2 text-xs text-slate-100" value={newCategory} onChange={(e) => setNewCategory(e.target.value)}>
+              <option value="general">General</option><option value="billing">Billing</option><option value="technical">Technical</option><option value="getting-started">Getting Started</option>
+            </select>
+          </div>
+          <textarea value={newBody} onChange={(e) => setNewBody(e.target.value)} rows={3} placeholder="Article content…" className="mt-2 w-full rounded-md border border-slate-500/40 bg-slate-700 px-3 py-2 text-xs text-slate-100 placeholder:text-slate-500 resize-none" />
+          <div className="mt-2 flex gap-2 justify-end">
+            <Button size="sm" className="h-7 bg-slate-700 text-slate-200 hover:bg-slate-600" onClick={() => setShowNew(false)}>Cancel</Button>
+            <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" onClick={() => {
+              if (!newTitle.trim() || !newBody.trim()) return;
+              const reason = reasonPrompt('Create KB article');
+              if (!reason) return;
+              createArticle.mutate({ title: newTitle, category: newCategory, body: newBody, reason }, { onSuccess: () => { setShowNew(false); setNewTitle(''); setNewBody(''); } });
+            }} disabled={!newTitle.trim() || !newBody.trim() || createArticle.isPending}>
+              {createArticle.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : null}Publish
+            </Button>
+          </div>
+        </Panel>
+      )}
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
         <StatCard label="Articles" value={String(articles.length)} sub="Published" gradient="from-violet-500/10 to-violet-500/5" />
         <StatCard label="Total Views" value={String(totalViews)} sub="All-time" gradient="from-blue-500/10 to-blue-500/5" />
@@ -483,15 +560,27 @@ function CsatView() {
   const accent = getAccent('provider_support');
   const { data: extras, isLoading } = useProviderSupportExtras();
   const ratings = extras?.csatRatings ?? [];
+  const tenantsQuery = useProviderTenants({});
+  const tenants = tenantsQuery.data ?? [];
+  const sendSurvey = useSendProviderCsatSurvey();
 
   const avgScore = ratings.length > 0 ? (ratings.reduce((s, r) => s + r.score, 0) / ratings.length).toFixed(1) : '—';
   const highCount = ratings.filter((r) => r.score >= 4.5).length;
   const lowCount = ratings.filter((r) => r.score < 4.0).length;
 
+  const handleSendSurvey = () => {
+    if (tenants.length === 0) return;
+    const reason = reasonPrompt('Send CSAT survey to all tenants');
+    if (!reason) return;
+    sendSurvey.mutate({ tenantIds: tenants.map((t) => t.id), reason });
+  };
+
   return (
     <SectionShell>
       <SectionPageHeader icon={Star} title="Customer Satisfaction (CSAT)" description="Tenant satisfaction scores and survey results" accent={accent} actions={
-        <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30">Send Survey</Button>
+        <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" onClick={handleSendSurvey} disabled={sendSurvey.isPending || tenants.length === 0}>
+          {sendSurvey.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : null}Send Survey
+        </Button>
       } />
       <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
         <StatCard label="Avg CSAT" value={avgScore} sub="Out of 5.0" gradient="from-emerald-500/10 to-emerald-500/5" />

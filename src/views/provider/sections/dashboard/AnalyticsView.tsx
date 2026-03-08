@@ -9,7 +9,7 @@ import { useProviderUsage } from '@/hooks/api/use-provider-console';
 export function AnalyticsView() {
   const { data: apiData } = usePlatformAnalytics();
   const { data: usageData } = useProviderUsage();
-  void usageData;
+  const usageArr = (usageData ?? []) as Array<Record<string, unknown>>;
   /* ── Inline 3D SVG Icons ── */
   const Icon3D_APICalls = () => (
     <svg viewBox="0 0 40 40" className="h-9 w-9 drop-shadow-lg" style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.35))' }}>
@@ -75,14 +75,13 @@ export function AnalyticsView() {
     { page: '/dashboard', views: '45.2K', pct: 92 }, { page: '/courses', views: '32.1K', pct: 70 },
     { page: '/students', views: '28.4K', pct: 62 }, { page: '/settings', views: '18.7K', pct: 41 }, { page: '/reports', views: '12.3K', pct: 27 },
   ];
-  const FALLBACK_heatmapGrid = [
+  const heatmapGrid = (usageArr.find((u) => u.type === 'heatmap')?.grid as number[][] | undefined) ?? [
     [0.2, 0.3, 0.8, 0.9, 0.7, 0.4], [0.1, 0.4, 0.7, 0.8, 0.6, 0.3], [0.3, 0.5, 0.9, 1.0, 0.8, 0.5],
     [0.2, 0.4, 0.8, 0.9, 0.7, 0.4], [0.3, 0.6, 0.9, 0.95, 0.8, 0.5], [0.1, 0.3, 0.5, 0.6, 0.4, 0.2], [0.05, 0.2, 0.3, 0.4, 0.3, 0.1],
   ];
-  const heatmapGrid = FALLBACK_heatmapGrid;
   const hmDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const hmSlots = ['6am', '9am', '12pm', '3pm', '6pm', '9pm'];
-  const FALLBACK_activityFeed = [
+  const activityFeed = (usageArr.find((u) => u.type === 'activity')?.entries as Array<{ text: string; color: string; time: string }> | undefined) ?? [
     { text: 'New school signup: Lincoln Academy', color: 'bg-emerald-500', time: '12s ago' },
     { text: 'Payment received: $599/mo', color: 'bg-blue-500', time: '45s ago' },
     { text: 'User exported reports', color: 'bg-violet-500', time: '2m ago' },
@@ -91,12 +90,10 @@ export function AnalyticsView() {
     { text: 'Webhook delivery failed', color: 'bg-red-500', time: '12m ago' },
     { text: 'Bulk import completed: 240 students', color: 'bg-blue-500', time: '18m ago' },
   ];
-  const activityFeed = FALLBACK_activityFeed;
-  const FALLBACK_retentionWeeks = [
+  const retentionWeeks = (usageArr.find((u) => u.type === 'retention')?.weeks as Array<{ week: string; pct: number }> | undefined) ?? [
     { week: 'W1', pct: 98 }, { week: 'W2', pct: 96 }, { week: 'W3', pct: 95 },
     { week: 'W4', pct: 94.8 }, { week: 'W5', pct: 94.5 }, { week: 'W6', pct: 94.3 }, { week: 'W7', pct: 94.2 },
   ];
-  const retentionWeeks = FALLBACK_retentionWeeks;
 
   return (
     <div className="flex gap-1.5 h-full min-h-0 overflow-hidden">
@@ -223,48 +220,42 @@ export function AnalyticsView() {
       </div>
 
       {/* ═══ Right sidebar ═══ */}
-      <div className="hidden lg:flex w-44 flex-col gap-1 shrink-0 min-h-0">
-        <div data-animate className="group relative flex flex-1 flex-col rounded-xl bg-slate-950 p-2 shadow-2xl transition-all duration-300 hover:shadow-blue-500/20 overflow-hidden min-h-0">
-          <div className="absolute inset-0 rounded-xl bg-linear-to-r from-blue-500 via-cyan-500 to-violet-500 opacity-20 blur-sm transition-opacity duration-300 group-hover:opacity-30" />
-          <div className="absolute inset-px rounded-[11px] bg-slate-950" />
-          <div className="relative flex flex-1 flex-col min-h-0">
-            <div className="mb-1.5 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-cyan-500"><Activity className="h-3 w-3 text-white" /></div>
-                <h3 className="text-[10px] font-semibold text-white">Live Activity</h3>
-              </div>
-              <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-medium text-emerald-500"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Live</span>
+      <div className="hidden lg:flex w-44 flex-col gap-1.5 shrink-0 min-h-0">
+        {/* Live Activity — blue chroma card */}
+        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-blue-500/20 bg-linear-to-br from-blue-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-blue-500/30 overflow-hidden min-h-0">
+          <div className="mb-1.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-cyan-500"><Activity className="h-3 w-3 text-white" /></div>
+              <h3 className="text-[10px] font-semibold text-foreground">Live Activity</h3>
             </div>
-            <div className="flex flex-1 flex-col gap-1 overflow-auto min-h-0">
-              {activityFeed.map((ev: typeof activityFeed[number], i: number) => (
-                <div key={i} className="flex items-start gap-1.5 rounded-md bg-slate-900/50 p-1 border border-slate-800/50">
-                  <span className={`mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full ${ev.color} ${i === 0 ? 'animate-pulse' : ''}`} />
-                  <div className="min-w-0">
-                    <p className="text-[8px] text-slate-300 leading-tight">{ev.text}</p>
-                    <p className="text-[7px] text-slate-500">{ev.time}</p>
-                  </div>
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-medium text-emerald-600 dark:text-emerald-400"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Live</span>
+          </div>
+          <div className="flex flex-1 flex-col gap-1 overflow-auto min-h-0">
+            {activityFeed.map((ev: typeof activityFeed[number], i: number) => (
+              <div key={i} className="flex items-start gap-1.5 rounded-lg bg-muted/40 p-1 border border-border/40 transition-colors hover:bg-muted/60">
+                <span className={`mt-0.5 h-1.5 w-1.5 shrink-0 rounded-full ${ev.color} ${i === 0 ? 'animate-pulse' : ''}`} />
+                <div className="min-w-0">
+                  <p className="text-[8px] text-foreground/80 leading-tight">{ev.text}</p>
+                  <p className="text-[7px] text-muted-foreground">{ev.time}</p>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
 
-        <div data-animate className="group relative flex flex-col rounded-xl bg-slate-950 p-2 shadow-2xl transition-all duration-300 hover:shadow-emerald-500/20 overflow-hidden" style={{ minHeight: 120 }}>
-          <div className="absolute inset-0 rounded-xl bg-linear-to-r from-emerald-500 via-teal-500 to-cyan-500 opacity-20 blur-sm transition-opacity duration-300 group-hover:opacity-30" />
-          <div className="absolute inset-px rounded-[11px] bg-slate-950" />
-          <div className="relative flex flex-col">
-            <div className="mb-1 flex items-center justify-between">
-              <h3 className="text-[10px] font-semibold text-white">Retention</h3>
-              <span className="text-sm font-bold text-emerald-400">94.2%</span>
-            </div>
-            <div className="flex items-end gap-0.5" style={{ height: 48 }}>
-              {retentionWeeks.map((w: typeof retentionWeeks[number]) => (
-                <div key={w.week} className="flex-1 flex flex-col items-center gap-0.5">
-                  <div className="w-full rounded-sm bg-linear-to-t from-emerald-600 to-emerald-400" style={{ height: `${(w.pct / 100) * 48}px` }} />
-                  <span className="text-[6px] text-slate-500">{w.week}</span>
-                </div>
-              ))}
-            </div>
+        {/* Retention — emerald chroma card */}
+        <div data-animate className="group flex flex-col rounded-xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-emerald-500/30 overflow-hidden" style={{ minHeight: 120 }}>
+          <div className="mb-1 flex items-center justify-between">
+            <h3 className="text-[10px] font-semibold text-foreground">Retention</h3>
+            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">94.2%</span>
+          </div>
+          <div className="flex items-end gap-0.5" style={{ height: 48 }}>
+            {retentionWeeks.map((w: typeof retentionWeeks[number]) => (
+              <div key={w.week} className="flex-1 flex flex-col items-center gap-0.5">
+                <div className="w-full rounded-sm bg-linear-to-t from-emerald-600 to-emerald-400" style={{ height: `${(w.pct / 100) * 48}px` }} />
+                <span className="text-[6px] text-muted-foreground">{w.week}</span>
+              </div>
+            ))}
           </div>
         </div>
       </div>

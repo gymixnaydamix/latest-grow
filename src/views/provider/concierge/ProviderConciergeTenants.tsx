@@ -8,7 +8,11 @@ import {
   Eye, FileText, Megaphone, Package,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useProviderTenants, useUpdateProviderTenantStatus } from '@/hooks/api/use-provider-console';
+import {
+  useProviderTenants,
+  useUpdateProviderTenantStatus,
+  useSendProviderMessage,
+} from '@/hooks/api/use-provider-console';
 import { notifySuccess } from '@/lib/notify';
 
 interface Tenant {
@@ -24,6 +28,60 @@ interface Tenant {
   users: number;
   monthlyRevenue: string;
   onboardingStep?: string;
+}
+
+/* ── Map API ProviderTenantRecord → local Tenant shape ── */
+const statusMap: Record<string, Tenant['status']> = {
+  ACTIVE: 'Active', Active: 'Active',
+  SUSPENDED: 'Suspended', Suspended: 'Suspended',
+  ONBOARDING: 'Onboarding', Onboarding: 'Onboarding',
+  TRIAL: 'Trial', Trial: 'Trial',
+  CHURNED: 'Churned', Churned: 'Churned',
+};
+const healthMap: Record<string, Tenant['healthState']> = {
+  HEALTHY: 'Healthy', Healthy: 'Healthy',
+  WARNING: 'Warning', Warning: 'Warning',
+  CRITICAL: 'Critical', Critical: 'Critical',
+  DEGRADED: 'Degraded', Degraded: 'Degraded',
+};
+const billingMap: Record<string, Tenant['billingState']> = {
+  GOOD: 'Current', Current: 'Current',
+  DUE: 'Overdue', Overdue: 'Overdue',
+  FAILED: 'Failed', Failed: 'Failed',
+  GRACE: 'Grace Period', 'Grace Period': 'Grace Period',
+};
+
+function formatRelativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const mins = Math.floor(diff / 60_000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr ago`;
+  const days = Math.floor(hrs / 24);
+  return `${days} day${days > 1 ? 's' : ''} ago`;
+}
+
+function mapApiTenant(raw: Record<string, unknown>): Tenant {
+  const totalUsers =
+    ((raw.activeStudents as number) ?? 0) +
+    ((raw.activeTeachers as number) ?? 0) +
+    ((raw.activeParents as number) ?? 0) +
+    ((raw.users as number) ?? 0);
+  return {
+    id: (raw.id as string) ?? '',
+    name: (raw.name as string) ?? 'Unknown',
+    status: statusMap[(raw.status as string)] ?? 'Active',
+    plan: (raw.planCode as string) ?? (raw.plan as string) ?? 'Unknown',
+    billingState: billingMap[(raw.billingStatus as string) ?? (raw.billingState as string)] ?? 'Current',
+    healthState: healthMap[(raw.health as string) ?? (raw.healthState as string)] ?? 'Healthy',
+    activeModules: (raw.modules as string[]) ?? (raw.activeModules as string[]) ?? [],
+    lastActivity: raw.lastLoginAt ? formatRelativeTime(raw.lastLoginAt as string) : ((raw.lastActivity as string) ?? 'Unknown'),
+    urgentFlags: (raw.incidentsOpen as number) ?? (raw.urgentFlags as number) ?? 0,
+    users: totalUsers || ((raw.users as number) ?? 0),
+    monthlyRevenue: (raw.monthlyRevenue as string) ?? '$0',
+    onboardingStep: (raw.onboardingStage as string) || (raw.onboardingStep as string) || undefined,
+  };
 }
 
 const FALLBACK_TENANTS: Tenant[] = [
@@ -99,8 +157,11 @@ export function ProviderConciergeTenants() {
   /* ── API hooks ── */
   const { data: apiTenants } = useProviderTenants();
   const updateStatus = useUpdateProviderTenantStatus();
+  const sendNotice = useSendProviderMessage();
 
-  const tenants = (apiTenants as any as Tenant[]) ?? FALLBACK_TENANTS;
+  const tenants: Tenant[] = apiTenants
+    ? (apiTenants as unknown as Record<string, unknown>[]).map(mapApiTenant)
+    : FALLBACK_TENANTS;
   const [selected, setSelected] = useState<Tenant | null>(tenants[0] ?? null);
 
   const filtered = (() => {
@@ -140,7 +201,7 @@ export function ProviderConciergeTenants() {
           </div>
           <div className="flex items-center gap-3 text-[10px] text-muted-foreground">
             <span className="inline-flex items-center gap-0.5"><Users className="h-2.5 w-2.5" />{t.users} users</span>
-            <span className="inline-flex items-center gap-0.5"><Package className="h-2.5 w-2.5" />{t.activeModules.length} modules</span>
+            <span className="inline-flex items-center gap-0.5"><Package className="h-2.5 w-2.5" />{t.activeModules?.length ?? 0} modules</span>
             <span className="inline-flex items-center gap-0.5"><Clock className="h-2.5 w-2.5" />{t.lastActivity}</span>
             {t.urgentFlags > 0 && (
               <span className="inline-flex items-center gap-0.5 text-red-500">
@@ -186,7 +247,7 @@ export function ProviderConciergeTenants() {
       <div>
         <h5 className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Active Modules</h5>
         <div className="flex flex-wrap gap-1.5">
-          {selected.activeModules.length > 0
+          {(selected.activeModules?.length ?? 0) > 0
             ? selected.activeModules.map((m) => (
                 <span key={m} className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary">{m}</span>
               ))
@@ -209,7 +270,14 @@ export function ProviderConciergeTenants() {
       <ConciergeAuditNotice message="Tenant actions are recorded in the provider audit log" />
 
       <div className="flex flex-wrap items-center gap-2 pt-2">
-        <button className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90">
+        <button
+          className="rounded-xl bg-primary px-3 py-1.5 text-xs font-medium text-primary-foreground hover:bg-primary/90"
+          onClick={() => {
+            const nav = useNavigationStore.getState();
+            nav.setSection('provider_tenants');
+            nav.setHeader('tenants_directory');
+          }}
+        >
           <span className="inline-flex items-center gap-1"><Eye className="h-3 w-3" />Open</span>
         </button>
         {selected.status === 'Active' && (
@@ -234,19 +302,58 @@ export function ProviderConciergeTenants() {
             <span className="inline-flex items-center gap-1"><Play className="h-3 w-3" />Reactivate</span>
           </button>
         )}
-        <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">
+        <button
+          className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+          onClick={() => {
+            const nav = useNavigationStore.getState();
+            nav.setSection('provider_billing');
+            nav.setHeader('billing_plans');
+          }}
+        >
           <span className="inline-flex items-center gap-1"><CreditCard className="h-3 w-3" />Change Plan</span>
         </button>
-        <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">
+        <button
+          className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+          onClick={() => {
+            const nav = useNavigationStore.getState();
+            nav.setSection('provider_tenants');
+            nav.setHeader('tenants_directory');
+            nav.setSubNav('tenants_profiles');
+          }}
+        >
           <span className="inline-flex items-center gap-1"><Settings className="h-3 w-3" />Configure Modules</span>
         </button>
-        <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">
+        <button
+          className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+          onClick={() => {
+            const nav = useNavigationStore.getState();
+            nav.setSection('provider_tenants');
+            nav.setHeader('tenants_usage');
+          }}
+        >
           <span className="inline-flex items-center gap-1"><Activity className="h-3 w-3" />View Usage</span>
         </button>
-        <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">
+        <button
+          className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+          onClick={() => {
+            const nav = useNavigationStore.getState();
+            nav.setSection('provider_billing');
+            nav.setHeader('billing_invoices');
+          }}
+        >
           <span className="inline-flex items-center gap-1"><FileText className="h-3 w-3" />Open Billing</span>
         </button>
-        <button className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60">
+        <button
+          className="rounded-xl border border-border/50 px-3 py-1.5 text-xs font-medium text-foreground hover:bg-muted/60"
+          onClick={() => {
+            const body = window.prompt(`Notice to ${selected.name}:`);
+            if (!body) return;
+            sendNotice.mutate(
+              { tenant: selected.name, subject: 'Concierge Notice', body, reason: 'Sent via concierge' },
+              { onSuccess: () => notifySuccess('Notice sent', `Notice delivered to ${selected.name}`) },
+            );
+          }}
+        >
           <span className="inline-flex items-center gap-1"><Megaphone className="h-3 w-3" />Send Notice</span>
         </button>
       </div>

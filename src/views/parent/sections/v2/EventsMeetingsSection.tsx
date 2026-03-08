@@ -9,7 +9,7 @@ import type { ParentEventDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
 import type { ParentSectionProps } from './shared';
 
-const TYPE_FILTERS = ['ALL', 'MEETING', 'EVENT', 'WORKSHOP', 'CONFERENCE'] as const;
+const TYPE_FILTERS = ['ALL', 'MEETING', 'ACADEMIC', 'EVENT', 'FIELD_TRIP', 'HOLIDAY'] as const;
 
 export function EventsMeetingsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawRows } = useParentV2Events({ scope, childId });

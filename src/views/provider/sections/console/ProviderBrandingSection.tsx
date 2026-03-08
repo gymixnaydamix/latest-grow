@@ -33,6 +33,7 @@ function ThemesView() {
   const [editId, setEditId] = useState<string | null>(null);
   const [editPrimary, setEditPrimary] = useState('');
   const [editSecondary, setEditSecondary] = useState('');
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   const handleCreate = () => {
     const reason = reasonPrompt('Create theme');
@@ -115,10 +116,29 @@ function ThemesView() {
                   ) : (
                     <div className="flex gap-1">
                       <Button size="sm" variant="outline" className="h-6 text-[10px] border-fuchsia-500/30" onClick={() => { setEditId(theme.id); setEditPrimary(theme.primary); setEditSecondary(theme.secondary); }}>Edit</Button>
-                      <Button size="sm" variant="outline" className="h-6 text-[10px] border-fuchsia-500/30">Preview</Button>
+                      <Button size="sm" variant="outline" className="h-6 text-[10px] border-fuchsia-500/30" onClick={() => setPreviewId(previewId === theme.id ? null : theme.id)}>
+                        {previewId === theme.id ? 'Close' : 'Preview'}
+                      </Button>
                     </div>
                   )}
                 </div>
+                {previewId === theme.id && (
+                  <div className="mt-3 rounded-lg border border-fuchsia-500/20 p-4 space-y-2" style={{ background: `linear-gradient(135deg, ${theme.primary}22, ${theme.secondary}22)` }}>
+                    <p className="text-[10px] font-semibold text-slate-300">Theme Preview</p>
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 flex-1 rounded-lg" style={{ backgroundColor: theme.primary }} />
+                      <div className="h-8 flex-1 rounded-lg" style={{ backgroundColor: theme.secondary }} />
+                    </div>
+                    <div className="flex gap-2">
+                      <button type="button" className="h-7 rounded-lg px-3 text-[10px] font-semibold text-white" style={{ backgroundColor: theme.primary }}>Primary Button</button>
+                      <button type="button" className="h-7 rounded-lg px-3 text-[10px] font-semibold text-white" style={{ backgroundColor: theme.secondary }}>Secondary Button</button>
+                    </div>
+                    <div className="rounded-lg border border-slate-500/30 bg-slate-900/60 p-2">
+                      <div className="h-2 w-3/4 rounded" style={{ backgroundColor: theme.primary, opacity: 0.3 }} />
+                      <div className="mt-1 h-2 w-1/2 rounded" style={{ backgroundColor: theme.secondary, opacity: 0.3 }} />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
           </div>
@@ -221,6 +241,7 @@ function LoginPagesView() {
   const [lpName, setLpName] = useState('');
   const [lpTenant, setLpTenant] = useState('');
   const [editId, setEditId] = useState<string | null>(null);
+  const [previewLoginId, setPreviewLoginId] = useState<string | null>(null);
 
   const handleCreate = () => {
     const reason = reasonPrompt('Create login page');
@@ -290,8 +311,35 @@ function LoginPagesView() {
                   <Button size="sm" variant="outline" className="h-6 text-[10px] border-fuchsia-500/30 flex-1" onClick={() => setEditId(editId === lp.id ? null : lp.id)}>
                     {editId === lp.id ? 'Close' : 'Edit'}
                   </Button>
-                  <Button size="sm" variant="outline" className="h-6 text-[10px] border-fuchsia-500/30 flex-1">Preview</Button>
+                  <Button size="sm" variant="outline" className="h-6 text-[10px] border-fuchsia-500/30 flex-1" onClick={() => setPreviewLoginId(previewLoginId === lp.id ? null : lp.id)}>
+                    {previewLoginId === lp.id ? 'Close Preview' : 'Preview'}
+                  </Button>
                 </div>
+
+                {previewLoginId === lp.id && (
+                  <div className="mt-2 rounded-lg border border-fuchsia-500/20 bg-slate-900 p-4">
+                    <div className="mx-auto max-w-[200px] space-y-3 text-center">
+                      <div className="flex items-center justify-center">
+                        {lp.logo ? (
+                          <div className="size-10 rounded-lg bg-fuchsia-500/20 flex items-center justify-center"><Lock className="size-5 text-fuchsia-300" /></div>
+                        ) : (
+                          <Lock className="size-8 text-slate-500" />
+                        )}
+                      </div>
+                      <p className="text-xs font-semibold text-slate-200">{lp.name}</p>
+                      <div className="space-y-2">
+                        <div className="h-7 rounded-md border border-slate-600 bg-slate-800" />
+                        <div className="h-7 rounded-md border border-slate-600 bg-slate-800" />
+                        <div className="h-7 rounded-md bg-fuchsia-500/30 text-[10px] leading-7 font-semibold text-fuchsia-100">Sign In</div>
+                      </div>
+                      <div className="flex justify-center gap-2 text-[10px]">
+                        {lp.sso && <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-emerald-300">SSO</span>}
+                        {lp.mfa && <span className="rounded bg-blue-500/15 px-1.5 py-0.5 text-blue-300">MFA</span>}
+                        {lp.customCss && <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-amber-300">CSS</span>}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {editId === lp.id && (
                   <div className="mt-2 grid grid-cols-2 gap-2 text-xs">

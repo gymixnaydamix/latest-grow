@@ -66,7 +66,7 @@ export function ProviderDashboard() {
 
   if (homeQuery.isLoading) {
     return (
-      <div className="flex h-full items-center justify-center text-slate-100">
+      <div className="flex h-full items-center justify-center text-foreground">
         <Loader2 className="mr-2 size-4 animate-spin" />
         Loading provider console…
       </div>
@@ -75,9 +75,9 @@ export function ProviderDashboard() {
 
   if (!canRead) {
     return (
-      <div className="h-full min-h-0 overflow-auto text-slate-100">
-        <Panel title="Permission Denied" accentBorder="border-red-500/20">
-          <p className="text-xs text-red-200">Provider read scope missing for this account.</p>
+      <div className="h-full min-h-0 overflow-auto text-foreground">
+        <Panel title="Permission Denied" accentBorder="border-danger/20">
+          <p className="text-xs text-danger">Provider read scope missing for this account.</p>
         </Panel>
       </div>
     );
@@ -86,7 +86,7 @@ export function ProviderDashboard() {
   const SectionComponent = SECTION_COMPONENT[activeSection] ?? ProviderHomeSection;
 
   return (
-    <div className="h-full min-h-0 overflow-auto text-slate-100">
+    <div className="h-full min-h-0 overflow-auto text-foreground">
       <SectionComponent />
     </div>
   );

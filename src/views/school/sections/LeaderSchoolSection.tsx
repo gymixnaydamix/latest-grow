@@ -49,8 +49,7 @@ export function LeaderSchoolSection() {
  * ══════════════════════════════════════════════════════════════════ */
 function AnnouncementsView() {
   const schoolId = useAuthStore((s) => s.schoolId) ?? '';
-  const { data, isLoading } = useAnnouncements(schoolId || null);
-  const announcements: Announcement[] = data ?? [];
+  const { data: announcements = [], isLoading } = useAnnouncements(schoolId || null);
 
   /* create form */
   const [showCreate, setShowCreate] = useState(false);

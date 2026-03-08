@@ -9,6 +9,7 @@ import { QuickNoteWidget } from '@/components/widgets/QuickNoteWidget';
 import { CountdownWidget } from '@/components/widgets/CountdownWidget';
 import { CalendarMiniWidget } from '@/components/widgets/CalendarMiniWidget';
 import { SystemStatusWidget } from '@/components/widgets/SystemStatusWidget';
+import { WeatherWidget } from '@/components/widgets/WeatherWidget';
 
 const SCHOOL_EVENTS = [
   { date: '2026-03-10', label: 'Parent-Teacher Conf', color: '#818cf8' },
@@ -80,6 +81,9 @@ export function WidgetPanel() {
 
           {/* System Status */}
           <SystemStatusWidget />
+
+          {/* Weather */}
+          <WeatherWidget />
         </div>
       </div>
     </>

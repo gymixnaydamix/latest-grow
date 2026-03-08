@@ -99,8 +99,12 @@ router.post('/limits', requireProviderPermission('provider.usage.write'), valida
 
 // ── Support extras ──
 router.get('/support/extras', requireProviderPermission('provider.support.read'), providerController.getSupportExtras);
+router.post('/support/macros', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.createMacro);
 router.patch('/support/macros/:macroId', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.updateMacro);
+router.delete('/support/macros/:macroId', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.deleteMacro);
+router.post('/support/kb', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.createKbArticle);
 router.patch('/support/kb/:articleId', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.updateKbArticle);
+router.post('/support/csat/survey', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.sendCsatSurvey);
 
 // ── Incidents / maintenance ──
 router.get('/incidents/maintenance', requireProviderPermission('provider.incidents.read'), providerController.listMaintenanceWindows);
@@ -170,6 +174,11 @@ router.get('/comms', requireProviderPermission('provider.support.read'), provide
 router.post('/comms/announcements', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.createAnnouncement);
 router.post('/comms/announcements/:announcementId/send', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.sendAnnouncement);
 router.post('/comms/messages', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.sendMessage);
+router.get('/comms/emails', requireProviderPermission('provider.support.read'), providerController.listEmailMessages);
+router.get('/comms/emails/:messageId', requireProviderPermission('provider.support.read'), providerController.getEmailMessage);
+router.post('/comms/emails', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.composeEmail);
+router.patch('/comms/emails/:messageId', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.updateEmail);
+router.delete('/comms/emails/:messageId', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.deleteEmail);
 router.post('/comms/templates', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.createCommsTemplate);
 router.patch('/comms/templates/:templateId', requireProviderPermission('provider.support.write'), validateCsrf, requireActionReason, providerController.updateCommsTemplate);
 

@@ -211,9 +211,15 @@ export function ProviderConciergeSettings() {
               <p className="mt-0.5 text-[10px] text-muted-foreground">{p.description}</p>
               <span className="mt-1 inline-block rounded-full bg-muted/50 px-2 py-0.5 text-[10px] text-muted-foreground">{p.scope}</span>
             </div>
-            <div className="h-5 w-9 rounded-full bg-primary/80 relative">
+            <button
+              onClick={() => updateSettings.mutate(
+                { section: 'permissions', payload: { label: p.label, enabled: false }, reason: 'Toggled via concierge' },
+                { onSuccess: () => notifySuccess('Permission updated', `${p.label} has been toggled`) },
+              )}
+              className="h-5 w-9 rounded-full bg-primary/80 relative transition-colors cursor-pointer"
+            >
               <div className="absolute right-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow" />
-            </div>
+            </button>
           </div>
         ))}
       </div>

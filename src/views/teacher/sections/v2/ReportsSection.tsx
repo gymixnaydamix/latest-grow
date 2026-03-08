@@ -20,6 +20,13 @@ import {
   gradebookStudentsDemo as FALLBACK_gradebookStudentsDemo, type ClassPerformanceDemo,
 } from './teacher-demo-data';
 
+/* ── Simple hash for deterministic values ── */
+function simpleHash(str: string): number {
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = ((h << 5) - h + str.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
 /* ── Grade letter helper ── */
 function gradeColor(avg: number): string {
   if (avg >= 90) return 'text-emerald-400';
@@ -47,10 +54,10 @@ function BarChart({ value, max, accent }: { value: number; max: number; accent: 
   const pct = Math.min((value / max) * 100, 100);
   return (
     <div className="flex items-center gap-2">
-      <div className="h-3 flex-1 rounded-full bg-white/5 overflow-hidden">
+      <div className="h-3 flex-1 rounded-full bg-muted/70 overflow-hidden">
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: accent }} />
       </div>
-      <span className="text-xs font-mono text-white/50 w-10 text-right">{value}%</span>
+      <span className="text-xs font-mono text-muted-foreground w-10 text-right">{value}%</span>
     </div>
   );
 }
@@ -67,16 +74,21 @@ interface StudentProgress {
   assignmentCompletion: number;
 }
 
-const studentProgressDemo: StudentProgress[] = FALLBACK_gradebookStudentsDemo.map(s => ({
-  id: s.id,
-  name: s.name,
-  initials: s.initials,
-  average: s.average,
-  letterGrade: s.letterGrade,
-  trend: s.trend,
-  attendanceRate: 85 + Math.floor(Math.random() * 15),
-  assignmentCompletion: s.scores.hw1 !== null ? 90 + Math.floor(Math.random() * 10) : 60 + Math.floor(Math.random() * 20),
-}));
+const studentProgressDemo: StudentProgress[] = FALLBACK_gradebookStudentsDemo.map(s => {
+  const h = simpleHash(s.id + s.name);
+  const baseAttendance = s.average >= 80 ? 90 : 82;
+  const hasAllScores = s.scores.hw1 !== null;
+  return {
+    id: s.id,
+    name: s.name,
+    initials: s.initials,
+    average: s.average,
+    letterGrade: s.letterGrade,
+    trend: s.trend,
+    attendanceRate: baseAttendance + (h % 10),
+    assignmentCompletion: hasAllScores ? 90 + (h % 10) : 60 + ((h >> 3) % 20),
+  };
+});
 
 /* ── At-risk students with reasons ── */
 interface AtRiskStudent {
@@ -126,7 +138,24 @@ export function ReportsSection(_props: TeacherSectionProps) {
 
   const overallAvg = classes.reduce((sum, c) => sum + c.avgGrade, 0) / classes.length;
   const overallPassRate = classes.reduce((sum, c) => sum + c.passRate, 0) / classes.length;
-  const atRiskCount = atRiskStudentsDemo.length;
+
+  // Derive at-risk students from class performance data when API data is available
+  const atRiskStudents = useMemo(() => {
+    const fromPerformance = classes.flatMap(cls =>
+      cls.atRiskStudents.map(name => ({
+        id: `ar-${simpleHash(name + cls.classId)}`,
+        name,
+        initials: name.split(' ').map(n => n[0]).join(''),
+        className: cls.className,
+        reasons: [`Below class average in ${cls.className}`, `Class average: ${cls.avgGrade}%`],
+        severity: cls.avgGrade < 70 ? 'high' as const : 'medium' as const,
+        actions: ['Schedule check-in with student', 'Review recent submissions', 'Contact parent if needed'],
+      }))
+    );
+    return fromPerformance.length > 0 ? fromPerformance : atRiskStudentsDemo;
+  }, [classes]);
+
+  const atRiskCount = atRiskStudents.length;
 
   const filteredStudents = useMemo(() => {
     if (!search.trim()) return studentProgressDemo;
@@ -159,7 +188,7 @@ export function ReportsSection(_props: TeacherSectionProps) {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <div className="size-3 rounded-full" style={{ backgroundColor: accent }} />
-                      <h4 className="text-sm font-semibold text-white/80">{cls.className}</h4>
+                      <h4 className="text-sm font-semibold text-foreground/80">{cls.className}</h4>
                     </div>
                     <span className={`text-lg font-bold ${gradeColor(cls.avgGrade)}`}>
                       {letterGrade(cls.avgGrade)}
@@ -169,28 +198,28 @@ export function ReportsSection(_props: TeacherSectionProps) {
                   {/* Bar charts using divs */}
                   <div className="space-y-3">
                     <div>
-                      <div className="flex items-center justify-between text-[11px] text-white/40 mb-1">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
                         <span>Average Grade</span>
                         <span className={gradeColor(cls.avgGrade)}>{cls.avgGrade}%</span>
                       </div>
                       <BarChart value={cls.avgGrade} max={100} accent={accent} />
                     </div>
                     <div>
-                      <div className="flex items-center justify-between text-[11px] text-white/40 mb-1">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
                         <span>Pass Rate</span>
                         <span>{cls.passRate}%</span>
                       </div>
                       <BarChart value={cls.passRate} max={100} accent="#34d399" />
                     </div>
                     <div>
-                      <div className="flex items-center justify-between text-[11px] text-white/40 mb-1">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
                         <span>Attendance</span>
                         <span>{cls.attendanceRate}%</span>
                       </div>
                       <BarChart value={cls.attendanceRate} max={100} accent="#818cf8" />
                     </div>
                     <div>
-                      <div className="flex items-center justify-between text-[11px] text-white/40 mb-1">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground mb-1">
                         <span>Assignment Completion</span>
                         <span>{cls.assignmentCompletion}%</span>
                       </div>
@@ -199,12 +228,12 @@ export function ReportsSection(_props: TeacherSectionProps) {
                   </div>
 
                   {/* Top / At-risk */}
-                  <div className="mt-4 pt-3 border-t border-white/6 grid grid-cols-2 gap-3">
+                  <div className="mt-4 pt-3 border-t border-border/50 grid grid-cols-2 gap-3">
                     <div>
                       <p className="text-[10px] font-semibold text-emerald-400/60 uppercase tracking-wide mb-1">Top Students</p>
                       <div className="space-y-0.5">
                         {cls.topStudents.map(s => (
-                          <p key={s} className="text-xs text-white/50">{s}</p>
+                          <p key={s} className="text-xs text-muted-foreground">{s}</p>
                         ))}
                       </div>
                     </div>
@@ -216,7 +245,7 @@ export function ReportsSection(_props: TeacherSectionProps) {
                             <p key={s} className="text-xs text-rose-400/70">{s}</p>
                           ))
                         ) : (
-                          <p className="text-xs text-white/25 italic">None</p>
+                          <p className="text-xs text-muted-foreground/60 italic">None</p>
                         )}
                       </div>
                     </div>
@@ -234,12 +263,12 @@ export function ReportsSection(_props: TeacherSectionProps) {
           {/* Search */}
           <GlassCard className="p-3!">
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
               <Input
                 placeholder="Search students..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
               />
             </div>
           </GlassCard>
@@ -247,7 +276,7 @@ export function ReportsSection(_props: TeacherSectionProps) {
           {/* Student Table */}
           <GlassCard className="p-0! overflow-hidden">
             {/* Header */}
-            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/6 text-[10px] font-semibold text-white/30 uppercase tracking-wide">
+            <div className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/50 text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide">
               <div className="col-span-3">Student</div>
               <div className="col-span-2 text-center">Average</div>
               <div className="col-span-1 text-center">Grade</div>
@@ -258,18 +287,18 @@ export function ReportsSection(_props: TeacherSectionProps) {
 
             {/* Rows */}
             {filteredStudents.length === 0 ? (
-              <div className="px-4 py-8 text-center text-sm text-white/25">No students match your search.</div>
+              <div className="px-4 py-8 text-center text-sm text-muted-foreground/60">No students match your search.</div>
             ) : (
               filteredStudents.map(student => (
                 <div
                   key={student.id}
-                  className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-white/4 items-center hover:bg-white/2 transition-colors"
+                  className="grid grid-cols-12 gap-2 px-4 py-3 border-b border-border/30 items-center hover:bg-card/60 transition-colors"
                 >
                   <div className="col-span-3 flex items-center gap-2 min-w-0">
-                    <Avatar className="size-7 shrink-0 border border-white/10">
-                      <AvatarFallback className="text-[9px] bg-white/5 text-white/50">{student.initials}</AvatarFallback>
+                    <Avatar className="size-7 shrink-0 border border-border/70">
+                      <AvatarFallback className="text-[9px] bg-muted/70 text-muted-foreground">{student.initials}</AvatarFallback>
                     </Avatar>
-                    <span className="text-sm text-white/70 truncate">{student.name}</span>
+                    <span className="text-sm text-foreground/70 truncate">{student.name}</span>
                   </div>
                   <div className="col-span-2 text-center">
                     <span className={`text-sm font-semibold ${gradeColor(student.average)}`}>{student.average.toFixed(1)}%</span>
@@ -280,7 +309,7 @@ export function ReportsSection(_props: TeacherSectionProps) {
                   <div className="col-span-1 flex justify-center">
                     {student.trend === 'up' && <TrendingUp className="size-4 text-emerald-400" />}
                     {student.trend === 'down' && <TrendingDown className="size-4 text-rose-400" />}
-                    {student.trend === 'flat' && <span className="text-xs text-white/30">→</span>}
+                    {student.trend === 'flat' && <span className="text-xs text-muted-foreground/70">→</span>}
                   </div>
                   <div className="col-span-2">
                     <BarChart value={student.attendanceRate} max={100} accent="#818cf8" />
@@ -298,14 +327,14 @@ export function ReportsSection(_props: TeacherSectionProps) {
       {/* ── AT-RISK VIEW ── */}
       {header === 'at_risk' && (
         <div className="space-y-4" data-animate>
-          {atRiskStudentsDemo.filter(s => s.severity === 'high').length > 0 && (
+          {atRiskStudents.filter(s => s.severity === 'high').length > 0 && (
             <UrgentInline
-              message={`${atRiskStudentsDemo.filter(s => s.severity === 'high').length} students require immediate attention`}
+              message={`${atRiskStudents.filter(s => s.severity === 'high').length} students require immediate attention`}
             />
           )}
 
           <div className="space-y-3">
-            {atRiskStudentsDemo.map(student => (
+            {atRiskStudents.map(student => (
               <GlassCard key={student.id} className={student.severity === 'high' ? 'border-rose-500/20! bg-rose-500/3!' : ''}>
                 <div className="flex items-start gap-3">
                   <Avatar className={`size-10 border shrink-0 ${
@@ -320,8 +349,8 @@ export function ReportsSection(_props: TeacherSectionProps) {
 
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-2">
-                      <span className="text-sm font-semibold text-white/80">{student.name}</span>
-                      <Badge variant="outline" className="text-[9px] border-white/10 text-white/35">{student.className}</Badge>
+                      <span className="text-sm font-semibold text-foreground/80">{student.name}</span>
+                      <Badge variant="outline" className="text-[9px] border-border/70 text-muted-foreground/80">{student.className}</Badge>
                       <StatusBadge
                         status={student.severity === 'high' ? 'High Risk' : 'Monitor'}
                         tone={student.severity === 'high' ? 'bad' : 'warn'}
@@ -330,10 +359,10 @@ export function ReportsSection(_props: TeacherSectionProps) {
 
                     {/* Reasons */}
                     <div className="mb-3">
-                      <p className="text-[10px] font-semibold text-white/30 uppercase tracking-wide mb-1">Risk Factors</p>
+                      <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-wide mb-1">Risk Factors</p>
                       <div className="space-y-1">
                         {student.reasons.map((reason, i) => (
-                          <div key={i} className="flex items-center gap-2 text-xs text-white/50">
+                          <div key={i} className="flex items-center gap-2 text-xs text-muted-foreground">
                             <div className={`size-1.5 rounded-full shrink-0 ${student.severity === 'high' ? 'bg-rose-400' : 'bg-amber-400'}`} />
                             {reason}
                           </div>

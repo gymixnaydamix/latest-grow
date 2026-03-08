@@ -24,8 +24,8 @@ export function OverviewView() {
   /* ── Wire KPIs to real tenant stats ── */
   const { data: statsResp } = useTenantStats();
   const { data: billingData } = useProviderBillingOverview();
-  void billingData;
   const s = statsResp;
+  const bAnalytics = billingData?.analytics;
 
   const kpis: KpiDef[] = [
     {
@@ -45,7 +45,8 @@ export function OverviewView() {
     },
     {
       label: 'LTV',
-      value: '$2,450', change: '+$120', up: true, sub: 'Customer Lifetime Value',
+      value: bAnalytics ? `$${Math.round(bAnalytics.summary.arpt * 14).toLocaleString()}` : '$…',
+      change: bAnalytics ? `ARPT $${bAnalytics.summary.arpt}` : '', up: true, sub: 'Customer Lifetime Value',
       icon3d: Icon3D_LTV, gradient: 'from-violet-500/10 to-violet-500/5',
       borderGlow: 'hover:shadow-violet-500/20', sparkline: FALLBACK_ltvSpark, sparkColor: '#8b5cf6',
     },
@@ -58,30 +59,34 @@ export function OverviewView() {
     },
   ];
 
-  const FALLBACK_barData = [
-    { h: '40%', fill: '60%' }, { h: '60%', fill: '40%' }, { h: '75%', fill: '80%' },
-    { h: '45%', fill: '50%' }, { h: '85%', fill: '90%' }, { h: '65%', fill: '70%' },
-    { h: '95%', fill: '85%' },
+  const barData = bAnalytics?.revenueByPlan?.map((p) => ({
+    h: `${Math.min(100, Math.round((p.mrr / (bAnalytics.summary.mrr || 1)) * 100))}%`,
+    fill: `${Math.min(100, Math.round((p.billed / (p.mrr || 1)) * 100))}%`,
+    name: p.planName,
+  })) ?? [
+    { h: '40%', fill: '60%', name: 'A' }, { h: '60%', fill: '40%', name: 'B' },
+    { h: '75%', fill: '80%', name: 'C' }, { h: '85%', fill: '90%', name: 'D' },
   ];
-  const barData = FALLBACK_barData;
 
   const FALLBACK_tickerItems = [
     { label: 'MRR', value: s ? `$${s.totalMrr.toLocaleString()}` : '$15.2K', change: '+2.1%', trend: 'up' as const },
     { label: 'Active Tenants', value: s ? String(s.active) : '124', change: '+5', trend: 'up' as const },
     { label: 'Churn Rate', value: s ? `${s.total > 0 ? ((s.churned / s.total) * 100).toFixed(1) : '0'}%` : '2.1%', change: '-0.5%', trend: 'down' as const },
-    { label: 'LTV', value: '$2,450', change: '+$120', trend: 'up' as const },
-    { label: 'Trial → Paid', value: '68%', change: '+3%', trend: 'up' as const },
-    { label: 'Uptime', value: '99.9%', trend: 'up' as const },
+    { label: 'LTV', value: bAnalytics ? `$${Math.round(bAnalytics.summary.arpt * 14).toLocaleString()}` : '$2,450', change: bAnalytics ? `ARPT $${bAnalytics.summary.arpt}` : '+$120', trend: 'up' as const },
+    { label: 'ARR', value: bAnalytics ? `$${bAnalytics.summary.arr.toLocaleString()}` : '$182K', change: bAnalytics ? `${bAnalytics.summary.atRiskTenants} at-risk` : '', trend: 'up' as const },
+    { label: 'Collected', value: bAnalytics ? `$${bAnalytics.summary.collectedThisMonth.toLocaleString()}` : '$12K', trend: 'up' as const },
   ];
   const tickerItems = FALLBACK_tickerItems;
 
-  const FALLBACK_planDistribution = [
+  const planColors = ['#818cf8', '#34d399', '#fbbf24', '#f472b6', '#60a5fa', '#f87171'];
+  const planDistribution = bAnalytics?.revenueByPlan?.map((p, i) => ({
+    name: p.planName, value: p.tenants, color: planColors[i % planColors.length],
+  })) ?? [
     { name: 'Professional', value: 45, color: '#818cf8' },
     { name: 'Enterprise', value: 28, color: '#34d399' },
     { name: 'Starter', value: 18, color: '#fbbf24' },
     { name: 'Trial', value: 9, color: '#f472b6' },
   ];
-  const planDistribution = FALLBACK_planDistribution;
 
   return (
     <div className="flex flex-col gap-1.5 h-full min-h-0 overflow-hidden">
@@ -244,48 +249,45 @@ export function OverviewView() {
       </div>
 
       {/* ═══ Right column: Performance + Weather stacked ═══ */}
-      <div className="hidden lg:flex w-44 flex-col gap-1 shrink-0 min-h-0">
-        <div data-animate className="group relative flex flex-1 flex-col rounded-xl bg-slate-950 p-2 shadow-2xl transition-all duration-300 hover:shadow-indigo-500/20 overflow-hidden min-h-0">
-          <div className="absolute inset-0 rounded-xl bg-linear-to-r from-indigo-500 via-purple-500 to-pink-500 opacity-20 blur-sm transition-opacity duration-300 group-hover:opacity-30" />
-          <div className="absolute inset-px rounded-[11px] bg-slate-950" />
-          <div className="relative flex flex-1 flex-col min-h-0">
-            <div className="mb-1.5 flex items-center justify-between">
-              <div className="flex items-center gap-1.5">
-                <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-purple-500">
-                  <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+      <div className="hidden lg:flex w-44 flex-col gap-1.5 shrink-0 min-h-0">
+        {/* Performance — indigo chroma card */}
+        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-indigo-500/20 bg-linear-to-br from-indigo-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-indigo-500/30 overflow-hidden min-h-0">
+          <div className="mb-1.5 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-purple-500">
+                <svg className="h-3 w-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" /></svg>
+              </div>
+              <h3 className="text-[10px] font-semibold text-foreground">Performance</h3>
+            </div>
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-medium text-emerald-600 dark:text-emerald-400"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Live</span>
+          </div>
+          <div className="mb-1.5 grid grid-cols-2 gap-1">
+            <div className="rounded-lg bg-muted/40 p-1 border border-border/40">
+              <p className="text-[8px] font-medium text-muted-foreground">Views</p>
+              <p className="text-xs font-semibold text-foreground">24.5K</p>
+              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">+12.3%</span>
+            </div>
+            <div className="rounded-lg bg-muted/40 p-1 border border-border/40">
+              <p className="text-[8px] font-medium text-muted-foreground">Converts</p>
+              <p className="text-xs font-semibold text-foreground">1.2K</p>
+              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">+8.1%</span>
+            </div>
+          </div>
+          <div className="mb-1.5 flex-1 min-h-0 w-full overflow-hidden rounded-lg bg-muted/30 p-1 border border-border/40">
+            <div className="flex h-full w-full items-end justify-between gap-0.5">
+              {barData.map((bar: typeof barData[number], i: number) => (
+                <div key={i} className="flex-1 rounded-sm bg-indigo-500/20" style={{ height: bar.h }}>
+                  <div className="w-full rounded-sm bg-linear-to-t from-indigo-600 to-indigo-400 transition-all duration-300" style={{ height: bar.fill }} />
                 </div>
-                <h3 className="text-[10px] font-semibold text-white">Performance</h3>
-              </div>
-              <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-medium text-emerald-500"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Live</span>
+              ))}
             </div>
-            <div className="mb-1.5 grid grid-cols-2 gap-1">
-              <div className="rounded-md bg-slate-900/50 p-1 border border-slate-800/50">
-                <p className="text-[8px] font-medium text-slate-400">Views</p>
-                <p className="text-xs font-semibold text-white">24.5K</p>
-                <span className="text-[8px] font-medium text-emerald-500">+12.3%</span>
-              </div>
-              <div className="rounded-md bg-slate-900/50 p-1 border border-slate-800/50">
-                <p className="text-[8px] font-medium text-slate-400">Converts</p>
-                <p className="text-xs font-semibold text-white">1.2K</p>
-                <span className="text-[8px] font-medium text-emerald-500">+8.1%</span>
-              </div>
-            </div>
-            <div className="mb-1.5 flex-1 min-h-0 w-full overflow-hidden rounded-md bg-slate-900/50 p-1 border border-slate-800/50">
-              <div className="flex h-full w-full items-end justify-between gap-0.5">
-                {barData.map((bar: typeof barData[number], i: number) => (
-                  <div key={i} className="flex-1 rounded-sm bg-indigo-500/30" style={{ height: bar.h }}>
-                    <div className="w-full rounded-sm bg-linear-to-t from-indigo-600 to-indigo-400 transition-all duration-300" style={{ height: bar.fill }} />
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-[8px] font-medium text-slate-400">Last 7 days</span>
-              <button className="flex items-center gap-0.5 rounded-md bg-linear-to-r from-indigo-500 to-purple-500 px-1.5 py-0.5 text-[8px] font-medium text-white transition-all duration-300 hover:from-indigo-600 hover:to-purple-600 hover:scale-105">
-                Details
-                <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
-              </button>
-            </div>
+          </div>
+          <div className="flex items-center justify-between">
+            <span className="text-[8px] font-medium text-muted-foreground">Last 7 days</span>
+            <button className="flex items-center gap-0.5 rounded-md bg-linear-to-r from-indigo-500 to-purple-500 px-1.5 py-0.5 text-[8px] font-medium text-white transition-all duration-300 hover:from-indigo-600 hover:to-purple-600 hover:scale-105">
+              Details
+              <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
+            </button>
           </div>
         </div>
         {/* ── Plan Distribution donut ── */}

@@ -15,19 +15,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/features/EmptyState';
 import { useAnnouncements } from '@/hooks/api';
-import type { Announcement } from '@root/types';
 import { useAuthStore } from '@/store/auth.store';
 
 export function AnnouncementsPage() {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('all');
   const { schoolId } = useAuthStore();
-  const { data, isLoading, error } = useAnnouncements(schoolId);
+  const { data: announcements = [], isLoading, error } = useAnnouncements(schoolId);
   const containerRef = useStaggerAnimate<HTMLDivElement>([tab, isLoading]);
 
-  const announcements = data ?? [];
-
-  const filtered = announcements.filter((a: Announcement) => {
+  const filtered = announcements.filter((a) => {
     const matchSearch = a.title.toLowerCase().includes(search.toLowerCase()) || a.body.toLowerCase().includes(search.toLowerCase());
     const audienceArr = (a.audience ?? []).map((x) => x.toLowerCase());
     const matchTab = tab === 'all' || audienceArr.includes(tab);

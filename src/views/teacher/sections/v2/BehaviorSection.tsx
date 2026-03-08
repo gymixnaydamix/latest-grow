@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useNavigationStore } from '@/store/navigation.store';
+import { useCourses } from '@/hooks/api';
 import { useSaveBehaviorNote, useTeacherBehaviorNotes } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import {
@@ -22,6 +23,7 @@ import {
 import type { TeacherSectionProps } from './shared';
 import {
   behaviorNotesDemo as FALLBACK_behaviorNotesDemo, attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo,
+  teacherClassesDemo as FALLBACK_teacherClassesDemo,
   formatDateLabel, type BehaviorNoteDemo,
 } from './teacher-demo-data';
 
@@ -32,11 +34,13 @@ const typeStyles: Record<string, { badge: string; icon: React.ReactNode; label: 
   incident: { badge: 'border-rose-500/30 bg-rose-500/10 text-rose-400', icon: <FileText className="size-3.5" />, label: 'Incident', tone: 'bad' },
 };
 
-export function BehaviorSection(_props: TeacherSectionProps) {
+export function BehaviorSection({ schoolId }: TeacherSectionProps) {
   const { activeHeader, setHeader } = useNavigationStore();
   const header = activeHeader || 'behavior_log';
   const saveBehaviorNoteMut = useSaveBehaviorNote();
   const { data: apiBehaviorNotes } = useTeacherBehaviorNotes();
+  const { data: coursesRes } = useCourses(schoolId);
+  const classes = coursesRes ?? FALLBACK_teacherClassesDemo;
 
   const notes: BehaviorNoteDemo[] = (apiBehaviorNotes as unknown as BehaviorNoteDemo[]) ?? FALLBACK_behaviorNotesDemo;
 
@@ -50,6 +54,7 @@ export function BehaviorSection(_props: TeacherSectionProps) {
   const [noteFollowUp, setNoteFollowUp] = useState(false);
   const [noteFollowUpText, setNoteFollowUpText] = useState('');
   const [studentSearch, setStudentSearch] = useState('');
+  const [noteClassId, setNoteClassId] = useState('');
 
   const positiveCount = notes.filter(n => n.type === 'positive').length;
   const concernCount = notes.filter(n => n.type === 'concern').length;
@@ -79,11 +84,13 @@ export function BehaviorSection(_props: TeacherSectionProps) {
 
   const handleAddNote = () => {
     if (!noteStudent || !noteDescription.trim()) return;
+    const selectedClass = classes.find((c: any) => (c.id ?? c.classId) === noteClassId);
+    const className = selectedClass ? (selectedClass as any).name ?? (selectedClass as any).className ?? '' : '';
     saveBehaviorNoteMut.mutate(
-      { studentName: noteStudent, className: '', classId: '', type: noteType, note: noteDescription, followUp: noteFollowUp ? noteFollowUpText : undefined },
+      { studentName: noteStudent, className, classId: noteClassId, type: noteType, note: noteDescription, followUp: noteFollowUp ? noteFollowUpText : undefined },
       { onSuccess: () => {
         notifySuccess('Behavior note saved', `Note saved for ${noteStudent}`);
-        setNoteStudent(''); setNoteType('concern'); setNoteDescription(''); setNoteFollowUp(false); setNoteFollowUpText('');
+        setNoteStudent(''); setNoteType('concern'); setNoteDescription(''); setNoteFollowUp(false); setNoteFollowUpText(''); setNoteClassId('');
         setHeader('behavior_log');
       }}
     );
@@ -117,12 +124,12 @@ export function BehaviorSection(_props: TeacherSectionProps) {
           {/* Search + Filter */}
           <GlassCard className="flex flex-wrap items-center gap-3 p-3!">
             <div className="relative flex-1 min-w-50">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
               <Input
                 placeholder="Search notes by student, class..."
                 value={search}
                 onChange={e => setSearch(e.target.value)}
-                className="pl-9 bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
               />
             </div>
             <div className="flex gap-1.5">
@@ -133,7 +140,7 @@ export function BehaviorSection(_props: TeacherSectionProps) {
                   className={`rounded-lg px-3 py-1.5 text-xs font-medium transition-all ${
                     filterType === t
                       ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
-                      : 'bg-white/3 text-white/40 border border-white/6 hover:bg-white/5'
+                      : 'bg-card/80 text-muted-foreground border border-border/50 hover:bg-muted/70'
                   }`}
                 >
                   {t === 'all' ? 'All' : t.charAt(0).toUpperCase() + t.slice(1)}
@@ -148,7 +155,7 @@ export function BehaviorSection(_props: TeacherSectionProps) {
           ) : (
             <div className="relative space-y-3">
               {/* Vertical timeline line */}
-              <div className="absolute left-4.75 top-4 bottom-4 w-px bg-white/6" />
+              <div className="absolute left-4.75 top-4 bottom-4 w-px bg-muted/80" />
 
               {filteredNotes.map(note => {
                 const style = typeStyles[note.type] ?? typeStyles.positive;
@@ -160,21 +167,21 @@ export function BehaviorSection(_props: TeacherSectionProps) {
                     </div>
 
                     {/* Card */}
-                    <div className="flex-1 rounded-xl border border-white/6 bg-white/3 backdrop-blur-xl p-4">
+                    <div className="flex-1 rounded-xl border border-border/50 bg-card/80 backdrop-blur-xl p-4">
                       <div className="flex flex-wrap items-center gap-2 mb-2">
-                        <Avatar className="size-6 border border-white/10">
-                          <AvatarFallback className="text-[9px] bg-white/5 text-white/50">
+                        <Avatar className="size-6 border border-border/70">
+                          <AvatarFallback className="text-[9px] bg-muted/70 text-muted-foreground">
                             {note.studentInitials}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="text-sm font-medium text-white/75">{note.studentName}</span>
-                        <Badge variant="outline" className="text-[9px] border-white/10 text-white/35">
+                        <span className="text-sm font-medium text-foreground/70">{note.studentName}</span>
+                        <Badge variant="outline" className="text-[9px] border-border/70 text-muted-foreground/80">
                           {note.className}
                         </Badge>
                         <StatusBadge status={style.label} tone={style.tone} />
-                        <span className="ml-auto text-[10px] text-white/25">{formatDateLabel(note.date)}</span>
+                        <span className="ml-auto text-[10px] text-muted-foreground/60">{formatDateLabel(note.date)}</span>
                       </div>
-                      <p className="text-sm text-white/60 leading-relaxed">{note.note}</p>
+                      <p className="text-sm text-muted-foreground leading-relaxed">{note.note}</p>
                       {note.followUp && (
                         <div className="mt-2 flex items-center gap-2 text-xs text-amber-400/70">
                           <AlertTriangle className="size-3" />
@@ -195,40 +202,40 @@ export function BehaviorSection(_props: TeacherSectionProps) {
         <GlassCard data-animate>
           <div className="flex items-center gap-2 mb-5">
             <FileText className="size-4 text-indigo-400" />
-            <h3 className="text-sm font-semibold text-white/80">Add Behavior Note</h3>
+            <h3 className="text-sm font-semibold text-foreground/80">Add Behavior Note</h3>
           </div>
 
           <div className="space-y-4">
             {/* Student Search */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Student</Label>
+              <Label className="text-xs text-muted-foreground">Student</Label>
               {noteStudent ? (
                 <div className="flex items-center gap-2 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-3 py-2">
                   <User className="size-4 text-indigo-400" />
-                  <span className="text-sm text-white/70 flex-1">{noteStudent}</span>
-                  <button onClick={() => { setNoteStudent(''); setStudentSearch(''); }} className="text-xs text-white/30 hover:text-white/50">Change</button>
+                  <span className="text-sm text-foreground/70 flex-1">{noteStudent}</span>
+                  <button onClick={() => { setNoteStudent(''); setStudentSearch(''); }} className="text-xs text-muted-foreground/70 hover:text-muted-foreground">Change</button>
                 </div>
               ) : (
                 <>
                   <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
                     <Input
                       placeholder="Search student name..."
                       value={studentSearch}
                       onChange={e => setStudentSearch(e.target.value)}
-                      className="pl-9 bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                      className="pl-9 bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
                     />
                   </div>
                   {matchingStudents.length > 0 && (
-                    <div className="rounded-lg border border-white/8 bg-white/3 p-1.5 space-y-0.5">
+                    <div className="rounded-lg border border-border/60 bg-card/80 p-1.5 space-y-0.5">
                       {matchingStudents.map(s => (
                         <button
                           key={s.id}
                           onClick={() => { setNoteStudent(s.name); setStudentSearch(''); }}
-                          className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-white/60 rounded-md hover:bg-white/5 transition-colors"
+                          className="w-full text-left flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground rounded-md hover:bg-muted/70 transition-colors"
                         >
-                          <Avatar className="size-5 border border-white/10">
-                            <AvatarFallback className="text-[8px] bg-white/5 text-white/40">{s.initials}</AvatarFallback>
+                          <Avatar className="size-5 border border-border/70">
+                            <AvatarFallback className="text-[8px] bg-muted/70 text-muted-foreground">{s.initials}</AvatarFallback>
                           </Avatar>
                           {s.name}
                         </button>
@@ -241,7 +248,22 @@ export function BehaviorSection(_props: TeacherSectionProps) {
 
             {/* Note Type */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Note Type</Label>
+              <Label className="text-xs text-muted-foreground">Class</Label>
+              <select
+                value={noteClassId}
+                onChange={e => setNoteClassId(e.target.value)}
+                className="w-full rounded-lg border border-border/60 bg-card/80 px-3 py-2 text-sm text-foreground/80 focus:outline-none focus:ring-1 focus:ring-indigo-500/40"
+              >
+                <option value="">Select class...</option>
+                {classes.map((c: any) => (
+                  <option key={c.id ?? c.classId} value={c.id ?? c.classId}>{(c as any).name ?? (c as any).className ?? c.id}</option>
+                ))}
+              </select>
+            </div>
+
+            {/* Note Type */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Note Type</Label>
               <div className="flex gap-2">
                 {(['positive', 'concern', 'incident'] as const).map(t => {
                   const style = typeStyles[t];
@@ -251,8 +273,8 @@ export function BehaviorSection(_props: TeacherSectionProps) {
                       onClick={() => setNoteType(t)}
                       className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all ${
                         noteType === t
-                          ? `${style.badge} ring-1 ring-white/10`
-                          : 'border-white/6 bg-white/2 text-white/40 hover:bg-white/4'
+                          ? `${style.badge} ring-1 ring-border/70`
+                          : 'border-border/50 bg-card/60 text-muted-foreground hover:bg-muted/60'
                       }`}
                     >
                       {style.icon} {style.label}
@@ -264,13 +286,13 @@ export function BehaviorSection(_props: TeacherSectionProps) {
 
             {/* Description */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-white/50">Description</Label>
+              <Label className="text-xs text-muted-foreground">Description</Label>
               <Textarea
                 placeholder="Describe the behavior observation..."
                 value={noteDescription}
                 onChange={e => setNoteDescription(e.target.value)}
                 rows={4}
-                className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25 resize-none"
+                className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60 resize-none"
               />
             </div>
 
@@ -280,22 +302,22 @@ export function BehaviorSection(_props: TeacherSectionProps) {
                 <Checkbox
                   checked={noteFollowUp}
                   onCheckedChange={v => setNoteFollowUp(!!v)}
-                  className="border-white/20 data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
+                  className="border-border data-[state=checked]:bg-indigo-500 data-[state=checked]:border-indigo-500"
                 />
-                <span className="text-sm text-white/60">Requires follow-up action</span>
+                <span className="text-sm text-muted-foreground">Requires follow-up action</span>
               </label>
               {noteFollowUp && (
                 <Input
                   placeholder="Follow-up action (e.g., Contact parent, Counselor referral)"
                   value={noteFollowUpText}
                   onChange={e => setNoteFollowUpText(e.target.value)}
-                  className="bg-white/3 border-white/8 text-white/80 placeholder:text-white/25"
+                  className="bg-card/80 border-border/60 text-foreground/80 placeholder:text-muted-foreground/60"
                 />
               )}
             </div>
 
             <div className="flex justify-end gap-2 pt-2">
-              <Button variant="ghost" size="sm" className="text-white/40 hover:text-white/60" onClick={() => setHeader('behavior_log')}>
+              <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-muted-foreground" onClick={() => setHeader('behavior_log')}>
                 Cancel
               </Button>
               <Button
@@ -317,8 +339,8 @@ export function BehaviorSection(_props: TeacherSectionProps) {
           <GlassCard className="flex items-center gap-3 py-3!">
             <Trophy className="size-5 text-amber-400" />
             <div>
-              <h3 className="text-sm font-semibold text-white/80">Praise Board</h3>
-              <p className="text-xs text-white/35">Celebrating student achievements and positive behavior</p>
+              <h3 className="text-sm font-semibold text-foreground/80">Praise Board</h3>
+              <p className="text-xs text-muted-foreground/80">Celebrating student achievements and positive behavior</p>
             </div>
             <Badge variant="outline" className="ml-auto text-[9px] border-emerald-500/30 text-emerald-400">{praiseNotes.length} recognitions</Badge>
           </GlassCard>
@@ -344,18 +366,18 @@ export function BehaviorSection(_props: TeacherSectionProps) {
                   >
                     <div className="flex items-center gap-2 mb-3">
                       <Award className="size-5 text-amber-400" />
-                      <Avatar className="size-8 border border-white/10">
-                        <AvatarFallback className="text-[10px] bg-white/5 text-white/60">
+                      <Avatar className="size-8 border border-border/70">
+                        <AvatarFallback className="text-[10px] bg-muted/70 text-muted-foreground">
                           {note.studentInitials}
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-semibold text-white/80">{note.studentName}</p>
-                        <p className="text-[10px] text-white/35">{note.className}</p>
+                        <p className="text-sm font-semibold text-foreground/80">{note.studentName}</p>
+                        <p className="text-[10px] text-muted-foreground/80">{note.className}</p>
                       </div>
                     </div>
-                    <p className="text-sm text-white/60 leading-relaxed">{note.note}</p>
-                    <p className="mt-3 text-[10px] text-white/25">{formatDateLabel(note.date)}</p>
+                    <p className="text-sm text-muted-foreground leading-relaxed">{note.note}</p>
+                    <p className="mt-3 text-[10px] text-muted-foreground/60">{formatDateLabel(note.date)}</p>
                   </div>
                 );
               })}

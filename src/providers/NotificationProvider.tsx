@@ -33,7 +33,10 @@ export function NotificationProvider({ children }: { children: ReactNode }) {
   // Connect/disconnect WS on auth state changes
   useEffect(() => {
     if (user) {
-      wsService.connect();
+      // Pass user ID as token for WS authentication
+      // The backend WS server can use this to identify the connection.
+      // If the backend solely relies on cookies, this is a safe no-op fallback.
+      wsService.connect(user.id);
     } else {
       wsService.disconnect();
     }

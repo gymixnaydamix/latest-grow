@@ -21,6 +21,7 @@ router.get('/grading-queue', tc.getGradingQueue);
 
 // Classes
 router.get('/classes', tc.getClasses);
+router.get('/classes/:classId', tc.getClassDetail);
 
 // Attendance
 router.get('/attendance/:classId', tc.getAttendanceByClass);

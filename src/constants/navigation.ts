@@ -603,6 +603,7 @@ export const teacherNav: RoleNavConfig = {
       description: 'Class workspaces, rosters, timetables',
       headerItems: [
         { id: 'class_list', label: 'All Classes', icon: BookOpen },
+        { id: 'class_detail', label: 'Class Detail', icon: BookOpen },
         { id: 'class_timetable', label: 'My Timetable', icon: Calendar },
       ],
     },
@@ -778,78 +779,6 @@ export const teacherNav: RoleNavConfig = {
         { id: 'notification_settings', label: 'Notifications', icon: Bell },
       ],
     },
-    /* ── Concierge AI ── */
-    {
-      id: 'concierge_ai', label: 'Concierge AI', icon: Sparkles,
-      description: 'AI family assistant for tasks, payments & communication',
-      headerItems: [
-        {
-          id: 'c_assistant', label: 'Assistant', icon: Sparkles,
-          subNav: [
-            { id: 'c_quick_actions', label: 'Quick Actions' },
-            { id: 'c_today', label: 'Today' },
-            { id: 'c_search', label: 'Search' },
-            { id: 'c_history', label: 'History' },
-          ],
-        },
-        {
-          id: 'c_family_tasks', label: 'Family Tasks', icon: CheckSquare,
-          subNav: [
-            { id: 'c_all_tasks', label: 'All Tasks' },
-            { id: 'c_due_today', label: 'Due Today' },
-            { id: 'c_per_child', label: 'Per Child' },
-            { id: 'c_approvals_needed', label: 'Approvals Needed' },
-            { id: 'c_scheduled', label: 'Scheduled' },
-            { id: 'c_completed', label: 'Completed' },
-          ],
-        },
-        {
-          id: 'c_payments', label: 'Payments', icon: CreditCard,
-          subNav: [
-            { id: 'c_outstanding', label: 'Outstanding' },
-            { id: 'c_payment_history', label: 'Payment History' },
-            { id: 'c_installments', label: 'Installment Plans' },
-            { id: 'c_fee_breakdown', label: 'Fee Breakdown' },
-            { id: 'c_receipts', label: 'Receipts' },
-            { id: 'c_pay_settings', label: 'Settings' },
-          ],
-        },
-        {
-          id: 'c_forms', label: 'Forms & Approvals', icon: FileCheck,
-          subNav: [
-            { id: 'c_pending_forms', label: 'Pending Forms' },
-            { id: 'c_leave_requests', label: 'Leave Requests' },
-            { id: 'c_permission_slips', label: 'Permission Slips' },
-            { id: 'c_medical', label: 'Medical' },
-            { id: 'c_reenrollment', label: 'Re-enrollment' },
-            { id: 'c_submitted', label: 'Submitted' },
-          ],
-        },
-        {
-          id: 'c_comms', label: 'Comms', icon: Mail,
-          subNav: [
-            { id: 'c_teacher_messages', label: 'Teacher Messages' },
-            { id: 'c_school_notices', label: 'School Notices' },
-            { id: 'c_event_updates', label: 'Event Updates' },
-            { id: 'c_feedback', label: 'Feedback' },
-            { id: 'c_emergency', label: 'Emergency Alerts' },
-            { id: 'c_sent', label: 'Sent' },
-          ],
-        },
-        {
-          id: 'c_settings', label: 'Settings', icon: Settings,
-          subNav: [
-            { id: 'c_preferences', label: 'Preferences' },
-            { id: 'c_notification_rules', label: 'Notification Rules' },
-            { id: 'c_child_profiles', label: 'Child Profiles' },
-            { id: 'c_payment_methods', label: 'Payment Methods' },
-            { id: 'c_privacy', label: 'Privacy' },
-            { id: 'c_language', label: 'Language' },
-          ],
-        },
-      ],
-    },
-
     {
       id: 'support', label: 'Support', icon: HelpCircle,
       description: 'Help center, submit tickets, FAQs',

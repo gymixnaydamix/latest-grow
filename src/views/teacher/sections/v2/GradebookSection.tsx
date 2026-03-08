@@ -14,7 +14,7 @@ import {
 } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCourses, useAssignments, useCourseGrades } from '@/hooks/api';
-import { useSaveGrades, useExportGrades, useAddComment, useTeacherCommentBank } from '@/hooks/api/use-teacher';
+import { useSaveGrades, useExportGrades, useAddComment, useTeacherCommentBank, useTeacherGradebook, useTeacherClassPerformance } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course } from '@root/types';
@@ -87,9 +87,15 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const { data: apiCommentBank } = useTeacherCommentBank();
   const commentBank = (apiCommentBank as unknown as typeof FALLBACK_commentBankDemo) ?? FALLBACK_commentBankDemo;
 
-  /* ── Gradebook data ── */
-  const students = FALLBACK_gradebookStudentsDemo;
-  const gbAssignments = FALLBACK_gradebookAssignmentsDemo;
+  // Wire gradebook from API with demo fallback
+  const { data: apiGradebookData } = useTeacherGradebook(selectedClass || firstCourseId || null);
+  const apiGb = (apiGradebookData as any)?.data as { students?: typeof FALLBACK_gradebookStudentsDemo; assignments?: typeof FALLBACK_gradebookAssignmentsDemo } | undefined;
+  const students = apiGb?.students?.length ? apiGb.students : FALLBACK_gradebookStudentsDemo;
+  const gbAssignments = apiGb?.assignments?.length ? apiGb.assignments : FALLBACK_gradebookAssignmentsDemo;
+
+  // Wire class performance from API for grade reports
+  const { data: apiClassPerf } = useTeacherClassPerformance();
+  const classPerformance = (apiClassPerf as unknown as typeof FALLBACK_classPerformanceDemo) ?? FALLBACK_classPerformanceDemo;
 
   /* ── Editable cells state ── */
   const [editedScores, setEditedScores] = useState<Record<string, Record<string, string>>>({});
@@ -133,7 +139,7 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
       <div className="space-y-4" data-animate>
         <div className="flex flex-wrap items-center gap-3">
           <Select value={selectedClass} onValueChange={setSelectedClass}>
-            <SelectTrigger className="w-52 border-white/8 bg-white/4 text-white/80 text-xs">
+            <SelectTrigger className="w-52 border-border/60 bg-muted/60 text-foreground/80 text-xs">
               <SelectValue placeholder="Select class" />
             </SelectTrigger>
             <SelectContent>
@@ -143,8 +149,8 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
             </SelectContent>
           </Select>
           <div className="ml-auto flex gap-2">
-            <Button variant="ghost" size="sm" className="text-xs text-white/40" onClick={() => { exportGradesMut.mutate({ classId: selectedClass || firstCourseId || '', format: 'csv' }, { onSuccess: () => notifySuccess('Export started', 'CSV will be downloaded shortly') }); }}>Export CSV</Button>
-            <Button size="sm" className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs" onClick={() => { const grades = Object.entries(editedScores).map(([key, score]) => { const [studentId, assignmentId] = key.split('_'); return { studentId, assignmentId, score: Number(score) }; }); saveGradesMut.mutate({ classId: selectedClass || firstCourseId || '', grades }, { onSuccess: () => notifySuccess('Grades saved', `${grades.length} grade(s) saved`) }); }}>
+            <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => { exportGradesMut.mutate({ classId: selectedClass || firstCourseId || '', format: 'csv' }, { onSuccess: () => notifySuccess('Export started', 'CSV will be downloaded shortly') }); }}>Export CSV</Button>
+            <Button size="sm" className="bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-xs" onClick={() => { const grades: Array<{ studentId: string; assignmentId: string; score: number }> = []; for (const [studentId, assignments] of Object.entries(editedScores)) { for (const [assignmentId, scoreStr] of Object.entries(assignments)) { const numScore = Number(scoreStr); if (!isNaN(numScore)) grades.push({ studentId, assignmentId, score: numScore }); } } saveGradesMut.mutate({ classId: selectedClass || firstCourseId || '', grades }, { onSuccess: () => notifySuccess('Grades saved', `${grades.length} grade(s) saved`) }); }}>
               <CheckCircle2 className="size-3 mr-1" /> Save Grades
             </Button>
           </div>
@@ -160,28 +166,28 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
         <GlassCard className="overflow-x-auto">
           <table className="w-full text-left min-w-[700px]">
             <thead>
-              <tr className="border-b border-white/6">
-                <th className="pb-3 pr-4 text-[11px] font-semibold text-white/40 uppercase tracking-wider sticky left-0 bg-white/3 z-10">Student</th>
+              <tr className="border-b border-border/50">
+                <th className="pb-3 pr-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider sticky left-0 bg-card/80 z-10">Student</th>
                 {gbAssignments.map(a => (
-                  <th key={a.id} className="pb-3 px-2 text-center text-[10px] font-semibold text-white/40 uppercase tracking-wider">
+                  <th key={a.id} className="pb-3 px-2 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
                     <div>{a.title}</div>
-                    <div className="text-[9px] text-white/20 font-normal">{a.weight}% · max {a.maxScore}</div>
+                    <div className="text-[9px] text-muted-foreground/50 font-normal">{a.weight}% · max {a.maxScore}</div>
                   </th>
                 ))}
-                <th className="pb-3 pl-3 text-center text-[11px] font-semibold text-white/40 uppercase tracking-wider">Avg</th>
-                <th className="pb-3 text-center text-[11px] font-semibold text-white/40 uppercase tracking-wider">Grade</th>
+                <th className="pb-3 pl-3 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Avg</th>
+                <th className="pb-3 text-center text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Grade</th>
               </tr>
             </thead>
             <tbody>
               {students.map(st => (
-                <tr key={st.id} className="border-b border-white/4 last:border-0 group">
-                  <td className="py-2.5 pr-4 sticky left-0 bg-white/3 z-10">
+                <tr key={st.id} className="border-b border-border/30 last:border-0 group">
+                  <td className="py-2.5 pr-4 sticky left-0 bg-card/80 z-10">
                     <div className="flex items-center gap-2">
-                      <Avatar className="size-6 border border-white/10">
-                        <AvatarFallback className="text-[8px] bg-white/5 text-white/50">{st.initials}</AvatarFallback>
+                      <Avatar className="size-6 border border-border/70">
+                        <AvatarFallback className="text-[8px] bg-muted/70 text-muted-foreground">{st.initials}</AvatarFallback>
                       </Avatar>
                       <div className="flex items-center gap-1.5">
-                        <span className="text-xs text-white/70">{st.name}</span>
+                        <span className="text-xs text-foreground/70">{st.name}</span>
                         {st.trend === 'up' && <TrendingUp className="size-3 text-emerald-400" />}
                         {st.trend === 'down' && <TrendingDown className="size-3 text-rose-400" />}
                       </div>
@@ -202,8 +208,8 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
                             isPoor
                               ? 'border-rose-500/30 bg-rose-500/8 text-rose-300'
                               : val === ''
-                                ? 'border-white/8 bg-white/3 text-white/25'
-                                : 'border-white/10 bg-white/5 text-white/70'
+                                ? 'border-border/60 bg-card/80 text-muted-foreground/60'
+                                : 'border-border/70 bg-muted/70 text-foreground/70'
                           }`}
                         />
                       </td>
@@ -247,13 +253,13 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
           <GlassCard key={std.id}>
             <div className="flex items-start gap-3 mb-3">
               <span className="text-xs font-mono text-indigo-400 shrink-0">{std.code}</span>
-              <p className="text-sm text-white/70">{std.title}</p>
+              <p className="text-sm text-foreground/70">{std.title}</p>
             </div>
             <div className="space-y-2">
               {std.classes.map((cls, i) => (
                 <div key={i} className="flex items-center gap-3">
-                  <span className="text-[11px] text-white/40 w-32 shrink-0">{cls.name}</span>
-                  <div className="flex-1 h-2 rounded-full bg-white/6 overflow-hidden">
+                  <span className="text-[11px] text-muted-foreground w-32 shrink-0">{cls.name}</span>
+                  <div className="flex-1 h-2 rounded-full bg-muted/80 overflow-hidden">
                     <div
                       className={`h-full rounded-full transition-all ${
                         cls.mastery >= 80 ? 'bg-emerald-400' : cls.mastery >= 60 ? 'bg-amber-400' : 'bg-rose-400'
@@ -279,36 +285,36 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const renderReports = () => (
     <div className="space-y-4" data-animate>
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {FALLBACK_classPerformanceDemo.map(cp => {
+        {classPerformance.map(cp => {
           const dist = gradeDistribution(cp.avgGrade);
           return (
             <GlassCard key={cp.classId}>
               <div className="flex items-center justify-between mb-3">
-                <h4 className="text-sm font-semibold text-white/80">{cp.className}</h4>
+                <h4 className="text-sm font-semibold text-foreground/80">{cp.className}</h4>
                 <StatusBadge status={`${cp.passRate}% pass`} tone={cp.passRate >= 90 ? 'good' : cp.passRate >= 75 ? 'warn' : 'bad'} />
               </div>
 
               <div className="grid grid-cols-2 gap-2 mb-4">
                 <div>
-                  <p className="text-[10px] text-white/30">Average</p>
-                  <p className="text-lg font-bold text-white/80">{cp.avgGrade}<span className="text-xs text-white/30">%</span></p>
+                  <p className="text-[10px] text-muted-foreground/70">Average</p>
+                  <p className="text-lg font-bold text-foreground/80">{cp.avgGrade}<span className="text-xs text-muted-foreground/70">%</span></p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/30">Attendance</p>
-                  <p className="text-lg font-bold text-white/80">{cp.attendanceRate}<span className="text-xs text-white/30">%</span></p>
+                  <p className="text-[10px] text-muted-foreground/70">Attendance</p>
+                  <p className="text-lg font-bold text-foreground/80">{cp.attendanceRate}<span className="text-xs text-muted-foreground/70">%</span></p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/30">HW Completion</p>
-                  <p className="text-lg font-bold text-white/80">{cp.assignmentCompletion}<span className="text-xs text-white/30">%</span></p>
+                  <p className="text-[10px] text-muted-foreground/70">HW Completion</p>
+                  <p className="text-lg font-bold text-foreground/80">{cp.assignmentCompletion}<span className="text-xs text-muted-foreground/70">%</span></p>
                 </div>
                 <div>
-                  <p className="text-[10px] text-white/30">Pass Rate</p>
-                  <p className="text-lg font-bold text-white/80">{cp.passRate}<span className="text-xs text-white/30">%</span></p>
+                  <p className="text-[10px] text-muted-foreground/70">Pass Rate</p>
+                  <p className="text-lg font-bold text-foreground/80">{cp.passRate}<span className="text-xs text-muted-foreground/70">%</span></p>
                 </div>
               </div>
 
               {/* Grade distribution bar chart */}
-              <p className="text-[10px] text-white/30 mb-1.5">Grade Distribution</p>
+              <p className="text-[10px] text-muted-foreground/70 mb-1.5">Grade Distribution</p>
               <div className="flex items-end gap-1 h-16">
                 {dist.map(d => (
                   <div key={d.label} className="flex-1 flex flex-col items-center gap-1">
@@ -316,21 +322,21 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
                       className={`w-full rounded-t ${d.color}`}
                       style={{ height: `${d.pct * 1.5}px` }}
                     />
-                    <span className="text-[9px] text-white/30">{d.label}</span>
+                    <span className="text-[9px] text-muted-foreground/70">{d.label}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="mt-3 pt-3 border-t border-white/6">
+              <div className="mt-3 pt-3 border-t border-border/50">
                 <div className="flex flex-wrap gap-1 mb-1">
-                  <span className="text-[10px] text-white/30">Top:</span>
+                  <span className="text-[10px] text-muted-foreground/70">Top:</span>
                   {cp.topStudents.map(s => (
                     <Badge key={s} className="text-[9px] bg-emerald-500/10 text-emerald-400 border-emerald-500/20">{s}</Badge>
                   ))}
                 </div>
                 {cp.atRiskStudents.length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    <span className="text-[10px] text-white/30">At risk:</span>
+                    <span className="text-[10px] text-muted-foreground/70">At risk:</span>
                     {cp.atRiskStudents.map(s => (
                       <Badge key={s} className="text-[9px] bg-rose-500/10 text-rose-400 border-rose-500/20">{s}</Badge>
                     ))}
@@ -349,12 +355,12 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
     <div className="space-y-4" data-animate>
       <div className="flex flex-wrap items-center gap-3">
         <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
           <Input
             value={commentSearch}
             onChange={e => setCommentSearch(e.target.value)}
             placeholder="Search comments..."
-            className="pl-9 border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+            className="pl-9 border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
           />
         </div>
         {(['all', 'positive', 'improvement', 'concern', 'encouragement'] as const).map(cat => (
@@ -362,7 +368,7 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
             key={cat}
             variant="ghost"
             size="sm"
-            className={`text-xs capitalize ${commentCategory === cat ? 'bg-white/8 text-white/80' : 'text-white/35'}`}
+            className={`text-xs capitalize ${commentCategory === cat ? 'bg-accent/60 text-foreground/80' : 'text-muted-foreground/80'}`}
             onClick={() => setCommentCategory(cat)}
           >
             {cat}
@@ -384,14 +390,14 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
           {filteredComments.map(c => (
             <div
               key={c.id}
-              className={`rounded-xl border p-4 cursor-pointer hover:brightness-110 transition-all ${categoryColors[c.category] ?? 'border-white/8 bg-white/4 text-white/60'}`}
+              className={`rounded-xl border p-4 cursor-pointer hover:brightness-110 transition-all ${categoryColors[c.category] ?? 'border-border/60 bg-muted/60 text-muted-foreground'}`}
               onClick={() => { navigator.clipboard.writeText(c.text); notifySuccess('Copied', 'Comment copied to clipboard'); }}
             >
               <div className="flex items-start justify-between gap-3">
                 <p className="text-sm leading-relaxed">{c.text}</p>
                 <div className="shrink-0 text-right">
-                  <Badge variant="outline" className="text-[9px] border-white/10 text-white/30 capitalize mb-1">{c.category}</Badge>
-                  <p className="text-[10px] text-white/25">{c.uses} uses</p>
+                  <Badge variant="outline" className="text-[9px] border-border/70 text-muted-foreground/70 capitalize mb-1">{c.category}</Badge>
+                  <p className="text-[10px] text-muted-foreground/60">{c.uses} uses</p>
                 </div>
               </div>
             </div>
@@ -402,17 +408,17 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
       <GlassCard>
         <div className="flex items-center gap-2 mb-3">
           <Edit3 className="size-4 text-indigo-400" />
-          <h4 className="text-sm font-semibold text-white/80">Add New Comment</h4>
+          <h4 className="text-sm font-semibold text-foreground/80">Add New Comment</h4>
         </div>
         <div className="flex gap-3">
           <Input
             value={newCommentText}
             onChange={e => setNewCommentText(e.target.value)}
             placeholder="Type a new report card comment..."
-            className="flex-1 border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+            className="flex-1 border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
           />
           <Select defaultValue="positive">
-            <SelectTrigger className="w-36 border-white/8 bg-white/4 text-white/80 text-xs">
+            <SelectTrigger className="w-36 border-border/60 bg-muted/60 text-foreground/80 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

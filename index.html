@@ -7,11 +7,13 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <link rel="dns-prefetch" href="//fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700&display=swap" rel="stylesheet" />
     <!-- Critical CSS: instant body paint before full stylesheet arrives -->
     <style>
-      :root{--background:oklch(1 0 0);--foreground:oklch(0.145 0 0);--primary:oklch(0.205 0 0);--accent:oklch(0.97 0 0);--border:oklch(0.922 0 0);--muted-foreground:oklch(0.556 0 0)}
-      .dark{--background:oklch(0.145 0 0);--foreground:oklch(0.985 0 0);--primary:oklch(0.922 0 0);--accent:oklch(0.269 0 0);--border:oklch(1 0 0/10%);--muted-foreground:oklch(0.708 0 0)}
-      body{margin:0;min-height:100vh;background:var(--background);color:var(--foreground);font-family:system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
+      :root{--background:#F4F7FB;--foreground:#0F172A;--primary:#2563EB;--accent:#DBEAFE;--border:#E6ECF3;--muted-foreground:#64748B}
+      .dark{--background:#0B1220;--foreground:#E5EEF8;--primary:#5B8CFF;--accent:rgba(91,140,255,0.18);--border:#1E2B3D;--muted-foreground:#93A4B8}
+      body{margin:0;min-height:100vh;background:var(--background);color:var(--foreground);font-family:'Inter',system-ui,-apple-system,sans-serif;-webkit-font-smoothing:antialiased}
       #root{min-height:100vh}
       @keyframes pulse{50%{opacity:.5}}
       .animate-pulse{animation:pulse 2s cubic-bezier(.4,0,.6,1) infinite}

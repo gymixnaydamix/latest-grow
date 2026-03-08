@@ -71,12 +71,11 @@ export function SchoolDashboard() {
   const { schoolId } = useAuthStore();
 
   const { data: kpiData, isLoading: kpiLoading } = useDashboardKPIs(schoolId);
-  const { data: announcementsData, isLoading: annLoading } = useAnnouncements(schoolId);
+  const { data: announcements = [], isLoading: annLoading } = useAnnouncements(schoolId);
   const { data: eventsData, isLoading: eventsLoading } = useEvents(schoolId);
   const { data: goalsData, isLoading: goalsLoading } = useGoals(schoolId);
 
   const kpiArr = kpiData ?? [];
-  const announcements = announcementsData ?? [];
   const upcomingEvents = eventsData ?? [];
   const strategicGoals = goalsData ?? [];
 

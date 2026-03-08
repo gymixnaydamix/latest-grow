@@ -17,7 +17,7 @@ import {
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useCourses, useAssignments } from '@/hooks/api';
-import { useCreateAssignment, useGradeSubmission, useTeacherAssignments } from '@/hooks/api/use-teacher';
+import { useCreateAssignment, useGradeSubmission, useTeacherAssignments, useTeacherSubmissions } from '@/hooks/api/use-teacher';
 import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import type { Course, Assignment } from '@root/types';
@@ -81,7 +81,6 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
   const createAssignment = useCreateAssignment();
   const gradeSubmission = useGradeSubmission();
   const { data: teacherAssignmentsApi } = useTeacherAssignments();
-  void teacherAssignmentsApi;
 
   const { data: coursesRes } = useCourses(schoolId);
   const courses: Course[] = coursesRes ?? [];
@@ -94,6 +93,25 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
   const { data: apiAssignments } = useAssignments(firstCourseId);
 
   const assignments: AssignmentDemo[] = useMemo(() => {
+    // Priority 1: teacher-specific assignments from API
+    const teacherApiData = (teacherAssignmentsApi as any)?.data as any[] | undefined;
+    if (teacherApiData?.length) {
+      return teacherApiData.map((a: any) => ({
+        id: a.id,
+        title: a.title,
+        className: a.className ?? a.course?.name ?? 'Unknown',
+        classId: a.classId ?? a.courseId ?? '',
+        type: (a.type?.toLowerCase() ?? 'homework') as AssignmentDemo['type'],
+        dueDate: a.dueDate ?? '',
+        assignedDate: a.assignedDate ?? a.createdAt ?? '',
+        totalPoints: a.totalPoints ?? a.maxScore ?? 100,
+        submitted: a.submitted ?? 0,
+        total: a.total ?? 25,
+        avgScore: a.avgScore ?? null,
+        status: (a.status ?? 'active') as 'active' | 'closed' | 'draft',
+      }));
+    }
+    // Priority 2: course-level assignments
     if (apiAssignments && (apiAssignments as Assignment[]).length > 0) {
       return (apiAssignments as Assignment[]).map(a => ({
         id: a.id,
@@ -111,7 +129,7 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
       }));
     }
     return FALLBACK_assignmentsDemo;
-  }, [apiAssignments]);
+  }, [apiAssignments, teacherAssignmentsApi]);
 
   /* ── Filters ── */
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'closed' | 'draft'>('all');
@@ -133,12 +151,24 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
   /* ── Submission view ── */
   const [selectedAssignment, setSelectedAssignment] = useState<string>(assignments[0]?.id ?? '');
   const currentAssignment = assignments.find(a => a.id === selectedAssignment);
-  const subs = submissionsDemo[selectedAssignment] ?? submissionsDemo.as1 ?? [];
+
+  // Wire submissions from API with demo fallback
+  const { data: apiSubmissionsData } = useTeacherSubmissions(selectedAssignment || null);
+  const apiSubs = (apiSubmissionsData as any)?.data as SubmissionStudent[] | undefined;
+  const subs: SubmissionStudent[] = apiSubs?.length ? apiSubs.map(s => ({
+    id: s.id ?? (s as any).studentId ?? '',
+    name: s.name ?? (s as any).studentName ?? 'Unknown',
+    initials: s.initials ?? (s.name ?? (s as any).studentName ?? 'U').split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase(),
+    status: s.status ?? ((s as any).score != null ? 'graded' : (s as any).submittedAt ? 'submitted' : 'pending'),
+    submittedAt: s.submittedAt ?? (s as any).submittedAt ?? null,
+    score: s.score ?? (s as any).score ?? null,
+    maxScore: s.maxScore ?? currentAssignment?.totalPoints ?? 100,
+  })) : (submissionsDemo[selectedAssignment] ?? submissionsDemo.as1 ?? []);
 
   const subStatusIcon: Record<string, { color: string; icon: React.ReactNode }> = {
     graded: { color: 'text-emerald-400', icon: <CheckCircle2 className="size-3.5" /> },
     submitted: { color: 'text-sky-400', icon: <Upload className="size-3.5" /> },
-    pending: { color: 'text-white/30', icon: <Clock className="size-3.5" /> },
+    pending: { color: 'text-muted-foreground/70', icon: <Clock className="size-3.5" /> },
     late: { color: 'text-rose-400', icon: <Clock className="size-3.5" /> },
   };
 
@@ -159,12 +189,12 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
 
         <div className="flex flex-wrap items-center gap-2">
           <div className="relative flex-1 min-w-[200px]">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-white/25" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
             <Input
               value={filterSearch}
               onChange={e => setFilterSearch(e.target.value)}
               placeholder="Search assignments..."
-              className="pl-9 border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+              className="pl-9 border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
             />
           </div>
           {(['all', 'active', 'closed', 'draft'] as const).map(s => (
@@ -172,7 +202,7 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
               key={s}
               variant="ghost"
               size="sm"
-              className={`text-xs capitalize ${filterStatus === s ? 'bg-white/8 text-white/80' : 'text-white/35'}`}
+              className={`text-xs capitalize ${filterStatus === s ? 'bg-accent/60 text-foreground/80' : 'text-muted-foreground/80'}`}
               onClick={() => setFilterStatus(s)}
             >
               {s}
@@ -192,28 +222,28 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
         ) : (
           <div className="space-y-2">
             {filtered.map(a => (
-              <GlassCard key={a.id} className="flex items-center gap-4 hover:bg-white/4 transition-colors cursor-pointer" onClick={() => { setSelectedAssignment(a.id); setHeader('submissions'); }}>
+              <GlassCard key={a.id} className="flex items-center gap-4 hover:bg-muted/60 transition-colors cursor-pointer" onClick={() => { setSelectedAssignment(a.id); setHeader('submissions'); }}>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-0.5">
-                    <p className="text-sm font-medium text-white/80 truncate">{a.title}</p>
+                    <p className="text-sm font-medium text-foreground/80 truncate">{a.title}</p>
                     <Badge className={`text-[9px] font-medium ${typeTone[a.type] ?? typeTone.homework}`}>
                       {a.type}
                     </Badge>
                     <StatusBadge status={a.status} tone={statusTone[a.status] ?? 'neutral'} />
                   </div>
-                  <p className="text-xs text-white/40">
+                  <p className="text-xs text-muted-foreground">
                     {a.className} · Due {formatDateLabel(a.dueDate)} · {a.totalPoints} pts
                   </p>
                 </div>
                 <div className="text-right shrink-0">
-                  <p className="text-sm font-semibold text-white/70">{a.submitted}/{a.total}</p>
-                  <p className="text-[10px] text-white/30">submitted</p>
+                  <p className="text-sm font-semibold text-foreground/70">{a.submitted}/{a.total}</p>
+                  <p className="text-[10px] text-muted-foreground/70">submitted</p>
                 </div>
                 <Progress value={(a.submitted / a.total) * 100} className="w-20 h-1.5" />
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="text-[10px] text-white/30 hover:text-white/60"
+                  className="text-[10px] text-muted-foreground/70 hover:text-muted-foreground"
                   onClick={(e) => { e.stopPropagation(); setSelectedAssignment(a.id); setHeader('submissions'); }}
                 >
                   View <ChevronRight className="ml-1 size-3" />
@@ -231,22 +261,22 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
     <GlassCard data-animate>
       <div className="flex items-center gap-2 mb-5">
         <Plus className="size-4 text-indigo-400" />
-        <h3 className="text-sm font-semibold text-white/80">New Assignment</h3>
+        <h3 className="text-sm font-semibold text-foreground/80">New Assignment</h3>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Title</Label>
+          <Label className="text-xs text-muted-foreground">Title</Label>
           <Input
             value={formTitle}
             onChange={e => setFormTitle(e.target.value)}
             placeholder="e.g. Chapter 6 Problem Set"
-            className="border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+            className="border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Class</Label>
+          <Label className="text-xs text-muted-foreground">Class</Label>
           <Select value={formClass} onValueChange={setFormClass}>
-            <SelectTrigger className="border-white/8 bg-white/4 text-white/80">
+            <SelectTrigger className="border-border/60 bg-muted/60 text-foreground/80">
               <SelectValue placeholder="Select class" />
             </SelectTrigger>
             <SelectContent>
@@ -257,9 +287,9 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
           </Select>
         </div>
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Type</Label>
+          <Label className="text-xs text-muted-foreground">Type</Label>
           <Select value={formType} onValueChange={setFormType}>
-            <SelectTrigger className="border-white/8 bg-white/4 text-white/80">
+            <SelectTrigger className="border-border/60 bg-muted/60 text-foreground/80">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -270,36 +300,36 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
           </Select>
         </div>
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Due Date</Label>
+          <Label className="text-xs text-muted-foreground">Due Date</Label>
           <Input
             type="date"
             value={formDue}
             onChange={e => setFormDue(e.target.value)}
-            className="border-white/8 bg-white/4 text-white/80"
+            className="border-border/60 bg-muted/60 text-foreground/80"
           />
         </div>
         <div className="space-y-2">
-          <Label className="text-xs text-white/50">Total Points</Label>
+          <Label className="text-xs text-muted-foreground">Total Points</Label>
           <Input
             type="number"
             value={formPoints}
             onChange={e => setFormPoints(e.target.value)}
-            className="border-white/8 bg-white/4 text-white/80"
+            className="border-border/60 bg-muted/60 text-foreground/80"
           />
         </div>
         <div className="space-y-2 sm:col-span-2">
-          <Label className="text-xs text-white/50">Instructions</Label>
+          <Label className="text-xs text-muted-foreground">Instructions</Label>
           <Textarea
             value={formInstructions}
             onChange={e => setFormInstructions(e.target.value)}
             placeholder="Describe the assignment requirements..."
             rows={4}
-            className="border-white/8 bg-white/4 text-white/80 placeholder:text-white/25"
+            className="border-border/60 bg-muted/60 text-foreground/80 placeholder:text-muted-foreground/60"
           />
         </div>
       </div>
       <div className="mt-5 flex gap-2 justify-end">
-        <Button variant="ghost" className="text-white/40 hover:text-white/60" onClick={() => setHeader('assignment_list')}>Cancel</Button>
+        <Button variant="ghost" className="text-muted-foreground hover:text-muted-foreground" onClick={() => setHeader('assignment_list')}>Cancel</Button>
         <Button className="bg-amber-500/20 text-amber-300 border border-amber-500/30 hover:bg-amber-500/30" onClick={() => { createAssignment.mutate({ title: formTitle, classId: formClass, type: formType, dueDate: formDue, totalPoints: Number(formPoints), instructions: formInstructions, status: 'draft' }, { onSuccess: () => { notifySuccess('Draft saved', `"${formTitle}" saved as draft`); setHeader('assignment_list'); } }); }}>
           Save as Draft
         </Button>
@@ -319,11 +349,11 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
     return (
       <div className="space-y-4" data-animate>
         <div className="flex items-center gap-3 mb-2">
-          <Button variant="ghost" size="sm" className="text-xs text-white/40" onClick={() => setHeader('assignment_list')}>
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground" onClick={() => setHeader('assignment_list')}>
             ← All Assignments
           </Button>
           <Select value={selectedAssignment} onValueChange={setSelectedAssignment}>
-            <SelectTrigger className="w-64 border-white/8 bg-white/4 text-white/80 text-xs">
+            <SelectTrigger className="w-64 border-border/60 bg-muted/60 text-foreground/80 text-xs">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -347,25 +377,25 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
           <div className="overflow-x-auto">
             <table className="w-full text-left">
               <thead>
-                <tr className="border-b border-white/6">
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Student</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Status</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Submitted</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider">Score</th>
-                  <th className="pb-3 text-[11px] font-semibold text-white/40 uppercase tracking-wider"></th>
+                <tr className="border-b border-border/50">
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Student</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Submitted</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider">Score</th>
+                  <th className="pb-3 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider"></th>
                 </tr>
               </thead>
               <tbody>
                 {subs.map(s => {
                   const si = subStatusIcon[s.status] ?? subStatusIcon.pending;
                   return (
-                    <tr key={s.id} className="border-b border-white/4 last:border-0">
+                    <tr key={s.id} className="border-b border-border/30 last:border-0">
                       <td className="py-3">
                         <div className="flex items-center gap-2.5">
-                          <Avatar className="size-7 border border-white/10">
-                            <AvatarFallback className="text-[9px] bg-white/5 text-white/50">{s.initials}</AvatarFallback>
+                          <Avatar className="size-7 border border-border/70">
+                            <AvatarFallback className="text-[9px] bg-muted/70 text-muted-foreground">{s.initials}</AvatarFallback>
                           </Avatar>
-                          <span className="text-xs text-white/70">{s.name}</span>
+                          <span className="text-xs text-foreground/70">{s.name}</span>
                         </div>
                       </td>
                       <td className="py-3">
@@ -374,19 +404,25 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
                           <span className="text-xs capitalize">{s.status}</span>
                         </div>
                       </td>
-                      <td className="py-3 text-xs text-white/40">
+                      <td className="py-3 text-xs text-muted-foreground">
                         {s.submittedAt ?? '—'}
                       </td>
                       <td className="py-3">
                         {s.score != null ? (
-                          <span className="text-xs font-semibold text-white/70">{s.score}/{s.maxScore}</span>
+                          <span className="text-xs font-semibold text-foreground/70">{s.score}/{s.maxScore}</span>
                         ) : (
-                          <span className="text-xs text-white/25">—</span>
+                          <span className="text-xs text-muted-foreground/60">—</span>
                         )}
                       </td>
                       <td className="py-3">
                         {(s.status === 'submitted' || s.status === 'late') && (
-                          <Button variant="ghost" size="sm" className="text-[10px] text-indigo-400 hover:text-indigo-300" onClick={() => { gradeSubmission.mutate({ assignmentId: selectedAssignment ?? '', studentId: s.id, score: 0 }, { onSuccess: () => notifySuccess('Graded', `${s.name} graded`) }); }}>
+                          <Button variant="ghost" size="sm" className="text-[10px] text-indigo-400 hover:text-indigo-300" onClick={() => {
+                            const scoreInput = prompt(`Enter score for ${s.name} (max ${s.maxScore}):`);
+                            if (scoreInput == null) return;
+                            const numScore = Number(scoreInput);
+                            if (isNaN(numScore) || numScore < 0 || numScore > s.maxScore) return;
+                            gradeSubmission.mutate({ assignmentId: selectedAssignment ?? '', studentId: s.id, score: numScore }, { onSuccess: () => notifySuccess('Graded', `${s.name} scored ${numScore}/${s.maxScore}`) });
+                          }}>
                             Grade
                           </Button>
                         )}

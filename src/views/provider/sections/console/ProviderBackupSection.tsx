@@ -123,8 +123,16 @@ function RecoveryView() {
   const restoreSnap = useRestoreProviderSnapshot();
 
   const snapshots = bundle?.snapshots ?? [];
+  const schedules = bundle?.schedules ?? [];
   const available = snapshots.filter((s) => s.status === 'AVAILABLE');
   const verified = snapshots.filter((s) => s.verified);
+
+  /* Derive RPO from the most frequent backup schedule */
+  const freqToHours: Record<string, number> = { HOURLY: 1, DAILY: 24, WEEKLY: 168 };
+  const bestRpoHours = schedules.length > 0
+    ? Math.min(...schedules.map((s) => freqToHours[s.frequency] ?? 24))
+    : 24;
+  const rpoLabel = bestRpoHours < 24 ? `${bestRpoHours}h` : `${Math.round(bestRpoHours / 24)}d`;
 
   const handleRestore = (id: string) => {
     const reason = reasonPrompt('Restore snapshot — this is destructive');
@@ -139,7 +147,7 @@ function RecoveryView() {
         <StatCard label="Snapshots" value={String(snapshots.length)} sub="Total available" gradient="from-emerald-500/10 to-emerald-500/5" />
         <StatCard label="Available" value={String(available.length)} sub="Restorable" gradient="from-blue-500/10 to-blue-500/5" />
         <StatCard label="Verified" value={String(verified.length)} sub="Integrity checked" gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="RPO" value="6h" sub="Recovery point obj." gradient="from-amber-500/10 to-amber-500/5" />
+        <StatCard label="RPO" value={rpoLabel} sub="Recovery point obj." gradient="from-amber-500/10 to-amber-500/5" />
       </div>
 
       <Panel title="Recovery Points" subtitle={isLoading ? 'Loading…' : `${snapshots.length} snapshots`} accentBorder="border-emerald-500/20">
@@ -180,13 +188,13 @@ function RecoveryView() {
         <div className="grid gap-2 md:grid-cols-2">
           <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 text-xs">
             <p className="font-semibold text-emerald-200">RPO (Recovery Point Objective)</p>
-            <p className="text-2xl font-bold text-emerald-300 mt-1">6 hours</p>
-            <p className="text-slate-400 mt-1">Maximum acceptable data loss window</p>
+            <p className="text-2xl font-bold text-emerald-300 mt-1">{bestRpoHours < 24 ? `${bestRpoHours} hour${bestRpoHours !== 1 ? 's' : ''}` : `${Math.round(bestRpoHours / 24)} day${Math.round(bestRpoHours / 24) !== 1 ? 's' : ''}`}</p>
+            <p className="text-slate-400 mt-1">Based on most frequent backup schedule ({schedules.length > 0 ? schedules.find((s) => (freqToHours[s.frequency] ?? 24) === bestRpoHours)?.frequency ?? 'DAILY' : 'No schedules'})</p>
           </div>
           <div className="rounded-lg border border-blue-500/20 bg-blue-500/5 p-3 text-xs">
             <p className="font-semibold text-blue-200">RTO (Recovery Time Objective)</p>
-            <p className="text-2xl font-bold text-blue-300 mt-1">2 hours</p>
-            <p className="text-slate-400 mt-1">Maximum acceptable downtime</p>
+            <p className="text-2xl font-bold text-blue-300 mt-1">{verified.length > 0 ? '< 2 hours' : 'Unverified'}</p>
+            <p className="text-slate-400 mt-1">{verified.length} of {snapshots.length} snapshots verified for integrity</p>
           </div>
         </div>
       </Panel>
@@ -205,6 +213,7 @@ function RunbooksView() {
   const [rbName, setRbName] = useState('');
   const [rbDesc, setRbDesc] = useState('');
   const [rbSeverity, setRbSeverity] = useState('HIGH');
+  const [viewId, setViewId] = useState<string | null>(null);
 
   const handleCreate = () => {
     const reason = reasonPrompt('Create runbook');
@@ -269,12 +278,26 @@ function RunbooksView() {
                     <p className="text-slate-500 mt-1">{rb.steps} steps · ~{rb.estimatedTime} · Last tested: {rb.lastTested}</p>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
-                    <Button size="sm" variant="outline" className="h-6 text-[10px] border-emerald-500/30">View</Button>
+                    <Button size="sm" variant="outline" className="h-6 text-[10px] border-emerald-500/30" onClick={() => setViewId(viewId === rb.id ? null : rb.id)}>
+                      {viewId === rb.id ? 'Close' : 'View'}
+                    </Button>
                     <Button size="sm" className="h-6 text-[10px] bg-amber-500/20 text-amber-100 hover:bg-amber-500/30" onClick={() => handleExecute(rb.id)} disabled={executeRb.isPending}>
                       {executeRb.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Play className="mr-1 size-3" />}Execute
                     </Button>
                   </div>
                 </div>
+                {viewId === rb.id && (
+                  <div className="mt-2 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3 space-y-2 text-xs">
+                    <p className="font-semibold text-emerald-200">Runbook Details</p>
+                    <div className="grid gap-1 text-[10px]">
+                      <div className="flex justify-between"><span className="text-slate-400">Steps</span><span className="text-slate-100">{rb.steps}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Estimated Time</span><span className="text-slate-100">{rb.estimatedTime}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Severity</span><span className={rb.severity === 'CRITICAL' ? 'text-red-300' : rb.severity === 'HIGH' ? 'text-amber-300' : 'text-blue-300'}>{rb.severity}</span></div>
+                      <div className="flex justify-between"><span className="text-slate-400">Last Tested</span><span className="text-slate-100">{rb.lastTested}</span></div>
+                    </div>
+                    <p className="text-slate-400">{rb.description}</p>
+                  </div>
+                )}
               </Row>
             ))}
           </div>

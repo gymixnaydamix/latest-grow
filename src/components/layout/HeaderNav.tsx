@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   Sun,
@@ -88,35 +88,30 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
     <TooltipProvider delayDuration={300} disableHoverableContent>
       <header
         className={cn(
-          'sticky top-2 z-40 mx-2 flex min-h-14 w-auto flex-wrap items-center gap-2 rounded-2xl border px-2 py-2 transition-all duration-500 ease-in-out sm:mx-3 sm:px-3 lg:min-h-16 lg:flex-nowrap lg:gap-4 lg:px-4 lg:py-0',
+          'sticky top-2 z-40 mx-2 flex min-h-14 w-auto flex-wrap items-center gap-2 rounded-xl border px-2 py-2 transition-all duration-300 sm:mx-3 sm:px-3 lg:min-h-14 lg:flex-nowrap lg:gap-3 lg:px-4 lg:py-0',
           isScrolled
-            ? 'border-border/60 bg-white backdrop-blur-2xl shadow-[0_1px_3px_var(--surface-glow),0_4px_16px_var(--ambient-light)]'
-            : 'border-border/40 bg-white backdrop-blur-xl shadow-[0_0_16px_-2px_rgba(30,64,175,0.12)]',
+            ? 'border-border bg-card shadow-[var(--shadow-sm)]'
+            : 'border-border/60 bg-card/95 shadow-[var(--shadow-xs)]',
         )}
       >
+        {/* --- Logo / Brand --- */}
         <div className="order-1 flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="flex items-center gap-2 select-none mr-1">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10 shadow-[0_0_12px_var(--surface-glow)]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/10">
               <Sparkles className="size-4 text-primary fill-primary/20" />
             </div>
-            <span className="text-lg font-bold tracking-tight text-foreground hidden sm:block">
+            <span className="text-base font-bold tracking-tight text-foreground hidden sm:block" style={{ fontFamily: 'var(--font-heading)' }}>
               GROW
-              <span className="bg-linear-to-tr from-sky-500 to-blue-600 bg-clip-text text-transparent ml-0.5">
-                NEED
-              </span>
+              <span className="text-primary ml-0.5">NEED</span>
             </span>
           </div>
         </div>
 
+        {/* --- Header Tabs (Context Bar) --- */}
         <div className="order-3 basis-full lg:order-2 lg:basis-auto flex min-w-0 flex-1 items-center justify-center px-0 lg:px-2">
           <nav
             ref={navRef}
-            className={cn(
-              'flex w-full items-stretch gap-1 overflow-x-auto rounded-2xl border px-1 py-1 scrollbar-none sm:w-auto sm:px-2 sm:py-1.5',
-              isProvider
-                ? 'bg-linear-to-r from-slate-700 via-slate-600 to-blue-700 border-slate-500/60 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.4)]'
-                : 'bg-linear-to-r from-slate-700 via-slate-600 to-indigo-600 border-slate-500/60 shadow-[0_4px_16px_-4px_rgba(15,23,42,0.35)]',
-            )}
+            className="flex w-full items-stretch gap-0.5 overflow-x-auto rounded-lg border border-border/60 bg-muted/50 px-1 py-1 scrollbar-none sm:w-auto sm:px-1.5"
           >
             {headerItems.map((item) => {
               const Icon = item.icon;
@@ -133,21 +128,16 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
                     }
                   }}
                   className={cn(
-                    'relative min-h-11 min-w-[4.5rem] flex-col gap-1 rounded-xl px-2 py-1.5 text-center text-[10px] font-medium leading-tight whitespace-normal transition-all duration-300 ease-out sm:h-8 sm:min-w-0 sm:flex-row sm:gap-1.5 sm:rounded-full sm:px-3 sm:py-0 sm:text-xs lg:px-3 xl:h-9 xl:px-4 xl:text-sm',
+                    'relative min-h-10 min-w-[4rem] flex-col gap-0.5 rounded-md px-2 py-1.5 text-center text-[10px] font-semibold leading-tight whitespace-normal transition-all duration-200 sm:h-8 sm:min-w-0 sm:flex-row sm:gap-1.5 sm:rounded-md sm:px-3 sm:py-0 sm:text-xs lg:px-3 xl:h-8 xl:px-4 xl:text-[13px]',
                     isActive
-                      ? 'bg-white/20 text-white shadow-md shadow-black/10 hover:bg-white/25 backdrop-blur-sm'
-                      : 'text-white hover:bg-white/10 hover:text-white',
+                      ? 'bg-card text-foreground shadow-[var(--shadow-sm)] border border-border/60'
+                      : 'text-muted-foreground hover:bg-card/60 hover:text-foreground border border-transparent',
                   )}
                 >
                   {Icon && (
-                    <Icon
-                      className={cn(
-                        'size-3.5 shrink-0 sm:size-4',
-                        isActive ? 'stroke-[2.5px]' : 'stroke-2',
-                      )}
-                    />
+                    <Icon className={cn('size-3.5 shrink-0 sm:size-4', isActive ? 'text-primary' : '')} />
                   )}
-                  <span className="block max-w-[5.4rem] text-center leading-tight sm:max-w-none sm:truncate">
+                  <span className="block max-w-[5rem] text-center leading-tight sm:max-w-none sm:truncate">
                     {item.label}
                   </span>
                 </Button>
@@ -156,27 +146,26 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
           </nav>
         </div>
 
+        {/* --- Right Controls --- */}
         <div className="order-2 ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5 lg:order-3 lg:gap-2">
+          {/* Search */}
           <div className="hidden md:flex items-center">
             <Button
               variant="outline"
-              className={cn(
-                'relative h-8 w-40 justify-start rounded-lg bg-muted/40 px-3 text-xs font-normal text-muted-foreground shadow-none transition-colors lg:w-52 xl:h-9 xl:w-72 xl:text-sm',
-                'hover:bg-muted/70 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring',
-              )}
+              className="relative h-8 w-40 justify-start rounded-lg bg-muted/40 px-3 text-xs font-normal text-muted-foreground shadow-none transition-colors lg:w-48 xl:h-8 xl:w-60 xl:text-[13px] hover:bg-muted/70 hover:text-foreground focus-visible:ring-1 focus-visible:ring-ring border-border/60"
             >
               <Search className="mr-2 size-3.5 opacity-50 xl:size-4" />
               <span className="truncate">
                 {isProvider ? (
                   <>
                     <span className="xl:hidden">Search tenants...</span>
-                    <span className="hidden xl:inline">Search tenants, domains, IDs...</span>
+                    <span className="hidden xl:inline">Search tenants, domains...</span>
                   </>
                 ) : (
                   'Search...'
                 )}
               </span>
-              <kbd className="pointer-events-none absolute right-2 top-1.5 hidden h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 xl:flex shadow-[0px_2px_0px_0px_rgba(0,0,0,0.08)] dark:shadow-none">
+              <kbd className="pointer-events-none absolute right-2 top-1.5 hidden h-5 select-none items-center gap-1 rounded border border-border/60 bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100 xl:flex">
                 <span className="text-xs">Ctrl</span>K
               </kbd>
             </Button>
@@ -188,7 +177,7 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
             </Button>
           </div>
 
-          <Separator orientation="vertical" className="mx-1 h-5 bg-border/60 sm:mx-2 sm:h-6" />
+          <Separator orientation="vertical" className="mx-1 h-5 bg-border/60 sm:mx-1.5 sm:h-5" />
 
           <NotificationBell />
 
@@ -198,10 +187,10 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
-                className="size-8 rounded-full hover:bg-secondary sm:size-9"
+                className="size-8 rounded-full hover:bg-muted sm:size-8"
               >
-                <Sun className="size-4 rotate-0 scale-100 transition-all duration-300 text-amber-500 dark:-rotate-90 dark:scale-0 sm:size-5" />
-                <Moon className="absolute size-4 rotate-90 scale-0 transition-all duration-300 text-sky-500 dark:rotate-0 dark:scale-100 sm:size-5" />
+                <Sun className="size-4 rotate-0 scale-100 transition-all duration-300 text-amber-500 dark:-rotate-90 dark:scale-0" />
+                <Moon className="absolute size-4 rotate-90 scale-0 transition-all duration-300 text-sky-400 dark:rotate-0 dark:scale-100" />
               </Button>
             </TooltipTrigger>
             <TooltipContent side="bottom">Switch Theme</TooltipContent>
@@ -211,11 +200,11 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
             <DropdownMenuTrigger asChild>
               <Button
                 variant="ghost"
-                className="relative h-8 w-8 rounded-full pl-0 hover:bg-transparent sm:h-10 sm:w-10 lg:w-auto lg:px-1.5 lg:hover:bg-secondary/80 xl:px-2"
+                className="relative h-8 w-8 rounded-full pl-0 hover:bg-transparent sm:h-9 sm:w-9 lg:w-auto lg:px-1.5 lg:hover:bg-muted xl:px-2"
               >
-                <Avatar className="size-8 border-2 border-background shadow-sm transition-transform hover:scale-105 sm:size-9">
+                <Avatar className="size-7 border-2 border-border shadow-[var(--shadow-xs)] transition-transform hover:scale-105 sm:size-8">
                   <AvatarImage src={undefined} alt={user?.firstName ?? ''} />
-                  <AvatarFallback className="bg-linear-to-br from-primary to-blue-600 text-white font-bold text-xs">
+                  <AvatarFallback className="bg-primary text-primary-foreground font-bold text-[11px]">
                     {initials}
                   </AvatarFallback>
                 </Avatar>
@@ -224,7 +213,7 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
                   <span className="max-w-14 truncate text-[11px] font-semibold leading-none text-foreground xl:max-w-24">
                     {user?.firstName}
                   </span>
-                  <span className="mt-1 text-[9px] leading-none text-muted-foreground xl:text-[10px]">
+                  <span className="mt-0.5 text-[9px] leading-none text-muted-foreground xl:text-[10px]">
                     {user?.role === 'PARENT' ? 'Parent' : isProvider ? 'Provider' : 'Admin'}
                   </span>
                 </div>
@@ -246,7 +235,7 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
                 <DropdownMenuItem className="cursor-pointer">
                   <User className="mr-2 size-4 opacity-70" />
                   <span>Profile</span>
-                  <DropdownMenuShortcut>??P</DropdownMenuShortcut>
+                  <DropdownMenuShortcut>&#8984;P</DropdownMenuShortcut>
                 </DropdownMenuItem>
                 <DropdownMenuItem className="cursor-pointer">
                   <CreditCard className="mr-2 size-4 opacity-70" />
@@ -255,17 +244,17 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
                 <DropdownMenuItem className="cursor-pointer">
                   <Settings className="mr-2 size-4 opacity-70" />
                   <span>Settings</span>
-                  <DropdownMenuShortcut>?S</DropdownMenuShortcut>
+                  <DropdownMenuShortcut>&#8984;S</DropdownMenuShortcut>
                 </DropdownMenuItem>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => logout()}
-                className="text-red-600 focus:text-red-600 focus:bg-red-50 dark:focus:bg-red-950/20 cursor-pointer"
+                className="text-destructive focus:text-destructive focus:bg-danger-soft cursor-pointer"
               >
                 <LogOut className="mr-2 size-4" />
                 <span>Log out</span>
-                <DropdownMenuShortcut>??Q</DropdownMenuShortcut>
+                <DropdownMenuShortcut>&#8984;&#8679;Q</DropdownMenuShortcut>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -274,4 +263,3 @@ export function HeaderNav({ headerItems }: HeaderNavProps) {
     </TooltipProvider>
   );
 }
-

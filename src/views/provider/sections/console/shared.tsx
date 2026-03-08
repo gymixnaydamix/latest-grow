@@ -1,4 +1,4 @@
-/* ─── Provider Console · Shared Design System ─────────────────── */
+/* --- Provider Console - Shared Design System --- */
 import { type ReactNode, useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +18,7 @@ import {
   X,
 } from 'lucide-react';
 
-/* ── Section accent colours ─────────────────────────────────── */
+/* -- Section accent colours -- */
 export interface SectionAccent {
   border: string;
   ring: string;
@@ -30,27 +30,27 @@ export interface SectionAccent {
 }
 
 export const sectionAccents: Record<string, SectionAccent> = {
-  provider_home:         { border: 'border-sky-500/30',     ring: 'ring-sky-500/20',     bg: 'bg-sky-500/10',     text: 'text-sky-300',     badge: 'bg-sky-500/15 text-sky-200 border-sky-500/40',       gradient: 'from-sky-500/10 to-sky-500/5',       dot: 'bg-sky-400' },
-  provider_tenants:      { border: 'border-indigo-500/30',  ring: 'ring-indigo-500/20',  bg: 'bg-indigo-500/10',  text: 'text-indigo-300',  badge: 'bg-indigo-500/15 text-indigo-200 border-indigo-500/40', gradient: 'from-indigo-500/10 to-indigo-500/5', dot: 'bg-indigo-400' },
-  provider_onboarding:   { border: 'border-teal-500/30',    ring: 'ring-teal-500/20',    bg: 'bg-teal-500/10',    text: 'text-teal-300',    badge: 'bg-teal-500/15 text-teal-200 border-teal-500/40',     gradient: 'from-teal-500/10 to-teal-500/5',     dot: 'bg-teal-400' },
-  provider_billing:      { border: 'border-emerald-500/30', ring: 'ring-emerald-500/20', bg: 'bg-emerald-500/10', text: 'text-emerald-300', badge: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40', gradient: 'from-emerald-500/10 to-emerald-500/5', dot: 'bg-emerald-400' },
-  provider_usage:        { border: 'border-cyan-500/30',    ring: 'ring-cyan-500/20',    bg: 'bg-cyan-500/10',    text: 'text-cyan-300',    badge: 'bg-cyan-500/15 text-cyan-200 border-cyan-500/40',     gradient: 'from-cyan-500/10 to-cyan-500/5',     dot: 'bg-cyan-400' },
-  provider_support:      { border: 'border-violet-500/30',  ring: 'ring-violet-500/20',  bg: 'bg-violet-500/10',  text: 'text-violet-300',  badge: 'bg-violet-500/15 text-violet-200 border-violet-500/40', gradient: 'from-violet-500/10 to-violet-500/5', dot: 'bg-violet-400' },
-  provider_incidents:    { border: 'border-red-500/30',     ring: 'ring-red-500/20',     bg: 'bg-red-500/10',     text: 'text-red-300',     badge: 'bg-red-500/15 text-red-200 border-red-500/40',       gradient: 'from-red-500/10 to-red-500/5',       dot: 'bg-red-400' },
-  provider_releases:     { border: 'border-fuchsia-500/30', ring: 'ring-fuchsia-500/20', bg: 'bg-fuchsia-500/10', text: 'text-fuchsia-300', badge: 'bg-fuchsia-500/15 text-fuchsia-200 border-fuchsia-500/40', gradient: 'from-fuchsia-500/10 to-fuchsia-500/5', dot: 'bg-fuchsia-400' },
-  provider_templates:    { border: 'border-amber-500/30',   ring: 'ring-amber-500/20',   bg: 'bg-amber-500/10',   text: 'text-amber-300',   badge: 'bg-amber-500/15 text-amber-200 border-amber-500/40',   gradient: 'from-amber-500/10 to-amber-500/5',   dot: 'bg-amber-400' },
-  provider_integrations: { border: 'border-lime-500/30',    ring: 'ring-lime-500/20',    bg: 'bg-lime-500/10',    text: 'text-lime-300',    badge: 'bg-lime-500/15 text-lime-200 border-lime-500/40',     gradient: 'from-lime-500/10 to-lime-500/5',     dot: 'bg-lime-400' },
-  provider_security:     { border: 'border-rose-500/30',    ring: 'ring-rose-500/20',    bg: 'bg-rose-500/10',    text: 'text-rose-300',    badge: 'bg-rose-500/15 text-rose-200 border-rose-500/40',     gradient: 'from-rose-500/10 to-rose-500/5',     dot: 'bg-rose-400' },
-  provider_data_ops:     { border: 'border-orange-500/30',  ring: 'ring-orange-500/20',  bg: 'bg-orange-500/10',  text: 'text-orange-300',  badge: 'bg-orange-500/15 text-orange-200 border-orange-500/40', gradient: 'from-orange-500/10 to-orange-500/5', dot: 'bg-orange-400' },
-  provider_team:         { border: 'border-pink-500/30',    ring: 'ring-pink-500/20',    bg: 'bg-pink-500/10',    text: 'text-pink-300',    badge: 'bg-pink-500/15 text-pink-200 border-pink-500/40',     gradient: 'from-pink-500/10 to-pink-500/5',     dot: 'bg-pink-400' },
-  provider_settings:     { border: 'border-slate-400/30',   ring: 'ring-slate-400/20',   bg: 'bg-slate-400/10',   text: 'text-slate-300',   badge: 'bg-slate-400/15 text-slate-200 border-slate-400/40',   gradient: 'from-slate-400/10 to-slate-400/5',   dot: 'bg-slate-300' },
-  provider_audit:        { border: 'border-yellow-500/30',  ring: 'ring-yellow-500/20',  bg: 'bg-yellow-500/10',  text: 'text-yellow-300',  badge: 'bg-yellow-500/15 text-yellow-200 border-yellow-500/40', gradient: 'from-yellow-500/10 to-yellow-500/5', dot: 'bg-yellow-400' },
-  provider_analytics:    { border: 'border-blue-500/30',    ring: 'ring-blue-500/20',    bg: 'bg-blue-500/10',    text: 'text-blue-300',    badge: 'bg-blue-500/15 text-blue-200 border-blue-500/40',     gradient: 'from-blue-500/10 to-blue-500/5',     dot: 'bg-blue-400' },
-  provider_comms:        { border: 'border-teal-500/30',    ring: 'ring-teal-500/20',    bg: 'bg-teal-500/10',    text: 'text-teal-300',    badge: 'bg-teal-500/15 text-teal-200 border-teal-500/40',     gradient: 'from-teal-500/10 to-teal-500/5',     dot: 'bg-teal-400' },
-  provider_notifications:{ border: 'border-amber-500/30',   ring: 'ring-amber-500/20',   bg: 'bg-amber-500/10',   text: 'text-amber-300',   badge: 'bg-amber-500/15 text-amber-200 border-amber-500/40',   gradient: 'from-amber-500/10 to-amber-500/5',   dot: 'bg-amber-400' },
-  provider_branding:     { border: 'border-fuchsia-500/30', ring: 'ring-fuchsia-500/20', bg: 'bg-fuchsia-500/10', text: 'text-fuchsia-300', badge: 'bg-fuchsia-500/15 text-fuchsia-200 border-fuchsia-500/40', gradient: 'from-fuchsia-500/10 to-fuchsia-500/5', dot: 'bg-fuchsia-400' },
-  provider_api_mgmt:     { border: 'border-cyan-500/30',    ring: 'ring-cyan-500/20',    bg: 'bg-cyan-500/10',    text: 'text-cyan-300',    badge: 'bg-cyan-500/15 text-cyan-200 border-cyan-500/40',     gradient: 'from-cyan-500/10 to-cyan-500/5',     dot: 'bg-cyan-400' },
-  provider_backup:       { border: 'border-emerald-500/30', ring: 'ring-emerald-500/20', bg: 'bg-emerald-500/10', text: 'text-emerald-300', badge: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40', gradient: 'from-emerald-500/10 to-emerald-500/5', dot: 'bg-emerald-400' },
+  provider_home:         { border: 'border-sky-500/20',     ring: 'ring-sky-500/15',     bg: 'bg-sky-500/8',      text: 'text-sky-600 dark:text-sky-400',         badge: 'bg-sky-500/10 text-sky-700 border-sky-500/25 dark:text-sky-300',             gradient: 'from-sky-500/8 to-sky-500/3',       dot: 'bg-sky-500' },
+  provider_tenants:      { border: 'border-indigo-500/20',  ring: 'ring-indigo-500/15',  bg: 'bg-indigo-500/8',   text: 'text-indigo-600 dark:text-indigo-400',   badge: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/25 dark:text-indigo-300', gradient: 'from-indigo-500/8 to-indigo-500/3', dot: 'bg-indigo-500' },
+  provider_onboarding:   { border: 'border-teal-500/20',    ring: 'ring-teal-500/15',    bg: 'bg-teal-500/8',     text: 'text-teal-600 dark:text-teal-400',       badge: 'bg-teal-500/10 text-teal-700 border-teal-500/25 dark:text-teal-300',         gradient: 'from-teal-500/8 to-teal-500/3',     dot: 'bg-teal-500' },
+  provider_billing:      { border: 'border-emerald-500/20', ring: 'ring-emerald-500/15', bg: 'bg-emerald-500/8',  text: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300', gradient: 'from-emerald-500/8 to-emerald-500/3', dot: 'bg-emerald-500' },
+  provider_usage:        { border: 'border-cyan-500/20',    ring: 'ring-cyan-500/15',    bg: 'bg-cyan-500/8',     text: 'text-cyan-600 dark:text-cyan-400',       badge: 'bg-cyan-500/10 text-cyan-700 border-cyan-500/25 dark:text-cyan-300',         gradient: 'from-cyan-500/8 to-cyan-500/3',     dot: 'bg-cyan-500' },
+  provider_support:      { border: 'border-violet-500/20',  ring: 'ring-violet-500/15',  bg: 'bg-violet-500/8',   text: 'text-violet-600 dark:text-violet-400',   badge: 'bg-violet-500/10 text-violet-700 border-violet-500/25 dark:text-violet-300', gradient: 'from-violet-500/8 to-violet-500/3', dot: 'bg-violet-500' },
+  provider_incidents:    { border: 'border-red-500/20',     ring: 'ring-red-500/15',     bg: 'bg-red-500/8',      text: 'text-red-600 dark:text-red-400',         badge: 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300',             gradient: 'from-red-500/8 to-red-500/3',       dot: 'bg-red-500' },
+  provider_releases:     { border: 'border-fuchsia-500/20', ring: 'ring-fuchsia-500/15', bg: 'bg-fuchsia-500/8',  text: 'text-fuchsia-600 dark:text-fuchsia-400', badge: 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/25 dark:text-fuchsia-300', gradient: 'from-fuchsia-500/8 to-fuchsia-500/3', dot: 'bg-fuchsia-500' },
+  provider_templates:    { border: 'border-amber-500/20',   ring: 'ring-amber-500/15',   bg: 'bg-amber-500/8',    text: 'text-amber-600 dark:text-amber-400',     badge: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300',     gradient: 'from-amber-500/8 to-amber-500/3',   dot: 'bg-amber-500' },
+  provider_integrations: { border: 'border-lime-500/20',    ring: 'ring-lime-500/15',    bg: 'bg-lime-500/8',     text: 'text-lime-600 dark:text-lime-400',       badge: 'bg-lime-500/10 text-lime-700 border-lime-500/25 dark:text-lime-300',         gradient: 'from-lime-500/8 to-lime-500/3',     dot: 'bg-lime-500' },
+  provider_security:     { border: 'border-rose-500/20',    ring: 'ring-rose-500/15',    bg: 'bg-rose-500/8',     text: 'text-rose-600 dark:text-rose-400',       badge: 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:text-rose-300',         gradient: 'from-rose-500/8 to-rose-500/3',     dot: 'bg-rose-500' },
+  provider_data_ops:     { border: 'border-orange-500/20',  ring: 'ring-orange-500/15',  bg: 'bg-orange-500/8',   text: 'text-orange-600 dark:text-orange-400',   badge: 'bg-orange-500/10 text-orange-700 border-orange-500/25 dark:text-orange-300', gradient: 'from-orange-500/8 to-orange-500/3', dot: 'bg-orange-500' },
+  provider_team:         { border: 'border-pink-500/20',    ring: 'ring-pink-500/15',    bg: 'bg-pink-500/8',     text: 'text-pink-600 dark:text-pink-400',       badge: 'bg-pink-500/10 text-pink-700 border-pink-500/25 dark:text-pink-300',         gradient: 'from-pink-500/8 to-pink-500/3',     dot: 'bg-pink-500' },
+  provider_settings:     { border: 'border-border',         ring: 'ring-border/60',      bg: 'bg-muted/50',       text: 'text-muted-foreground',                  badge: 'bg-muted text-muted-foreground border-border',                               gradient: 'from-muted/60 to-muted/30',        dot: 'bg-muted-foreground' },
+  provider_audit:        { border: 'border-yellow-500/20',  ring: 'ring-yellow-500/15',  bg: 'bg-yellow-500/8',   text: 'text-yellow-600 dark:text-yellow-400',   badge: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/25 dark:text-yellow-300', gradient: 'from-yellow-500/8 to-yellow-500/3', dot: 'bg-yellow-500' },
+  provider_analytics:    { border: 'border-blue-500/20',    ring: 'ring-blue-500/15',    bg: 'bg-blue-500/8',     text: 'text-blue-600 dark:text-blue-400',       badge: 'bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300',         gradient: 'from-blue-500/8 to-blue-500/3',     dot: 'bg-blue-500' },
+  provider_comms:        { border: 'border-teal-500/20',    ring: 'ring-teal-500/15',    bg: 'bg-teal-500/8',     text: 'text-teal-600 dark:text-teal-400',       badge: 'bg-teal-500/10 text-teal-700 border-teal-500/25 dark:text-teal-300',         gradient: 'from-teal-500/8 to-teal-500/3',     dot: 'bg-teal-500' },
+  provider_notifications:{ border: 'border-amber-500/20',   ring: 'ring-amber-500/15',   bg: 'bg-amber-500/8',    text: 'text-amber-600 dark:text-amber-400',     badge: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300',     gradient: 'from-amber-500/8 to-amber-500/3',   dot: 'bg-amber-500' },
+  provider_branding:     { border: 'border-fuchsia-500/20', ring: 'ring-fuchsia-500/15', bg: 'bg-fuchsia-500/8',  text: 'text-fuchsia-600 dark:text-fuchsia-400', badge: 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/25 dark:text-fuchsia-300', gradient: 'from-fuchsia-500/8 to-fuchsia-500/3', dot: 'bg-fuchsia-500' },
+  provider_api_mgmt:     { border: 'border-cyan-500/20',    ring: 'ring-cyan-500/15',    bg: 'bg-cyan-500/8',     text: 'text-cyan-600 dark:text-cyan-400',       badge: 'bg-cyan-500/10 text-cyan-700 border-cyan-500/25 dark:text-cyan-300',         gradient: 'from-cyan-500/8 to-cyan-500/3',     dot: 'bg-cyan-500' },
+  provider_backup:       { border: 'border-emerald-500/20', ring: 'ring-emerald-500/15', bg: 'bg-emerald-500/8',  text: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300', gradient: 'from-emerald-500/8 to-emerald-500/3', dot: 'bg-emerald-500' },
 };
 
 const defaultAccent: SectionAccent = sectionAccents.provider_home;
@@ -59,7 +59,7 @@ export function getAccent(sectionId: string): SectionAccent {
   return sectionAccents[sectionId] ?? defaultAccent;
 }
 
-/* ── Section page header (unique per module) ─────────────────── */
+/* -- Section page header (unique per module) -- */
 export function SectionPageHeader({
   icon: Icon,
   title,
@@ -84,7 +84,7 @@ export function SectionPageHeader({
   descriptionClassName?: string;
 }) {
   return (
-    <div className={cn('mb-4 rounded-2xl border p-4 ring-1', accent.border, accent.bg, accent.ring, className)}>
+    <div className={cn('mb-4 rounded-xl border p-4 ring-1', accent.border, accent.bg, accent.ring, className)}>
       <div className={cn('flex items-center justify-between', contentClassName)}>
         <div className="flex items-center gap-3">
           <div className={`flex size-10 items-center justify-center rounded-xl ${accent.bg} ring-1 ${accent.ring}`}>
@@ -92,7 +92,7 @@ export function SectionPageHeader({
           </div>
           <div>
             <h2 className={cn('text-base font-bold', accent.text, titleClassName)}>{title}</h2>
-            {description && <p className={cn('text-xs text-slate-400', descriptionClassName)}>{description}</p>}
+            {description && <p className={cn('text-xs text-muted-foreground', descriptionClassName)}>{description}</p>}
           </div>
         </div>
         {actions && <div className={cn('flex items-center gap-2', actionsClassName)}>{actions}</div>}
@@ -101,7 +101,7 @@ export function SectionPageHeader({
   );
 }
 
-/* ── Panel wrapper shared across all console sections ───────── */
+/* -- Panel wrapper shared across all console sections -- */
 export function Panel({
   title,
   subtitle,
@@ -126,11 +126,11 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <section className={cn('rounded-2xl border bg-slate-900/70', accentBorder ?? 'border-slate-500/20', className)}>
-      <div className={cn('flex items-center justify-between border-b px-4 py-3', accentBorder ?? 'border-slate-500/20', headerClassName)}>
+    <section className={cn('rounded-xl border bg-card shadow-[var(--shadow-xs)]', accentBorder ?? 'border-border', className)}>
+      <div className={cn('flex items-center justify-between border-b px-4 py-3', accentBorder ?? 'border-border', headerClassName)}>
         <div>
-          <h3 className={cn('text-sm font-semibold text-slate-100', titleClassName)}>{title}</h3>
-          {subtitle ? <p className={cn('text-xs text-slate-400', subtitleClassName)}>{subtitle}</p> : null}
+          <h3 className={cn('text-sm font-semibold text-foreground', titleClassName)}>{title}</h3>
+          {subtitle ? <p className={cn('text-xs text-muted-foreground', subtitleClassName)}>{subtitle}</p> : null}
         </div>
         {action}
       </div>
@@ -139,104 +139,104 @@ export function Panel({
   );
 }
 
-/* ── Severity colour helper ─────────────────────────────────── */
+/* -- Severity colour helper -- */
 export function tone(severity: string): string {
-  if (severity === 'CRITICAL') return 'bg-red-500/15 text-red-200 border-red-500/40';
-  if (severity === 'HIGH') return 'bg-amber-500/15 text-amber-200 border-amber-500/40';
-  if (severity === 'MEDIUM') return 'bg-blue-500/15 text-blue-200 border-blue-500/40';
-  return 'bg-slate-500/15 text-slate-200 border-slate-500/40';
+  if (severity === 'CRITICAL') return 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300';
+  if (severity === 'HIGH') return 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300';
+  if (severity === 'MEDIUM') return 'bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300';
+  return 'bg-muted text-muted-foreground border-border';
 }
 
-/* ── Reason prompt (mutation guard) ─────────────────────────── */
+/* -- Reason prompt (mutation guard) -- */
 export function reasonPrompt(label: string): string | null {
   const value = window.prompt(`Reason required: ${label}`);
   if (!value || !value.trim()) return null;
   return value.trim();
 }
 
-/* ── Status badge ───────────────────────────────────────────── */
+/* -- Status badge -- */
 const statusVariant: Record<string, string> = {
-  ACTIVE: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-  HEALTHY: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-  PAID: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-  OPERATIONAL: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-  SUCCEEDED: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-  CONNECTED: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-  COMPLETED: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
+  ACTIVE: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300',
+  HEALTHY: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300',
+  PAID: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300',
+  OPERATIONAL: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300',
+  SUCCEEDED: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300',
+  CONNECTED: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300',
+  COMPLETED: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300',
 
-  TRIAL: 'bg-blue-500/15 text-blue-200 border-blue-500/40',
-  ISSUED: 'bg-blue-500/15 text-blue-200 border-blue-500/40',
-  IN_PROGRESS: 'bg-blue-500/15 text-blue-200 border-blue-500/40',
-  PENDING: 'bg-blue-500/15 text-blue-200 border-blue-500/40',
-  NEW: 'bg-blue-500/15 text-blue-200 border-blue-500/40',
-  MONITORING: 'bg-blue-500/15 text-blue-200 border-blue-500/40',
+  TRIAL: 'bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300',
+  ISSUED: 'bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300',
+  IN_PROGRESS: 'bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300',
+  PENDING: 'bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300',
+  NEW: 'bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300',
+  MONITORING: 'bg-blue-500/10 text-blue-700 border-blue-500/25 dark:text-blue-300',
 
-  WARNING: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
-  PAYMENT_DUE: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
-  OVERDUE: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
-  FAILED: 'bg-red-500/15 text-red-200 border-red-500/40',
-  SUSPENDED: 'bg-red-500/15 text-red-200 border-red-500/40',
-  DEGRADED: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
-  DISCONNECTED: 'bg-red-500/15 text-red-200 border-red-500/40',
-  BLOCKED: 'bg-red-500/15 text-red-200 border-red-500/40',
+  WARNING: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300',
+  PAYMENT_DUE: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300',
+  OVERDUE: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300',
+  FAILED: 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300',
+  SUSPENDED: 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300',
+  DEGRADED: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300',
+  DISCONNECTED: 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300',
+  BLOCKED: 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300',
 
-  OPEN: 'bg-red-500/15 text-red-200 border-red-500/40',
-  RESOLVED: 'bg-emerald-500/15 text-emerald-200 border-emerald-500/40',
-  ESCALATED: 'bg-amber-500/15 text-amber-200 border-amber-500/40',
-  CLOSED: 'bg-slate-500/15 text-slate-200 border-slate-500/40',
+  OPEN: 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300',
+  RESOLVED: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300',
+  ESCALATED: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300',
+  CLOSED: 'bg-muted text-muted-foreground border-border',
 };
 
 export function StatusBadge({ status }: { status: string }) {
-  const cls = statusVariant[status] ?? 'bg-slate-500/15 text-slate-200 border-slate-500/40';
+  const cls = statusVariant[status] ?? 'bg-muted text-muted-foreground border-border';
   return <Badge className={`border text-[10px] ${cls}`}>{status.replaceAll('_', ' ')}</Badge>;
 }
 
-/* ── Stat card (mini KPI) ───────────────────────────────────── */
+/* -- Stat card (mini KPI) -- */
 export function StatCard({
   label,
   value,
   sub,
-  gradient = 'from-slate-500/10 to-slate-500/5',
+  gradient = 'from-muted/60 to-muted/30',
+  borderAccent,
 }: {
   label: string;
   value: string | number;
   sub?: string;
   gradient?: string;
+  borderAccent?: string;
 }) {
   return (
-    <div className={`rounded-xl border border-slate-500/20 bg-linear-to-br ${gradient} p-3`}>
-      <p className="text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</p>
-      <p className="text-lg font-extrabold leading-tight text-slate-100">{value}</p>
-      {sub ? <span className="text-[10px] text-slate-400">{sub}</span> : null}
+    <div className={`rounded-xl border ${borderAccent ?? 'border-border'} bg-linear-to-br ${gradient} p-3 shadow-[var(--shadow-xs)] transition-all duration-200 hover:shadow-[var(--shadow-sm)]`}>
+      <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
+      <p className="text-lg font-extrabold leading-tight text-foreground">{value}</p>
+      {sub ? <span className="text-[10px] text-muted-foreground">{sub}</span> : null}
     </div>
   );
 }
 
-/* ── Row wrapper for tables ─────────────────────────────────── */
+/* -- Row wrapper for tables -- */
 export function Row({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`rounded-lg border border-slate-500/20 bg-slate-800/60 px-3 py-2 text-xs ${className}`}>
+    <div className={`rounded-lg border border-border bg-muted/50 px-3 py-2 text-xs ${className}`}>
       {children}
     </div>
   );
 }
 
-/* ── Progress bar ───────────────────────────────────────────── */
-export function ProgressBar({ value, max, color = 'bg-sky-500' }: { value: number; max: number; color?: string }) {
+/* -- Progress bar -- */
+export function ProgressBar({ value, max, color = 'bg-primary' }: { value: number; max: number; color?: string }) {
   const pct = max > 0 ? Math.min((value / max) * 100, 100) : 0;
   const warn = pct > 90;
   return (
-    <div className="h-1.5 w-full rounded-full bg-slate-700 dark:bg-slate-700 bg-slate-200">
-      <div className={`h-full rounded-full transition-all ${warn ? 'bg-red-500' : color}`} style={{ width: `${pct}%` }} />
+    <div className="h-1.5 w-full rounded-full bg-muted">
+      <div className={`h-full rounded-full transition-all ${warn ? 'bg-danger' : color}`} style={{ width: `${pct}%` }} />
     </div>
   );
 }
 
-/* ══════════════════════════════════════════════════════════════ */
-/*  EXTENDED COMPONENT SYSTEM                                   */
-/* ══════════════════════════════════════════════════════════════ */
+/* ---- EXTENDED COMPONENT SYSTEM ---- */
 
-/* ── SubPageRouter: renders content based on activeHeader ──── */
+/* -- SubPageRouter: renders content based on activeHeader -- */
 export interface SubPageDef {
   headerId: string;
   label: string;
@@ -257,7 +257,7 @@ export function SubPageRouter({
   return <>{fallback ?? null}</>;
 }
 
-/* ── EmptyState ─────────────────────────────────────────────── */
+/* -- EmptyState -- */
 export function EmptyState({
   icon: Icon,
   title,
@@ -270,16 +270,16 @@ export function EmptyState({
   action?: ReactNode;
 }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-500/30 bg-slate-800/30 dark:bg-slate-800/30 p-8 text-center">
-      {Icon && <Icon className="mb-3 size-10 text-slate-500" />}
-      <h3 className="text-sm font-semibold text-slate-200">{title}</h3>
-      {description && <p className="mt-1 max-w-sm text-xs text-slate-400">{description}</p>}
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/30 p-8 text-center">
+      {Icon && <Icon className="mb-3 size-10 text-muted-foreground/60" />}
+      <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+      {description && <p className="mt-1 max-w-sm text-xs text-muted-foreground">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
     </div>
   );
 }
 
-/* ── DataTable: Sortable, filterable, responsive ────────────── */
+/* -- DataTable: Sortable, filterable, responsive -- */
 export interface ColumnDef<T> {
   key: string;
   label: string;
@@ -350,9 +350,9 @@ export function DataTable<T extends { id?: string | number }>({
     <div className="space-y-2">
       {searchFn && searchPlaceholder && (
         <div className="relative mb-2">
-          <Search className="absolute left-2.5 top-2 size-3.5 text-slate-400" />
+          <Search className="absolute left-2.5 top-2 size-3.5 text-muted-foreground" />
           <Input
-            className="h-8 border-slate-500/30 bg-slate-800 pl-8 text-xs text-slate-100 dark:bg-slate-800 dark:text-slate-100"
+            className="h-8 border-border bg-muted/50 pl-8 text-xs"
             placeholder={searchPlaceholder}
             value={filterQuery}
             onChange={(e) => setFilterQuery(e.target.value)}
@@ -361,7 +361,7 @@ export function DataTable<T extends { id?: string | number }>({
       )}
 
       {/* Table header */}
-      <div className={`hidden md:grid gap-3 rounded-lg border ${accentBorder ?? 'border-slate-500/20'} bg-slate-800/40 px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-slate-400`}
+      <div className={`hidden md:grid gap-3 rounded-lg border ${accentBorder ?? 'border-border'} bg-muted/50 px-3 py-2 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground`}
         style={{ gridTemplateColumns: columns.map(() => '1fr').join(' ') }}>
         {columns.map((col) => (
           <button
@@ -382,14 +382,14 @@ export function DataTable<T extends { id?: string | number }>({
       {rows.map((row, idx) => (
         <div
           key={rowKey(row, idx)}
-          className={`grid gap-3 rounded-lg border ${accentBorder ?? 'border-slate-500/20'} bg-slate-800/60 px-3 py-2 text-xs transition-colors ${onRowClick ? 'cursor-pointer hover:bg-slate-700/60' : ''}`}
+          className={`grid gap-3 rounded-lg border ${accentBorder ?? 'border-border'} bg-muted/30 px-3 py-2 text-xs transition-colors ${onRowClick ? 'cursor-pointer hover:bg-muted/60' : ''}`}
           style={{ gridTemplateColumns: columns.map(() => '1fr').join(' ') }}
           onClick={() => onRowClick?.(row)}
         >
           {columns.map((col) => (
             <div key={col.key} className={`${col.className ?? ''} ${col.hideOnMobile ? 'hidden lg:block' : ''}`}>
               {/* Mobile: stacked layout */}
-              <span className="md:hidden text-[10px] text-slate-400 uppercase tracking-wider">{col.label}: </span>
+              <span className="md:hidden text-[10px] text-muted-foreground uppercase tracking-wider">{col.label}: </span>
               {col.render(row, idx)}
             </div>
           ))}
@@ -397,16 +397,16 @@ export function DataTable<T extends { id?: string | number }>({
       ))}
 
       {rows.length === 0 && (
-        <p className="py-4 text-center text-xs text-slate-400">{emptyMessage}</p>
+        <p className="py-4 text-center text-xs text-muted-foreground">{emptyMessage}</p>
       )}
       {sorted.length > maxRows && (
-        <p className="text-center text-[10px] text-slate-400">Showing {maxRows} of {sorted.length} results</p>
+        <p className="text-center text-[10px] text-muted-foreground">Showing {maxRows} of {sorted.length} results</p>
       )}
     </div>
   );
 }
 
-/* ── PermissionGate: role-based section guard ───────────────── */
+/* -- PermissionGate: role-based section guard -- */
 export function PermissionGate({
   requires,
   permissions,
@@ -426,10 +426,10 @@ export function PermissionGate({
     return (
       <>
         {fallback ?? (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/5 p-8 text-center">
-            <Lock className="mb-3 size-8 text-red-400" />
-            <h3 className="text-sm font-semibold text-red-200">Access Restricted</h3>
-            <p className="mt-1 text-xs text-slate-400">
+          <div className="flex flex-col items-center justify-center rounded-xl border border-danger/20 bg-danger-soft p-8 text-center">
+            <Lock className="mb-3 size-8 text-danger" />
+            <h3 className="text-sm font-semibold text-danger">Access Restricted</h3>
+            <p className="mt-1 text-xs text-muted-foreground">
               Required permission: {needed.join(' or ')}
             </p>
           </div>
@@ -441,7 +441,7 @@ export function PermissionGate({
   return <>{children}</>;
 }
 
-/* ── TenantSwitcher: combobox for multi-tenant context ──────── */
+/* -- TenantSwitcher: combobox for multi-tenant context -- */
 export function TenantSwitcher({
   tenants,
   selectedTenantId,
@@ -471,21 +471,21 @@ export function TenantSwitcher({
     <div className="relative">
       <button
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 rounded-lg border border-slate-500/30 bg-slate-800/80 px-3 py-1.5 text-xs text-slate-100 hover:bg-slate-700/80 transition-colors"
+        className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground hover:bg-muted transition-colors"
       >
-        <Building2 className="size-3.5 text-slate-400" />
+        <Building2 className="size-3.5 text-muted-foreground" />
         <span className="max-w-[160px] truncate">{selected ? selected.name : 'All Tenants'}</span>
-        <ChevronsUpDown className="size-3 text-slate-400" />
+        <ChevronsUpDown className="size-3 text-muted-foreground" />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-slate-500/30 bg-slate-900 shadow-2xl">
+        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-border bg-card shadow-[var(--shadow-md)]">
           <div className="p-2">
             <div className="relative">
-              <Search className="absolute left-2 top-2 size-3.5 text-slate-400" />
+              <Search className="absolute left-2 top-2 size-3.5 text-muted-foreground" />
               <Input
-                className="h-8 border-slate-500/30 bg-slate-800 pl-7 text-xs text-slate-100"
-                placeholder="Search tenants…"
+                className="h-8 border-border bg-muted/50 pl-7 text-xs"
+                placeholder="Search tenants..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 autoFocus
@@ -495,7 +495,7 @@ export function TenantSwitcher({
 
           {/* All tenants option */}
           <button
-            className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-800 ${!selectedTenantId ? 'bg-slate-800 text-sky-300' : 'text-slate-200'}`}
+            className={`w-full px-3 py-2 text-left text-xs hover:bg-muted ${!selectedTenantId ? 'bg-primary/8 text-primary' : 'text-foreground'}`}
             onClick={() => { onSelect(null); setOpen(false); }}
           >
             All Tenants (Platform View)
@@ -504,8 +504,8 @@ export function TenantSwitcher({
           <div className="max-h-64 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
             {/* Pinned */}
             {pinnedTenants.length > 0 && (
-              <div className="border-t border-slate-700 px-2 py-1">
-                <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              <div className="border-t border-border px-2 py-1">
+                <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                   <Pin className="mr-1 inline size-3" />Pinned
                 </p>
                 {pinnedTenants.map((t) => (
@@ -523,8 +523,8 @@ export function TenantSwitcher({
 
             {/* Recent */}
             {recentTenants.length > 0 && (
-              <div className="border-t border-slate-700 px-2 py-1">
-                <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500">
+              <div className="border-t border-border px-2 py-1">
+                <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
                   <Star className="mr-1 inline size-3" />Recent
                 </p>
                 {recentTenants.map((t) => (
@@ -540,8 +540,8 @@ export function TenantSwitcher({
             )}
 
             {/* All filtered */}
-            <div className="border-t border-slate-700 px-2 py-1">
-              <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-widest text-slate-500">All Tenants</p>
+            <div className="border-t border-border px-2 py-1">
+              <p className="px-1 py-1 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">All Tenants</p>
               {filtered.slice(0, 20).map((t) => (
                 <TenantRow
                   key={t.id}
@@ -554,13 +554,13 @@ export function TenantSwitcher({
                   }
                 />
               ))}
-              {filtered.length === 0 && <p className="px-1 py-2 text-[10px] text-slate-400">No tenants match "{query}"</p>}
+              {filtered.length === 0 && <p className="px-1 py-2 text-[10px] text-muted-foreground">No tenants match "{query}"</p>}
             </div>
           </div>
 
-          <div className="border-t border-slate-700 p-2">
+          <div className="border-t border-border p-2">
             <button
-              className="w-full rounded-md bg-slate-800 px-2 py-1.5 text-[10px] text-slate-400 hover:text-slate-200"
+              className="w-full rounded-md bg-muted px-2 py-1.5 text-[10px] text-muted-foreground hover:text-foreground"
               onClick={() => setOpen(false)}
             >
               <X className="mr-1 inline size-3" />Close
@@ -588,13 +588,13 @@ function TenantRow({
   return (
     <div
       className={`group flex items-center justify-between rounded-md px-2 py-1.5 text-xs cursor-pointer transition-colors ${
-        selected ? 'bg-sky-500/15 text-sky-200' : 'text-slate-200 hover:bg-slate-800'
+        selected ? 'bg-primary/10 text-primary' : 'text-foreground hover:bg-muted'
       }`}
       onClick={onSelect}
     >
       <div className="flex items-center gap-2 min-w-0">
         <span className={`size-1.5 shrink-0 rounded-full ${
-          tenant.status === 'ACTIVE' ? 'bg-emerald-400' : tenant.status === 'TRIAL' ? 'bg-blue-400' : 'bg-red-400'
+          tenant.status === 'ACTIVE' ? 'bg-emerald-500' : tenant.status === 'TRIAL' ? 'bg-blue-500' : 'bg-red-500'
         }`} />
         <span className="truncate">{tenant.name}</span>
       </div>
@@ -602,7 +602,7 @@ function TenantRow({
         <StatusBadge status={tenant.status} />
         {onTogglePin && (
           <button
-            className={`opacity-0 group-hover:opacity-100 transition-opacity ${pinned ? 'text-amber-400' : 'text-slate-500'}`}
+            className={`opacity-0 group-hover:opacity-100 transition-opacity ${pinned ? 'text-amber-500' : 'text-muted-foreground'}`}
             onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
           >
             <Pin className="size-3" />
@@ -613,7 +613,7 @@ function TenantRow({
   );
 }
 
-/* ── Responsive helpers ─────────────────────────────────────── */
+/* -- Responsive helpers -- */
 export function ResponsiveGrid({
   children,
   cols = { sm: 1, md: 2, lg: 3, xl: 4 },
@@ -635,7 +635,7 @@ export function ResponsiveGrid({
   return <div className={`grid gap-${gap} ${colClasses} ${className}`}>{children}</div>;
 }
 
-/* ── Workflow action bar ────────────────────────────────────── */
+/* -- Workflow action bar -- */
 export function WorkflowActions({
   children,
   className = '',
@@ -644,13 +644,13 @@ export function WorkflowActions({
   className?: string;
 }) {
   return (
-    <div className={`flex flex-wrap items-center gap-2 rounded-xl border border-slate-500/20 bg-slate-800/40 px-4 py-3 ${className}`}>
+    <div className={`flex flex-wrap items-center gap-2 rounded-xl border border-border bg-muted/40 px-4 py-3 ${className}`}>
       {children}
     </div>
   );
 }
 
-/* ── Section shell: wraps every section with standardized layout ── */
+/* -- Section shell: wraps every section with standardized layout -- */
 export function SectionShell({
   children,
   className = '',
@@ -665,7 +665,7 @@ export function SectionShell({
   );
 }
 
-/* ── Link-style nav helper for programmatic navigation ──── */
+/* -- Link-style nav helper for programmatic navigation -- */
 export function useProviderNavigate() {
   const navTo = useNavigate();
   const navigate = useCallback(

@@ -227,6 +227,89 @@ export const getGradingQueue = (_req: Request, res: Response) => ok(res, grading
 
 export const getClasses = (_req: Request, res: Response) => ok(res, classes);
 
+export const getClassDetail = (req: Request, res: Response): void => {
+  const cls = classes.find((c) => c.id === req.params.classId);
+  if (!cls) { res.status(404).json({ success: false, error: 'Class not found' }); return; }
+
+  const classAssignments = assignments.filter((a) => a.classId === cls.id);
+  const classStudents = attendanceStudents[cls.id] ?? [];
+  const gbData = gradebookData[cls.id];
+
+  // Build enriched student list
+  const students = classStudents.map((s) => {
+    const gbStudent = gbData?.students.find((gs) => gs.name === s.name);
+    const avg = gbStudent?.average ?? cls.avgGrade + (Math.random() * 10 - 5);
+    const missing = classAssignments.filter((a) => a.status === 'active').length > 0 ? Math.floor(Math.random() * 3) : 0;
+    const attendanceRate = s.overallRate;
+    let status: 'on-track' | 'at-risk' | 'excelling' = 'on-track';
+    if (avg >= 90 && attendanceRate >= 95) status = 'excelling';
+    else if (avg < 70 || attendanceRate < 85 || missing >= 2) status = 'at-risk';
+    const letterGrade = gbStudent?.letterGrade ?? (avg >= 90 ? 'A' : avg >= 80 ? 'B' : avg >= 70 ? 'C' : avg >= 60 ? 'D' : 'F');
+    return {
+      id: s.id,
+      name: s.name,
+      initials: s.initials,
+      email: `${s.name.toLowerCase().replace(/\s/g, '.')}@lincoln.edu`,
+      average: Math.round(avg * 10) / 10,
+      letterGrade,
+      attendanceRate,
+      streak: s.streak,
+      missingAssignments: missing,
+      status,
+    };
+  });
+
+  // Fill extra students if the class has more students than we have in attendance
+  const extraCount = cls.studentCount - students.length;
+  const extraNames = [
+    ['David Johnson', 'DJ'], ['Priya Patel', 'PP'], ['Aisha Mohammed', 'AM'],
+    ['Liam O\'Brien', 'LO'], ['Sofia Martinez', 'SM'], ['Noah Taylor', 'NT'],
+    ['Isabella Nguyen', 'IN'], ['Mason Clark', 'MC'], ['Ava Thompson', 'AT'],
+    ['Lucas Wright', 'LW'], ['Mia Davis', 'MD'], ['Ethan Wilson', 'EW'],
+    ['Harper Brown', 'HB'], ['Oliver Harris', 'OH'], ['Charlotte Lewis', 'CL'],
+    ['William Moore', 'WM'], ['Amelia Anderson', 'AA'], ['Benjamin Martin', 'BM'],
+    ['Evelyn Jackson', 'EJ'], ['Henry White', 'HW'], ['Scarlett Robinson', 'SR'],
+    ['Alexander Hall', 'AH'], ['Chloe Young', 'CY'], ['Daniel King', 'DK'],
+    ['Grace Scott', 'GS'], ['Sebastian Green', 'SG'], ['Lily Adams', 'LA'],
+    ['Jack Baker', 'JB2'],
+  ];
+  for (let i = 0; i < Math.min(extraCount, extraNames.length); i++) {
+    const [name, initials] = extraNames[i];
+    const avg = cls.avgGrade + (Math.random() * 20 - 10);
+    const attendanceRate = 85 + Math.random() * 15;
+    let status: 'on-track' | 'at-risk' | 'excelling' = 'on-track';
+    if (avg >= 90 && attendanceRate >= 95) status = 'excelling';
+    else if (avg < 70 || attendanceRate < 85) status = 'at-risk';
+    students.push({
+      id: `st-extra-${cls.id}-${i}`,
+      name,
+      initials,
+      email: `${name.toLowerCase().replace(/['\s]/g, '.')}@lincoln.edu`,
+      average: Math.round(avg * 10) / 10,
+      letterGrade: avg >= 90 ? 'A' : avg >= 80 ? 'B' : avg >= 70 ? 'C' : avg >= 60 ? 'D' : 'F',
+      attendanceRate: Math.round(attendanceRate * 10) / 10,
+      streak: Math.floor(Math.random() * 20),
+      missingAssignments: Math.floor(Math.random() * 3),
+      status,
+    });
+  }
+
+  const totalAttendance = students.reduce((s, st) => s + st.attendanceRate, 0);
+  const detail = {
+    ...cls,
+    attendanceRate: Math.round((totalAttendance / (students.length || 1)) * 10) / 10,
+    assignmentCompletion: classAssignments.length > 0
+      ? Math.round(classAssignments.reduce((s, a) => s + (a.submitted / (a.total || 1)) * 100, 0) / classAssignments.length)
+      : 0,
+    upcomingAssignments: classAssignments.filter((a) => a.status === 'active' || a.status === 'draft').length,
+    recentAssignments: classAssignments.slice(0, 5).map((a) => ({
+      id: a.id, title: a.title, type: a.type, dueDate: a.dueDate, avgScore: a.avgScore, status: a.status,
+    })),
+    students,
+  };
+  ok(res, detail);
+};
+
 export const getAttendanceByClass = (req: Request, res: Response) => {
   const students = attendanceStudents[req.params.classId as string] ?? [];
   ok(res, students.map((s: Record<string, unknown>) => ({ ...s, status: null })));

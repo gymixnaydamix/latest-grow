@@ -68,6 +68,11 @@ export const schoolOpsKeys = {
   approvalHistory: (schoolId: string) => ['school-ops', 'audit', 'approvals', schoolId] as const,
   complianceTasks: (schoolId: string) => ['school-ops', 'audit', 'compliance', schoolId] as const,
 
+  // Dashboard insights
+  schoolAnalytics: (schoolId: string) => ['school-ops', 'dashboard', 'analytics', schoolId] as const,
+  schoolMarket: (schoolId: string) => ['school-ops', 'dashboard', 'market', schoolId] as const,
+  schoolSystem: (schoolId: string) => ['school-ops', 'dashboard', 'system', schoolId] as const,
+
   // Reports
   report: (schoolId: string, type: string) => ['school-ops', 'reports', type, schoolId] as const,
 
@@ -156,11 +161,18 @@ export function useOpsMarkAttendance(schoolId: string | null) {
   return useSchoolMutationPost(schoolId, 'attendance/mark', [
     schoolOpsKeys.attendanceDaily(schoolId!, new Date().toISOString().slice(0, 10)),
     schoolOpsKeys.attendanceOverview(schoolId!),
+    schoolOpsKeys.attendanceExceptions(schoolId!),
+  ]);
+}
+export function useCreateAttendanceCorrection(schoolId: string | null) {
+  return useSchoolMutationPost(schoolId, 'attendance/corrections', [
+    schoolOpsKeys.attendanceCorrections(schoolId!),
   ]);
 }
 export function useApproveCorrection(schoolId: string | null) {
   return useSchoolMutationPatch<{ id: string; status: string }>(schoolId, 'attendance/corrections', [
     schoolOpsKeys.attendanceCorrections(schoolId!),
+    schoolOpsKeys.attendanceOverview(schoolId!),
   ]);
 }
 export function useDeleteAttendanceRecord(schoolId: string | null) {
@@ -176,19 +188,23 @@ export function useDeleteCorrection(schoolId: string | null) {
 }
 export function useExportAttendance(schoolId: string | null) {
   return useMutation({
-    mutationFn: (params: { from?: string; to?: string }) =>
-      api
-        .get<Blob>(
-          `/admin/schools/${schoolId}/attendance/export?from=${params.from ?? ''}&to=${params.to ?? ''}`,
-        )
-        .then(blob => {
-          const url = URL.createObjectURL(blob as unknown as Blob);
-          const a = document.createElement('a');
-          a.href = url;
-          a.download = `attendance-export-${new Date().toISOString().slice(0, 10)}.csv`;
-          a.click();
-          URL.revokeObjectURL(url);
-        }),
+    mutationFn: async (params: { from?: string; to?: string }) => {
+      const search = new URLSearchParams();
+      if (params.from) search.set('from', params.from);
+      if (params.to) search.set('to', params.to);
+
+      const response = await fetch(`/api/admin/schools/${schoolId}/attendance/export?${search.toString()}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) throw new Error(`Failed to export attendance (${response.status})`);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `attendance-export-${new Date().toISOString().slice(0, 10)}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    },
   });
 }
 
@@ -500,6 +516,14 @@ export function useSchoolProfile(schoolId: string | null) {
 export function useAcademicConfig(schoolId: string | null) {
   return useSchoolResource(schoolId, 'settings/academic', schoolOpsKeys.academicConfig(schoolId!));
 }
+export function useSaveAcademicConfig(schoolId: string | null) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      api.patch<ApiSuccessResponse<unknown>>(`/admin/schools/${schoolId}/settings/academic`, payload).then(r => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: schoolOpsKeys.academicConfig(schoolId!) }); },
+  });
+}
 export function useGradingScales(schoolId: string | null) {
   return useSchoolResource(schoolId, 'settings/grading', schoolOpsKeys.gradingScales(schoolId!));
 }
@@ -524,6 +548,9 @@ export function useSaveFeeConfig(schoolId: string | null) {
       api.patch<ApiSuccessResponse<unknown>>(`/admin/schools/${schoolId}/settings/fees`, payload).then(r => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: schoolOpsKeys.feeConfig(schoolId!) }); },
   });
+}
+export function useDeleteFeeConfig(schoolId: string | null) {
+  return useSchoolMutationDelete(schoolId, 'settings/fees', [schoolOpsKeys.feeConfig(schoolId!)]);
 }
 export function useCreateGradingScale(schoolId: string | null) {
   return useSchoolMutationPost(schoolId, 'settings/grading', [schoolOpsKeys.gradingScales(schoolId!)]);
@@ -554,6 +581,18 @@ export function useUpdateComplianceTask(schoolId: string | null) {
 }
 export function useDeleteComplianceTask(schoolId: string | null) {
   return useSchoolMutationDelete(schoolId, 'audit/compliance', [schoolOpsKeys.complianceTasks(schoolId!)]);
+}
+
+export function useSchoolAnalytics(schoolId: string | null) {
+  return useSchoolResource(schoolId, 'dashboard/analytics', schoolOpsKeys.schoolAnalytics(schoolId!));
+}
+
+export function useSchoolMarket(schoolId: string | null) {
+  return useSchoolResource(schoolId, 'dashboard/market', schoolOpsKeys.schoolMarket(schoolId!));
+}
+
+export function useSchoolSystem(schoolId: string | null) {
+  return useSchoolResource(schoolId, 'dashboard/system', schoolOpsKeys.schoolSystem(schoolId!));
 }
 
 // ═══════════════════ LEAVE REQUESTS ═══════════════════

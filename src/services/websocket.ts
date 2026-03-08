@@ -32,13 +32,18 @@ class WebSocketService {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const apiBase = import.meta.env.VITE_API_URL as string | undefined;
     const wsEnv = import.meta.env.VITE_WS_URL as string | undefined;
+    const wsDisabled = import.meta.env.VITE_WS_ENABLED === 'false';
 
-    if (wsEnv) {
+    if (wsDisabled) {
+      // Explicitly disabled via env
+      this.url = '';
+      this.enabled = false;
+    } else if (wsEnv) {
       // Explicit WS URL takes priority
       this.url = wsEnv;
       this.enabled = true;
-    } else if (apiBase) {
-      // Derive WS URL from API base (e.g. http://localhost:4000 → ws://localhost:4000/ws)
+    } else if (import.meta.env.PROD && apiBase) {
+      // Production with API base — derive WS URL
       try {
         const parsed = new URL(apiBase);
         const wsp = parsed.protocol === 'https:' ? 'wss:' : 'ws:';
@@ -53,7 +58,8 @@ class WebSocketService {
       this.url = `${wsProtocol}//${window.location.host}/ws`;
       this.enabled = true;
     } else {
-      // Dev with no API/WS URL configured — don't attempt connections
+      // Dev with no explicit VITE_WS_URL — don't attempt connections
+      // (backend may not have a WS server; avoids console error spam)
       this.url = '';
       this.enabled = false;
     }

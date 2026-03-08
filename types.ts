@@ -1924,6 +1924,37 @@ export interface TeacherClassPerformance {
   atRiskStudents: string[];
 }
 
+export interface TeacherClassDetail {
+  id: string;
+  name: string;
+  subject: string;
+  gradeLevel: string;
+  period: number;
+  room: string;
+  studentCount: number;
+  avgGrade: number;
+  nextSession: string;
+  color: string;
+  attendanceRate: number;
+  assignmentCompletion: number;
+  upcomingAssignments: number;
+  recentAssignments: Array<{ id: string; title: string; type: string; dueDate: string; avgScore: number | null; status: string }>;
+  students: Array<TeacherClassStudent>;
+}
+
+export interface TeacherClassStudent {
+  id: string;
+  name: string;
+  initials: string;
+  email: string;
+  average: number;
+  letterGrade: string;
+  attendanceRate: number;
+  streak: number;
+  missingAssignments: number;
+  status: 'on-track' | 'at-risk' | 'excelling';
+}
+
 // ---------------------------------------------------------------------------
 // Analytics DTOs (Provider Dashboard)
 // ---------------------------------------------------------------------------
