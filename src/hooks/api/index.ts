@@ -23,3 +23,6 @@ export * from './use-users';
 export * from './use-provider-console';
 // Note: use-settings is NOT re-exported here due to name collisions with use-platform.
 // Import directly from '@/hooks/api/use-settings' when needed.
+// Note: use-student and use-teacher are NOT re-exported here due to name collisions
+// (useSubmitAssignment, useCreateJournalEntry, useCreateWellnessGoal).
+// Import directly from '@/hooks/api/use-student' or '@/hooks/api/use-teacher' when needed.

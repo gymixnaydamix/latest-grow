@@ -1,6 +1,7 @@
 ﻿
 import { randomUUID } from 'node:crypto';
 import { prisma } from '../../db/prisma.service.js';
+import { logger } from '../../utils/logger.js';
 
 type TenantStatus = 'TRIAL' | 'ACTIVE' | 'PAYMENT_DUE' | 'SUSPENDED' | 'OFFBOARDING' | 'ARCHIVED';
 type TicketPriority = 'LOW' | 'NORMAL' | 'HIGH' | 'URGENT';
@@ -220,6 +221,9 @@ const severityOrder: Record<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL', number> = { 
 
 const iso = (offsetMs: number): string => new Date(Date.now() + offsetMs).toISOString();
 const titleCase = (value: string): string => value.toLowerCase().replaceAll('_', ' ').replace(/\b\w/g, (ch) => ch.toUpperCase());
+
+/* Local status → Prisma TenantStatus enum mapping */
+const PRISMA_STATUS_MAP: Record<string, string> = { ACTIVE: 'ACTIVE', TRIAL: 'TRIAL', SUSPENDED: 'SUSPENDED', PAYMENT_DUE: 'SUSPENDED', OFFBOARDING: 'CHURNED', ARCHIVED: 'CHURNED' };
 
 function seedState(): ConsoleState {
   const tenants: Tenant[] = [
@@ -760,7 +764,8 @@ export const providerConsoleService = {
           smsDelivery: 'healthy',
         },
       };
-    } catch {
+    } catch (err) {
+      logger.warn("provider-console: DB query failed, using mock data", { error: String(err) });
       // Fallback to mock data if database is unavailable
       return {
         actionInbox: actionInbox(),
@@ -815,9 +820,7 @@ export const providerConsoleService = {
   async listTenants(filters: { country?: string; status?: TenantStatus; stage?: Tenant['onboardingStage']; search?: string }): Promise<Tenant[]> {
     try {
       const where: Record<string, unknown> = {};
-      // Map local status to Prisma TenantStatus enum
-      const statusMap: Record<string, string> = { ACTIVE: 'ACTIVE', TRIAL: 'TRIAL', SUSPENDED: 'SUSPENDED', PAYMENT_DUE: 'SUSPENDED', OFFBOARDING: 'CHURNED', ARCHIVED: 'CHURNED' };
-      if (filters.status && statusMap[filters.status]) where.status = statusMap[filters.status];
+      if (filters.status && PRISMA_STATUS_MAP[filters.status]) where.status = PRISMA_STATUS_MAP[filters.status];
       if (filters.search) {
         where.OR = [
           { name: { contains: filters.search, mode: 'insensitive' } },
@@ -853,7 +856,8 @@ export const providerConsoleService = {
         lastLoginAt: t.updatedAt.toISOString(),
         modules: ['Admin', 'Teacher', 'Parent', 'Student'],
       }));
-    } catch {
+    } catch (err) {
+      logger.warn("provider-console: DB query failed, using mock data", { error: String(err) });
       const text = filters.search?.trim().toLowerCase() ?? '';
       return state.tenants.filter((tenant) => {
         if (filters.country && tenant.country !== filters.country) return false;
@@ -900,7 +904,8 @@ export const providerConsoleService = {
           audit: state.audit.filter((entry) => entry.tenantId === tenantId).slice(0, 100),
         };
       }
-    } catch {
+    } catch (err) {
+      logger.warn("provider-console: DB query failed, using mock data", { error: String(err) });
       // Fall through to mock data
     }
     const tenant = getTenant(tenantId);
@@ -942,7 +947,8 @@ export const providerConsoleService = {
           analytics: billingAnalytics(),
         };
       }
-    } catch {
+    } catch (err) {
+      logger.warn("provider-console: DB query failed, using mock data", { error: String(err) });
       // Fall through to mock data
     }
     refreshAutomations();
