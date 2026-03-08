@@ -17,7 +17,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { useAuthStore } from '@/store/auth.store';
-import { useMessageThreads, useMessageThread } from '@/hooks/api';
+import { useMessageThreads, useMessageThread, useToggleThreadStar, useArchiveThread, useDeleteThread } from '@/hooks/api';
 import { useSendStudentMessage } from '@/hooks/api/use-student';
 import { notifySuccess, notifyError } from '@/lib/notify';
 
@@ -33,6 +33,9 @@ export default function InboxPage() {
   const [category, setCategory] = useState('All');
   const [replyText, setReplyText] = useState('');
   const sendReplyMut = useSendStudentMessage();
+  const starMut = useToggleThreadStar();
+  const archiveMut = useArchiveThread();
+  const deleteMut = useDeleteThread();
 
   const unreadCount = threads.filter((t) => !t.isRead).length;
 
@@ -145,9 +148,9 @@ export default function InboxPage() {
                   </p>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => notifySuccess('Starred', 'Message starred')}><Star className="size-3" /></Button>
-                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => notifySuccess('Archive', 'Message archived')}><Archive className="size-3" /></Button>
-                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => notifySuccess('Delete', 'Message moved to trash')}><Trash2 className="size-3" /></Button>
+                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => starMut.mutate(selectedThread!.id, { onSuccess: () => notifySuccess('Starred', 'Message starred'), onError: () => notifyError('Error', 'Failed to star message') })}><Star className="size-3" /></Button>
+                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => archiveMut.mutate(selectedThread!.id, { onSuccess: () => { notifySuccess('Archive', 'Message archived'); setSelectedId(null); }, onError: () => notifyError('Error', 'Failed to archive message') })}><Archive className="size-3" /></Button>
+                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => deleteMut.mutate(selectedThread!.id, { onSuccess: () => { notifySuccess('Delete', 'Message moved to trash'); setSelectedId(null); }, onError: () => notifyError('Error', 'Failed to delete message') })}><Trash2 className="size-3" /></Button>
                 </div>
               </div>
               <Separator className="bg-white/6" />

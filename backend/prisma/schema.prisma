@@ -50,6 +50,7 @@ enum ApplicantStage {
 enum InvoiceStatus {
   DRAFT
   ISSUED
+  SENT
   PARTIALLY_PAID
   PAID
   OVERDUE
@@ -402,6 +403,8 @@ model MessageThread {
   schoolId       String
   subject        String
   participantIds String[]
+  isStarred      Boolean  @default(false)
+  isArchived     Boolean  @default(false)
   lastMessageAt  DateTime @default(now())
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

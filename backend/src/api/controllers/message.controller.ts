@@ -105,4 +105,49 @@ export const messageController = {
       next(error);
     }
   },
+
+  /** Toggle star on a thread */
+  async toggleStar(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = param(req.params.id);
+      const thread = await prisma.messageThread.findUnique({ where: { id } });
+      if (!thread) throw new NotFoundError('Thread not found');
+      const updated = await prisma.messageThread.update({
+        where: { id },
+        data: { isStarred: !thread.isStarred },
+      });
+      res.json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** Archive a thread */
+  async archiveThread(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = param(req.params.id);
+      const thread = await prisma.messageThread.findUnique({ where: { id } });
+      if (!thread) throw new NotFoundError('Thread not found');
+      const updated = await prisma.messageThread.update({
+        where: { id },
+        data: { isArchived: true },
+      });
+      res.json({ success: true, data: updated });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** Delete a thread */
+  async deleteThread(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = param(req.params.id);
+      const thread = await prisma.messageThread.findUnique({ where: { id } });
+      if (!thread) throw new NotFoundError('Thread not found');
+      await prisma.messageThread.delete({ where: { id } });
+      res.json({ success: true, data: { id } });
+    } catch (error) {
+      next(error);
+    }
+  },
 };

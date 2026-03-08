@@ -60,3 +60,37 @@ export function useSendMessage(threadId: string) {
     },
   });
 }
+
+// ── Thread Actions ──
+export function useToggleThreadStar() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (threadId: string) =>
+      api.patch<ApiSuccessResponse<MessageThread>>(`/messages/threads/${threadId}/star`, {}).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['messages'] });
+    },
+  });
+}
+
+export function useArchiveThread() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (threadId: string) =>
+      api.patch<ApiSuccessResponse<MessageThread>>(`/messages/threads/${threadId}/archive`, {}).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['messages'] });
+    },
+  });
+}
+
+export function useDeleteThread() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (threadId: string) =>
+      api.del<ApiSuccessResponse<{ id: string }>>(`/messages/threads/${threadId}`).then(r => r.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['messages'] });
+    },
+  });
+}
