@@ -4,7 +4,7 @@ import {
   CreditCard, Receipt, Download, ChevronRight,
   DollarSign, Calendar, TrendingUp, AlertCircle,
   CheckCircle2, Clock, Shield, Wallet,
-  ArrowUpRight, FileText, Star, Zap,
+  ArrowUpRight, FileText, Star, Zap, Loader2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,8 +15,43 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { notifySuccess, notifyError } from '@/lib/notify';
+import { notifySuccess, notifyError, notifyInfo } from '@/lib/notify';
 import { useStudentFees, usePayInvoice, useDownloadDocument } from '@/hooks/api/use-student';
+
+/* ── Typed interfaces for billing data ── */
+interface PaymentMethod {
+  id: string;
+  type: string;
+  last4: string;
+  expiry: string;
+  isDefault: boolean;
+}
+
+interface Invoice {
+  id: string;
+  date: string;
+  amount: string;
+  status: 'paid' | 'pending' | 'overdue';
+}
+
+interface Transaction {
+  desc: string;
+  date: string;
+  amount: string;
+  type: 'charge' | 'credit';
+}
+
+interface SpendingMonth {
+  month: string;
+  amount: number;
+}
+
+interface FeesData {
+  paymentMethods?: PaymentMethod[];
+  invoices?: Invoice[];
+  transactions?: Transaction[];
+  spendingMonths?: SpendingMonth[];
+}
 
 const PLAN = {
   name: 'Pro Student Plan',
@@ -34,12 +69,13 @@ const PLAN = {
   usage: { courses: { used: 8, total: 25 }, storage: { used: 12.4, total: 50 }, aiQueries: { used: 342, total: 'Unlimited' } },
 };
 
-const FALLBACK_PAYMENT_METHODS = [
+/* ── Demo/Fallback data — shown only when API returns no data ── */
+const DEMO_PAYMENT_METHODS: PaymentMethod[] = [
   { id: '1', type: 'Visa', last4: '4242', expiry: '12/2026', isDefault: true },
   { id: '2', type: 'Mastercard', last4: '8888', expiry: '03/2027', isDefault: false },
 ];
 
-const FALLBACK_INVOICES = [
+const DEMO_INVOICES: Invoice[] = [
   { id: 'INV-2026-03', date: 'Mar 1, 2026', amount: '$49.00', status: 'paid' as const },
   { id: 'INV-2026-02', date: 'Feb 1, 2026', amount: '$49.00', status: 'paid' as const },
   { id: 'INV-2026-01', date: 'Jan 1, 2026', amount: '$49.00', status: 'paid' as const },
@@ -48,7 +84,7 @@ const FALLBACK_INVOICES = [
   { id: 'INV-2025-10', date: 'Oct 1, 2025', amount: '$49.00', status: 'paid' as const },
 ];
 
-const FALLBACK_TRANSACTIONS = [
+const DEMO_TRANSACTIONS: Transaction[] = [
   { desc: 'Monthly subscription', date: 'Mar 1, 2026', amount: '-$49.00', type: 'charge' },
   { desc: 'Referral credit', date: 'Feb 20, 2026', amount: '+$10.00', type: 'credit' },
   { desc: 'Monthly subscription', date: 'Feb 1, 2026', amount: '-$49.00', type: 'charge' },
@@ -56,7 +92,7 @@ const FALLBACK_TRANSACTIONS = [
   { desc: 'Monthly subscription', date: 'Jan 1, 2026', amount: '-$49.00', type: 'charge' },
 ];
 
-const FALLBACK_SPENDING_MONTHS = [
+const DEMO_SPENDING_MONTHS: SpendingMonth[] = [
   { month: 'Oct', amount: 49 },
   { month: 'Nov', amount: 49 },
   { month: 'Dec', amount: 49 },
@@ -69,21 +105,52 @@ export default function BillingSettingsPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const [expandedInvoice, setExpandedInvoice] = useState<string | null>(null);
 
-  /* ── API data ── */
-  const { data: apiFees } = useStudentFees();
+  /* ── API data with loading/error handling ── */
+  const { data: apiFees, isLoading, isError, error } = useStudentFees();
   const payInvoiceMut = usePayInvoice();
   const downloadDocMut = useDownloadDocument();
+  // payInvoiceMut available for pending invoice actions
   void payInvoiceMut;
-  const feesData = (apiFees as any) ?? {};
-  const paymentMethods = (feesData?.paymentMethods as any[])?.length > 0 ? (feesData.paymentMethods as any[]) : FALLBACK_PAYMENT_METHODS;
-  const invoices = (feesData?.invoices as any[])?.length > 0 ? (feesData.invoices as any[]) : FALLBACK_INVOICES;
-  const transactions = (feesData?.transactions as any[])?.length > 0 ? (feesData.transactions as any[]) : FALLBACK_TRANSACTIONS;
-  const spendingMonths = (feesData?.spendingMonths as any[])?.length > 0 ? (feesData.spendingMonths as any[]) : FALLBACK_SPENDING_MONTHS;
-  const maxSpend = Math.max(...spendingMonths.map((m: any) => m.amount));
+  const feesData = (apiFees as FeesData | undefined) ?? {};
+  const paymentMethods: PaymentMethod[] = feesData.paymentMethods?.length ? feesData.paymentMethods : DEMO_PAYMENT_METHODS;
+  const invoices: Invoice[] = feesData.invoices?.length ? feesData.invoices : DEMO_INVOICES;
+  const transactions: Transaction[] = feesData.transactions?.length ? feesData.transactions : DEMO_TRANSACTIONS;
+  const spendingMonths: SpendingMonth[] = feesData.spendingMonths?.length ? feesData.spendingMonths : DEMO_SPENDING_MONTHS;
+  const usingDemoData = !feesData.paymentMethods?.length;
+  const maxSpend = Math.max(...spendingMonths.map((m) => m.amount));
+
+  /* ── Loading state ── */
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
+        <Loader2 className="size-8 animate-spin text-indigo-400" />
+        <p className="text-sm text-white/40">Loading billing information…</p>
+      </div>
+    );
+  }
+
+  /* ── Error state ── */
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center gap-3 py-20">
+        <AlertCircle className="size-8 text-red-400" />
+        <p className="text-sm text-red-400/80">Failed to load billing data</p>
+        <p className="text-xs text-white/30">{error instanceof Error ? error.message : 'Please try again later'}</p>
+      </div>
+    );
+  }
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
       <PageHeader title="Billing & Subscription" description="Manage your plan, payment methods, and invoices" />
+
+      {/* Demo data indicator */}
+      {usingDemoData && (
+        <div className="flex items-center gap-2 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2">
+          <AlertCircle className="size-4 text-amber-400 shrink-0" />
+          <p className="text-[10px] text-amber-400/70">Showing demo data — billing information will appear once your account is fully configured.</p>
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
@@ -107,8 +174,8 @@ export default function BillingSettingsPage() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button size="sm" variant="outline" className="text-[10px] h-7 border-white/10 text-white/40" onClick={() => notifySuccess('Plan', 'Plan selection opened')}>Change Plan</Button>
-              <Button size="sm" className="text-[10px] h-7 bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => notifySuccess('Upgrade', 'Redirecting to premium options…')}>
+              <Button size="sm" variant="outline" className="text-[10px] h-7 border-white/10 text-white/40" onClick={() => notifyInfo('Plan', 'Plan management is coming soon')}>Change Plan</Button>
+              <Button size="sm" className="text-[10px] h-7 bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => notifyInfo('Upgrade', 'Upgrade options are coming soon')}>
                 <Star className="size-3" />Upgrade
               </Button>
             </div>
@@ -157,10 +224,10 @@ export default function BillingSettingsPage() {
               <CardTitle className="text-white/90 text-sm flex items-center gap-1.5">
                 <CreditCard className="size-4 text-violet-400" />Payment Methods
               </CardTitle>
-              <Button size="sm" className="text-[10px] h-7 bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => notifySuccess('Payment', 'Add card form opened')}>+ Add Card</Button>
+              <Button size="sm" className="text-[10px] h-7 bg-indigo-600 hover:bg-indigo-500 text-white gap-1" onClick={() => notifyInfo('Payment', 'Card management is coming soon')}>+ Add Card</Button>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {paymentMethods.map((pm: any) => (
+              {paymentMethods.map((pm) => (
                 <div key={pm.id} className={cn(
                   'flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-3',
                   pm.isDefault && 'border-indigo-500/15 bg-indigo-500/5',
@@ -176,7 +243,7 @@ export default function BillingSettingsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {pm.isDefault && <Badge className="text-[7px] bg-indigo-500/15 text-indigo-400 border-0">Default</Badge>}
-                    <Button size="sm" variant="ghost" className="h-6 text-[9px] text-white/30 hover:text-white/60" onClick={() => notifySuccess('Payment', 'Editing payment method')}>Edit</Button>
+                    <Button size="sm" variant="ghost" className="h-6 text-[9px] text-white/30 hover:text-white/60" onClick={() => notifyInfo('Payment', 'Card editing is coming soon')}>Edit</Button>
                   </div>
                 </div>
               ))}
@@ -198,7 +265,7 @@ export default function BillingSettingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
-                  {invoices.map((inv: any) => (
+                  {invoices.map((inv) => (
                     <div
                       key={inv.id}
                       className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-3 cursor-pointer hover:bg-white/3 transition-colors"
@@ -216,7 +283,7 @@ export default function BillingSettingsPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-white/60">{inv.amount}</span>
                         <Badge className="text-[7px] bg-emerald-500/15 text-emerald-400 border-0 capitalize">{inv.status}</Badge>
-                        <Button size="icon" className="size-7 bg-transparent text-white/20 hover:text-white/50 hover:bg-white/5" onClick={(e) => { e.stopPropagation(); downloadDocMut.mutate({ documentId: inv.id } as any, { onSuccess: () => notifySuccess('Invoice', 'Invoice downloaded'), onError: () => notifyError('Invoice', 'Download failed') }); }}>
+                        <Button size="icon" className="size-7 bg-transparent text-white/20 hover:text-white/50 hover:bg-white/5" onClick={(e) => { e.stopPropagation(); downloadDocMut.mutate(inv.id, { onSuccess: () => notifySuccess('Invoice', 'Invoice downloaded'), onError: () => notifyError('Invoice', 'Download failed') }); }}>
                           <Download className="size-3" />
                         </Button>
                       </div>
@@ -234,7 +301,7 @@ export default function BillingSettingsPage() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="flex flex-col gap-2">
-                  {transactions.map((tx: any, i: number) => (
+                  {transactions.map((tx, i) => (
                     <div key={i} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-2.5">
                       <div className="flex items-center gap-3">
                         <div className={cn(
@@ -270,7 +337,7 @@ export default function BillingSettingsPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-end gap-2 h-20">
-                {spendingMonths.map((m: any) => (
+                {spendingMonths.map((m) => (
                   <div key={m.month} className="flex-1 flex flex-col items-center gap-1">
                     <div
                       className="w-full rounded-t-sm bg-gradient-to-t from-emerald-500/30 to-emerald-500/60"
@@ -320,7 +387,7 @@ export default function BillingSettingsPage() {
           <Card data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="p-3 text-center">
               <p className="text-[10px] text-white/30 mb-2">Need help with billing?</p>
-              <Button size="sm" variant="outline" className="text-[10px] h-7 border-white/10 text-white/40 gap-1" onClick={() => notifySuccess('Support', 'Opening support chat…')}>
+              <Button size="sm" variant="outline" className="text-[10px] h-7 border-white/10 text-white/40 gap-1" onClick={() => notifyInfo('Support', 'Support chat is coming soon')}>
                 <ChevronRight className="size-3" />Contact Support
               </Button>
             </CardContent>

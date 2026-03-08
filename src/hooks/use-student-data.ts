@@ -3,7 +3,7 @@
  * Fetches from real API endpoints; falls back to demo store data.
  * All mutations wired to real backend endpoints.
  * ─────────────────────────────────────────────────────────────────────── */
-import { useStudentStore } from '@/store/student-data.store';
+import { useStudentStore, type AssignmentStatus } from '@/store/student-data.store';
 import {
   // Queries
   useStudentProfile,
@@ -54,6 +54,18 @@ import {
   useClearNotificationHistory,
   useCreateWellnessGoal,
   useCreateJournalEntry,
+  // Data types (used for type-safe API → store bridge)
+  type StudentProfile,
+  type CommunityPost,
+  type PortfolioItem,
+  type PlannerBlock,
+  type Citation,
+  type MindMap,
+  type FocusSession,
+  type LearningPath,
+  type MoodEntry,
+  type WellnessSession,
+  type DeptRequest,
   // Payload types (re-exported to satisfy TS4058)
   type AddPlannerBlockPayload,
   type CreateCommunityPostPayload,
@@ -144,7 +156,7 @@ export function useStudentData() {
 
   /* ── Merged data: API first, store fallback ── */
   const timetable = (apiTimetable as typeof store.timetable) ?? store.timetable;
-  const profile = (apiProfile as any) ?? null;
+  const profile = (apiProfile as StudentProfile | undefined) ?? null;
   const subjects = (apiSubjects as unknown as typeof store.subjects) ?? store.subjects;
   const grades = (apiGrades as unknown as typeof store.grades) ?? store.grades;
   const exams = (apiExams as unknown as typeof store.exams) ?? store.exams;
@@ -155,16 +167,16 @@ export function useStudentData() {
   const documents = (apiDocuments as unknown as typeof store.documents) ?? store.documents;
   const invoices = (apiFees as typeof store.invoices) ?? store.invoices;
   const notifications = (apiNotifications as typeof store.notifications) ?? store.notifications;
-  const communityPosts = (apiCommunity as any) ?? [];
-  const portfolio = (apiPortfolio as any) ?? [];
-  const planner = (apiPlanner as any) ?? [];
-  const citations = (apiCitations as any) ?? [];
-  const mindMaps = (apiMindMaps as any) ?? [];
-  const focusSessions = (apiFocusSessions as any) ?? [];
-  const learningPaths = (apiLearningPaths as any) ?? [];
-  const wellness = (apiWellness as any) ?? null;
-  const moodHistory = (apiMoodHistory as any) ?? [];
-  const sessions = (apiSessions as any) ?? [];
+  const communityPosts = (apiCommunity as CommunityPost[] | undefined) ?? [];
+  const portfolio = (apiPortfolio as PortfolioItem[] | undefined) ?? [];
+  const planner = (apiPlanner as PlannerBlock[] | undefined) ?? [];
+  const citations = (apiCitations as Citation[] | undefined) ?? [];
+  const mindMaps = (apiMindMaps as MindMap[] | undefined) ?? [];
+  const focusSessions = (apiFocusSessions as FocusSession[] | undefined) ?? [];
+  const learningPaths = (apiLearningPaths as LearningPath[] | undefined) ?? [];
+  const wellness = (apiWellness as Record<string, unknown> | undefined) ?? null;
+  const moodHistory = (apiMoodHistory as MoodEntry[] | undefined) ?? [];
+  const sessions = (apiSessions as WellnessSession[] | undefined) ?? [];
 
   return {
     // Spread store for any fields we don't explicitly override
@@ -182,7 +194,7 @@ export function useStudentData() {
     documents,
     invoices,
     notifications,
-    deptRequests: (apiDeptRequests as any) ?? [],
+    deptRequests: (apiDeptRequests as DeptRequest[] | undefined) ?? [],
     communityPosts,
     portfolio,
     planner,
@@ -219,7 +231,7 @@ export function useStudentData() {
 
     markFeedbackRead: store.markFeedbackRead,
 
-    updateAssignmentStatus: (id: string, status: any) => {
+    updateAssignmentStatus: (id: string, status: AssignmentStatus) => {
       submitAssignment.mutate(
         { assignmentId: id, content: status },
         {
@@ -263,7 +275,7 @@ export function useStudentData() {
         { currentPassword: oldPw, newPassword: newPw },
         {
           onSuccess: () => notifySuccess('Security', 'Password changed'),
-          onError: (e: any) => notifyError('Password', e?.message ?? 'Failed to change password'),
+          onError: (e: Error) => notifyError('Password', e.message || 'Failed to change password'),
         },
       );
     },
