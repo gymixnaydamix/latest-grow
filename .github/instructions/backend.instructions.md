@@ -71,7 +71,7 @@ Routes are mounted at `/api/{feature}` (e.g., `/api/auth`, `/api/student`, `/api
 - Framework: Vitest 4 with v8 coverage.
 - Test files: `backend/src/__tests__/**/*.test.ts`.
 - Run tests: `pnpm backend:test` (requires `DATABASE_URL` environment variable).
-- Mock Prisma models thoroughly — when testing controllers that invoke service functions, mock every Prisma model the service accesses, not just the primary one.
+- Mock Prisma models thoroughly — services often call multiple Prisma models (e.g., `user`, `courseEnrollment`, `grade`, `attendance`). Mock every model the service accesses to avoid missing mock errors and ensure test isolation.
 
 ## Security
 

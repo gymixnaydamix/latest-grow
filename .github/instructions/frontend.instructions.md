@@ -25,7 +25,7 @@ applyTo:
 - **Zustand** for domain/client state — stores live in `src/store/`.
 - **TanStack React Query** for server state — hooks live in `src/hooks/api/`.
 - Mutations should sync both Zustand stores and React Query caches on success.
-- React Query is configured with 2-minute staleTime, 1 retry, and no refetch-on-focus.
+- React Query is configured with 2-minute staleTime, 1 retry, and `refetchOnWindowFocus: false`.
 
 ## API integration
 

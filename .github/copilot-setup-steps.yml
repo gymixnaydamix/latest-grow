@@ -7,7 +7,7 @@ env:
   PNPM_VERSION: "9"
   DATABASE_URL: postgresql://postgres:postgres@localhost:5432/growyourneed?schema=public
   REDIS_URL: redis://localhost:6379
-  JWT_SECRET: copilot-dev-jwt-secret
+  JWT_SECRET: copilot-dev-jwt-secret-do-not-use-in-production
   NODE_ENV: development
 
 jobs:
