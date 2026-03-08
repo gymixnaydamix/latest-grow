@@ -133,7 +133,7 @@ export default function BillingSettingsPage() {
   if (isError) {
     return (
       <div className="flex flex-col items-center justify-center gap-3 py-20">
-        <AlertCircle className="size-8 text-red-400" />
+        <AlertCircle className="size-8 text-red-400 shrink-0" />
         <p className="text-sm text-red-400/80">Failed to load billing data</p>
         <p className="text-xs text-white/30">{error instanceof Error ? error.message : 'Please try again later'}</p>
       </div>

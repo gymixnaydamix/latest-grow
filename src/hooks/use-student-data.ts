@@ -275,7 +275,7 @@ export function useStudentData() {
         { currentPassword: oldPw, newPassword: newPw },
         {
           onSuccess: () => notifySuccess('Security', 'Password changed'),
-          onError: (e: Error) => notifyError('Password', e.message || 'Failed to change password'),
+          onError: (e: Error) => notifyError('Password', e instanceof Error ? e.message : 'Failed to change password'),
         },
       );
     },
