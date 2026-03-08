@@ -435,7 +435,7 @@ export const saveExamMarks = (req: Request, res: Response) => {
 export const getMessages = (_req: Request, res: Response) => ok(res, messages);
 
 export const getThreadMessages = (req: Request, res: Response): void => {
-  const threadId = req.params.threadId;
+  const threadId = String(req.params.threadId);
   const thread = messages.find((m) => m.id === threadId);
   if (!thread) { res.status(404).json({ success: false, error: 'Thread not found' }); return; }
   const history = threadMessages[threadId] ?? [];

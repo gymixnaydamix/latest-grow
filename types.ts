@@ -1324,6 +1324,8 @@ export interface DashboardKPI {
   change: number;
   changeLabel: string;
   trend: 'up' | 'down' | 'neutral';
+  /** Optional sparkline data points (e.g. 7-day history) */
+  sparklineData?: number[] | null;
 }
 
 export interface AuditLogEntry {

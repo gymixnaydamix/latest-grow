@@ -5,7 +5,7 @@
  * ────────────────────────────────────────────────────────────────────── */
 import type { Request, Response, NextFunction } from 'express';
 import { prisma } from '../../db/prisma.service.js';
-import { Prisma } from '@prisma/client';
+import { Prisma, type AttendanceStatus, type InvoiceStatus } from '@prisma/client';
 import { NotFoundError, BadRequestError } from '../../utils/errors.js';
 
 /** Express 5 params can be string | string[] — helper to coerce */
@@ -53,7 +53,7 @@ const formatUserName = (user?: { firstName?: string | null; lastName?: string | 
 
 const userIdFromReq = (req: Request): string => req.user?.userId ?? '';
 
-const normalizeAttendanceStatus = (value: unknown): string => {
+const normalizeAttendanceStatus = (value: unknown): AttendanceStatus => {
   const raw = str(value, 'present').trim().toUpperCase();
   switch (raw) {
     case 'PRESENT':
@@ -1176,14 +1176,13 @@ export const schoolOpsFinanceController = {
           amountPaid: num(paid),
           currency: currency ?? 'USD',
           dueDate: new Date(dueDate),
-          status:
-            str(status).toUpperCase() === 'PAID'
-              ? 'PAID'
-              : str(status).toUpperCase() === 'PARTIAL'
-                ? 'PARTIAL'
-                : str(status).toUpperCase() === 'OVERDUE'
-                  ? 'OVERDUE'
-                  : 'ISSUED',
+          status: ((): InvoiceStatus => {
+            const s = str(status).toUpperCase();
+            if (s === 'PAID') return 'PAID';
+            if (s === 'PARTIAL' || s === 'PARTIALLY_PAID') return 'PARTIALLY_PAID';
+            if (s === 'OVERDUE') return 'OVERDUE';
+            return 'ISSUED';
+          })(),
         },
       });
       res.status(201).json({ success: true, data: invoice });
@@ -3102,6 +3101,29 @@ export const schoolOpsReportsController = {
           res.json({ success: true, data: { type, totalCourses: courses.length, totalEnrollments, courses } });
           return;
         }
+        case 'admissions': {
+          const [applicants, stages] = await Promise.all([
+            prisma.applicant.findMany({ where: { schoolId }, orderBy: { appliedAt: 'desc' } }),
+            prisma.applicant.groupBy({ by: ['stage'], where: { schoolId }, _count: true }),
+          ]);
+          const pipeline: Record<string, number> = {};
+          for (const s of stages) pipeline[s.stage] = s._count;
+          const total = applicants.length;
+          const enrolled = (pipeline['ENROLLED'] ?? 0) + (pipeline['ACCEPTED'] ?? 0);
+          res.json({
+            success: true,
+            data: {
+              type, total, enrolled,
+              conversionRate: total > 0 ? Math.round((enrolled / total) * 10000) / 100 : 0,
+              pipeline,
+              applicants: applicants.map(a => ({
+                id: a.id, studentName: `${a.firstName} ${a.lastName}`, stage: a.stage,
+                email: a.email, appliedDate: a.appliedAt.toISOString().slice(0, 10),
+              })),
+            },
+          });
+          return;
+        }
         case 'attendance': {
           const courses = await prisma.course.findMany({ where: { schoolId }, select: { id: true } });
           const courseIds = courses.map(c => c.id);
@@ -3129,6 +3151,29 @@ export const schoolOpsReportsController = {
           });
           return;
         }
+        case 'grades': {
+          const grades = await prisma.grade.findMany({
+            where: { course: { schoolId } },
+            include: {
+              student: { select: { id: true, firstName: true, lastName: true } },
+              course: { select: { id: true, name: true } },
+            },
+          });
+          const byStudent: Record<string, { name: string; scores: number[]; courses: string[] }> = {};
+          for (const g of grades) {
+            const key = g.studentId;
+            if (!byStudent[key]) byStudent[key] = { name: `${g.student.firstName} ${g.student.lastName}`, scores: [], courses: [] };
+            byStudent[key].scores.push(g.score);
+            if (!byStudent[key].courses.includes(g.course.name)) byStudent[key].courses.push(g.course.name);
+          }
+          const students = Object.entries(byStudent).map(([id, v]) => {
+            const avg = v.scores.reduce((a, b) => a + b, 0) / v.scores.length;
+            return { id, name: v.name, average: Math.round(avg * 100) / 100, courses: v.courses.length, totalGrades: v.scores.length };
+          });
+          const overallAvg = students.length ? students.reduce((s, st) => s + st.average, 0) / students.length : 0;
+          res.json({ success: true, data: { type, totalStudents: students.length, overallAverage: Math.round(overallAvg * 100) / 100, students } });
+          return;
+        }
         case 'staff': {
           const members = await prisma.schoolMember.findMany({
             where: { schoolId, role: { in: ['TEACHER', 'ADMIN'] } },
@@ -3137,9 +3182,238 @@ export const schoolOpsReportsController = {
           res.json({ success: true, data: { type, totalStaff: members.length, members } });
           return;
         }
+        case 'compliance': {
+          const [policies, complianceReports, certs] = await Promise.all([
+            prisma.policy.findMany({ where: { schoolId }, select: { id: true, title: true, status: true, updatedAt: true } }),
+            prisma.complianceReport.findMany({ where: { schoolId }, orderBy: { createdAt: 'desc' }, take: 50 }),
+            prisma.complianceCert.findMany({ orderBy: { expiresAt: 'asc' } }),
+          ]);
+          const totalPolicies = policies.length;
+          const publishedPolicies = policies.filter(p => p.status === 'PUBLISHED').length;
+          const expiringCerts = certs.filter(c => c.expiresAt && c.expiresAt < new Date(Date.now() + 30 * 86400000)).length;
+          res.json({
+            success: true,
+            data: {
+              type, totalPolicies, publishedPolicies, totalReports: complianceReports.length,
+              expiringCertifications: expiringCerts,
+              policies: policies.map(p => ({ id: p.id, title: p.title, status: p.status, updatedAt: p.updatedAt })),
+              reports: complianceReports.map(r => ({ id: r.id, title: r.title, type: r.type, status: r.status, createdAt: r.createdAt })),
+            },
+          });
+          return;
+        }
         default:
-          res.json({ success: true, data: { type, message: 'Report type not yet implemented' } });
+          res.status(400).json({ success: false, error: `Unknown report type: ${type}` });
       }
+    } catch (error) {
+      next(error);
+    }
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS
+// ═══════════════════════════════════════════════════════════════════════
+
+export const schoolOpsNotificationsController = {
+  /** POST /admin/schools/:schoolId/notifications/send */
+  async send(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const { type, recipientId, recipientEmail, subject, body } = req.body;
+
+      if (!subject || !body) {
+        throw new BadRequestError('subject and body are required');
+      }
+
+      // Resolve recipient — either by direct ID or by email lookup
+      let userId = recipientId ? str(recipientId) : '';
+      if (!userId && recipientEmail) {
+        const user = await prisma.user.findFirst({ where: { email: str(recipientEmail) } });
+        if (user) userId = user.id;
+      }
+
+      // If we have a userId, create a real in-app notification
+      if (userId) {
+        const notification = await prisma.notification.create({
+          data: {
+            userId,
+            type: str(type, 'INFO').toUpperCase(),
+            title: str(subject),
+            message: str(body),
+            metadata: { schoolId, channel: str(type, 'email'), recipientEmail: recipientEmail ?? null },
+          },
+        });
+        res.status(201).json({ success: true, data: { id: notification.id, channel: type, status: 'sent' } });
+        return;
+      }
+
+      // Fallback: even when recipient is unknown, log the attempt
+      const notification = await prisma.notification.create({
+        data: {
+          userId: userIdFromReq(req),
+          type: 'OUTBOUND',
+          title: str(subject),
+          message: str(body),
+          metadata: { schoolId, channel: str(type, 'email'), recipientEmail: recipientEmail ?? null, direction: 'outbound' },
+        },
+      });
+      res.status(201).json({ success: true, data: { id: notification.id, channel: type, status: 'queued' } });
+    } catch (error) {
+      next(error);
+    }
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// EXAM REPORTS
+// ═══════════════════════════════════════════════════════════════════════
+
+export const schoolOpsExamReportsController = {
+  /** GET /admin/schools/:schoolId/exams/reports/generate-all */
+  async generateAll(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+
+      // Aggregate exam data per student for all exams in this school
+      const exams = await prisma.exam.findMany({ where: { schoolId } });
+      const members = await prisma.schoolMember.findMany({
+        where: { schoolId, role: 'STUDENT' },
+        include: { user: { select: { id: true, firstName: true, lastName: true } } },
+      });
+      const grades = await prisma.grade.findMany({
+        where: { course: { schoolId } },
+        include: { course: { select: { name: true } } },
+      });
+
+      const reportCards = members.map(m => {
+        const studentGrades = grades.filter(g => g.studentId === m.userId);
+        const totalScore = studentGrades.reduce((sum, g) => sum + g.score, 0);
+        const maxPossible = studentGrades.length * 100;
+        const avg = studentGrades.length > 0 ? totalScore / studentGrades.length : 0;
+        return {
+          id: `RC-${m.userId.slice(-6)}`,
+          studentId: m.userId,
+          student: `${m.user.firstName} ${m.user.lastName}`,
+          gpa: Math.round((avg / 25) * 100) / 100, // rough 4.0 scale
+          totalMarks: maxPossible > 0 ? `${Math.round(totalScore)}/${maxPossible}` : 'N/A',
+          subjects: studentGrades.map(g => ({ subject: g.course.name, score: g.score })),
+          status: studentGrades.length > 0 ? 'Generated' : 'Pending',
+        };
+      });
+
+      // Return as JSON — a production system would generate PDF here
+      res.json({ success: true, data: { totalExams: exams.length, totalStudents: members.length, reportCards } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /admin/schools/:schoolId/exams/reports/bulk-download */
+  async bulkDownload(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+
+      // Build CSV content for all students
+      const members = await prisma.schoolMember.findMany({
+        where: { schoolId, role: 'STUDENT' },
+        include: { user: { select: { id: true, firstName: true, lastName: true } } },
+      });
+      const grades = await prisma.grade.findMany({
+        where: { course: { schoolId } },
+        include: { course: { select: { name: true } } },
+      });
+
+      const rows: string[] = ['Student,Subject,Score,GPA'];
+      for (const m of members) {
+        const sg = grades.filter(g => g.studentId === m.userId);
+        const avg = sg.length > 0 ? sg.reduce((s, g) => s + g.score, 0) / sg.length : 0;
+        const gpa = (Math.round((avg / 25) * 100) / 100).toFixed(2);
+        if (sg.length === 0) {
+          rows.push(`${m.user.firstName} ${m.user.lastName},N/A,N/A,${gpa}`);
+        } else {
+          for (const g of sg) {
+            rows.push(`${m.user.firstName} ${m.user.lastName},${g.course.name},${g.score},${gpa}`);
+          }
+        }
+      }
+
+      const csv = rows.join('\n');
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', 'attachment; filename=report-cards-bulk.csv');
+      res.send(csv);
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /admin/schools/:schoolId/exams/reports/:reportId/preview */
+  async preview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const reportId = p(req.params.reportId);
+
+      // reportId format: RC-{last6ofUserId} — extract student
+      const studentIdSuffix = reportId.replace('RC-', '');
+      const member = await prisma.schoolMember.findFirst({
+        where: { schoolId, userId: { endsWith: studentIdSuffix }, role: 'STUDENT' },
+        include: { user: { select: { id: true, firstName: true, lastName: true } } },
+      });
+      if (!member) throw new NotFoundError('Report card not found');
+
+      const grades = await prisma.grade.findMany({
+        where: { studentId: member.userId, course: { schoolId } },
+        include: { course: { select: { name: true } } },
+      });
+
+      const totalScore = grades.reduce((s, g) => s + g.score, 0);
+      const avg = grades.length > 0 ? totalScore / grades.length : 0;
+
+      res.json({
+        success: true,
+        data: {
+          reportId,
+          student: `${member.user.firstName} ${member.user.lastName}`,
+          studentId: member.userId,
+          gpa: Math.round((avg / 25) * 100) / 100,
+          totalMarks: grades.length > 0 ? `${Math.round(totalScore)}/${grades.length * 100}` : 'N/A',
+          subjects: grades.map(g => ({ name: g.course.name, score: g.score, weight: g.weight, gradedAt: g.gradedAt })),
+          generatedAt: new Date().toISOString(),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /admin/schools/:schoolId/exams/reports/:reportId/download */
+  async download(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const reportId = p(req.params.reportId);
+
+      const studentIdSuffix = reportId.replace('RC-', '');
+      const member = await prisma.schoolMember.findFirst({
+        where: { schoolId, userId: { endsWith: studentIdSuffix }, role: 'STUDENT' },
+        include: { user: { select: { id: true, firstName: true, lastName: true } } },
+      });
+      if (!member) throw new NotFoundError('Report card not found');
+
+      const grades = await prisma.grade.findMany({
+        where: { studentId: member.userId, course: { schoolId } },
+        include: { course: { select: { name: true } } },
+      });
+
+      // Generate CSV download (production would be PDF)
+      const rows: string[] = ['Subject,Score,Weight,Date'];
+      for (const g of grades) {
+        rows.push(`${g.course.name},${g.score},${g.weight},${g.gradedAt.toISOString().slice(0, 10)}`);
+      }
+      const csv = rows.join('\n');
+      const studentName = `${member.user.firstName}-${member.user.lastName}`.replace(/\s/g, '-');
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=report-${studentName}.csv`);
+      res.send(csv);
     } catch (error) {
       next(error);
     }

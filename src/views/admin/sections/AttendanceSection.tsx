@@ -28,7 +28,7 @@ import {
   DetailPanel, DetailFields, type DetailTab,
 } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
-import { notifySuccess, notifyWarning } from '@/lib/notify';
+import { notifySuccess, notifyWarning, notifyError } from '@/lib/notify';
 import { sendNotification } from '@/lib/export';
 
 /* ─── Local types ─── */
@@ -370,7 +370,7 @@ function ExceptionsView() {
             { key: 'status', label: 'Status', render: v => <StatusBadge status={String(v)} /> },
           ]}
           actions={[
-            { label: 'Contact Parent', icon: Users, onClick: r => { sendNotification(schoolId!, { type: 'email', subject: `Attendance Alert: ${String(r.student)}`, body: `Dear Parent, we are reaching out regarding ${String(r.student)}'s attendance. ${String(r.type)} has been recorded ${String(r.count)} times.`, recipientId: String((r as any).parentId ?? '') }).then(() => notifySuccess('Contacting Parent', `Contact initiated for ${String(r.student)}`)).catch(() => notifySuccess('Contacting Parent', `Contact initiated for ${String(r.student)}`)); } },
+            { label: 'Contact Parent', icon: Users, onClick: r => { sendNotification(schoolId!, { type: 'email', subject: `Attendance Alert: ${String(r.student)}`, body: `Dear Parent, we are reaching out regarding ${String(r.student)}'s attendance. ${String(r.type)} has been recorded ${String(r.count)} times.`, recipientId: String((r as any).parentId ?? '') }).then(() => notifySuccess('Contacting Parent', `Contact initiated for ${String(r.student)}`)).catch((err) => notifyError('Contact Failed', err?.message ?? `Failed to contact parent of ${String(r.student)}`)); } },
             { label: 'View History', icon: Eye, onClick: r => setDetail(r) },
           ]}
           searchPlaceholder="Search exceptions..."

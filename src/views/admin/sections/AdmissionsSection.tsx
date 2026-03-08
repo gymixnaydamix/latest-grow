@@ -23,7 +23,7 @@ import type { FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
 import { admissionsPipeline as FALLBACK_admissionsPipeline } from '../data/demo-data';
-import { notifySuccess, notifyWarning } from '@/lib/notify';
+import { notifySuccess, notifyWarning, notifyError } from '@/lib/notify';
 
 /* ── Local type ── */
 interface AdmissionApp {
@@ -228,7 +228,7 @@ function ApplicationsView() {
         actions={[
           { label: 'View', icon: Eye, onClick: (r) => { setSelected(r as AdmissionApp); setDetailOpen(true); } },
           { label: 'Edit', icon: Edit, onClick: (r) => { setEditData(r as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } },
-          { label: 'Email Guardian', icon: Mail, onClick: (r) => { const app = r as AdmissionApp; sendNotification(schoolId!, { type: 'email', recipientEmail: String((app as any).guardianEmail ?? ''), subject: `Application Update: ${app.studentName}`, body: `Dear ${app.guardian}, we are writing regarding the application for ${app.studentName}.` }).then(() => notifySuccess('Email Sent', `Email sent to ${app.guardian}`)).catch(() => notifySuccess('Email Sent', `Email sent to ${app.guardian}`)); } },
+          { label: 'Email Guardian', icon: Mail, onClick: (r) => { const app = r as AdmissionApp; sendNotification(schoolId!, { type: 'email', recipientEmail: String((app as any).guardianEmail ?? ''), subject: `Application Update: ${app.studentName}`, body: `Dear ${app.guardian}, we are writing regarding the application for ${app.studentName}.` }).then(() => notifySuccess('Email Sent', `Email sent to ${app.guardian}`)).catch((err) => notifyError('Email Failed', err?.message ?? `Failed to email ${app.guardian}`)); } },
           { label: 'Withdraw', icon: Trash2, onClick: (r) => setDeleteTarget(r as AdmissionApp) },
         ]}
         searchPlaceholder="Search applications..."
@@ -238,7 +238,7 @@ function ApplicationsView() {
 
       <DetailPanel open={detailOpen} onOpenChange={setDetailOpen} title={selected?.studentName || ''} subtitle={`${selected?.grade || ''} \u00b7 Applied ${selected?.appliedDate || ''}`} status={selected?.status} tabs={detailTabs} actions={[
         { label: 'Edit', onClick: () => { setDetailOpen(false); if (selected) { setEditData(selected as unknown as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } } },
-        { label: 'Email Guardian', variant: 'outline', onClick: () => { sendNotification(schoolId!, { type: 'email', subject: `Application Update: ${selected?.studentName}`, body: `Dear ${selected?.guardian}, we are writing regarding the enrollment of ${selected?.studentName}.`, recipientEmail: String((selected as any)?.guardianEmail ?? '') }).then(() => notifySuccess('Email Sent', `Email sent to ${selected?.guardian}`)).catch(() => notifySuccess('Email Sent', `Email sent to ${selected?.guardian}`)); } },
+        { label: 'Email Guardian', variant: 'outline', onClick: () => { sendNotification(schoolId!, { type: 'email', subject: `Application Update: ${selected?.studentName}`, body: `Dear ${selected?.guardian}, we are writing regarding the enrollment of ${selected?.studentName}.`, recipientEmail: String((selected as any)?.guardianEmail ?? '') }).then(() => notifySuccess('Email Sent', `Email sent to ${selected?.guardian}`)).catch((err) => notifyError('Email Failed', err?.message ?? `Failed to email ${selected?.guardian}`)); } },
       ]} />
 
       <ConfirmDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)} title="Withdraw Application" description={`Withdraw application for ${deleteTarget?.studentName}? This cannot be undone.`} confirmLabel="Withdraw" variant="destructive" onConfirm={handleDelete} />

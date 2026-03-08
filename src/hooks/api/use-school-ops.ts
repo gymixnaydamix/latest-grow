@@ -75,6 +75,7 @@ export const schoolOpsKeys = {
 
   // Reports
   report: (schoolId: string, type: string) => ['school-ops', 'reports', type, schoolId] as const,
+  examReportCards: (schoolId: string) => ['school-ops', 'exams', 'report-cards', schoolId] as const,
 
   // Leave requests
   leaveRequests: (schoolId: string) => ['school-ops', 'staff', 'leave', schoolId] as const,
@@ -300,6 +301,24 @@ export function useUpdateMarks(schoolId: string | null) {
 }
 export function useDeleteExam(schoolId: string | null) {
   return useSchoolMutationDelete(schoolId, 'exams/schedule', [schoolOpsKeys.examSchedule(schoolId!)]);
+}
+
+/** Fetch generated report cards for all students in a school */
+export interface ExamReportCard {
+  id: string;
+  studentId: string;
+  student: string;
+  gpa: number;
+  totalMarks: string;
+  subjects: Array<{ subject: string; score: number }>;
+  status: string;
+}
+export function useExamReportCards(schoolId: string | null) {
+  return useSchoolResource<{ totalExams: number; totalStudents: number; reportCards: ExamReportCard[] }>(
+    schoolId,
+    'exams/reports/generate-all',
+    schoolOpsKeys.examReportCards(schoolId!),
+  );
 }
 
 // ═══════════════════ FINANCE OPS HOOKS ═══════════════════

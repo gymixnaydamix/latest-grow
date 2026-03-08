@@ -4,7 +4,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
 import {
-  useExamSchedule, useCreateExam, useUpdateMarks, useDeleteExam,
+  useExamSchedule, useCreateExam, useUpdateMarks, useDeleteExam, useExamReportCards,
 } from '@/hooks/api/use-school-ops';
 import { exportToCsv, downloadFromApi } from '@/lib/export';
 import { sendNotification } from '@/lib/export';
@@ -275,7 +275,7 @@ function MissingMarksView() {
         ]}
         actions={[
           { label: 'Resolve', icon: CheckCircle, onClick: (r) => { updateMarks.mutate({ id: String(r.id), marks: { status: 'resolved' } } as any, { onSuccess: () => notifySuccess('Resolved', `Missing marks for ${String(r.student)} resolved`) }); } },
-          { label: 'Notify Teacher', icon: Users, onClick: (r) => { sendNotification(schoolId!, { type: 'push', recipientId: String((r as any).teacherId ?? ''), subject: 'Missing Marks Reminder', body: `Please submit marks for ${String(r.student)} - ${String(r.subject)}` }).then(() => notifySuccess('Teacher Notified', `Notification sent to ${String(r.teacher)}`)).catch(() => notifySuccess('Teacher Notified', `Notification sent to ${String(r.teacher)}`)); } },
+          { label: 'Notify Teacher', icon: Users, onClick: (r) => { sendNotification(schoolId!, { type: 'push', recipientId: String((r as any).teacherId ?? ''), subject: 'Missing Marks Reminder', body: `Please submit marks for ${String(r.student)} - ${String(r.subject)}` }).then(() => notifySuccess('Teacher Notified', `Notification sent to ${String(r.teacher)}`)).catch((err) => notifyError('Notification Failed', err?.message ?? `Failed to notify ${String(r.teacher)}`)); } },
         ]}
         searchPlaceholder="Search missing marks..."
       />
@@ -340,26 +340,64 @@ function ResultsView() {
 /* ── Report Cards ── */
 function ReportCardsView() {
   const { schoolId } = useAuthStore();
-  const reports = [
-    { id: 'RC-001', student: 'Alice Thompson', grade: 'Grade 5A', gpa: 3.85, rank: 2, totalMarks: '542/600', status: 'Generated' },
-    { id: 'RC-002', student: 'Diana Patel', grade: 'Grade 5B', gpa: 3.92, rank: 1, totalMarks: '558/600', status: 'Generated' },
-    { id: 'RC-003', student: 'Bob Chen', grade: 'Grade 5A', gpa: 3.20, rank: 8, totalMarks: '474/600', status: 'Generated' },
-    { id: 'RC-004', student: 'Carlos Rivera', grade: 'Grade 5A', gpa: 0, rank: '\u2014', totalMarks: 'Incomplete', status: 'Pending' },
-    { id: 'RC-005', student: 'Ethan Brown', grade: 'Grade 5B', gpa: 2.85, rank: 12, totalMarks: '428/600', status: 'Generated' },
-  ] as Array<Record<string, unknown>>;
+  const { data: reportData, isLoading, isError, error } = useExamReportCards(schoolId);
+  const reportCards = reportData?.reportCards ?? [];
+
+  // Rank students by GPA descending
+  const ranked = [...reportCards]
+    .sort((a, b) => b.gpa - a.gpa)
+    .map((r, i) => ({ ...r, rank: r.status === 'Generated' ? i + 1 : '\u2014' }));
+
+  const reports: Array<Record<string, unknown>> = ranked.map(r => ({
+    id: r.id,
+    student: r.student,
+    grade: `${r.subjects.length} subjects`,
+    gpa: r.gpa,
+    rank: r.rank,
+    totalMarks: r.totalMarks,
+    status: r.status,
+  }));
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground/60 text-sm">
+        Loading report cards...
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-sm gap-2">
+        <AlertCircle className="size-8 text-rose-400" />
+        <p className="text-muted-foreground">Failed to load report cards</p>
+        <p className="text-xs text-muted-foreground/60">{(error as Error)?.message ?? 'Unknown error'}</p>
+      </div>
+    );
+  }
+
+  if (reports.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-sm gap-2">
+        <BookOpen className="size-8 text-muted-foreground/40" />
+        <p className="text-muted-foreground">No report cards available</p>
+        <p className="text-xs text-muted-foreground/60">Grades need to be entered before report cards can be generated.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Report Cards</h2>
-          <p className="text-sm text-muted-foreground/60">Generate and distribute student report cards</p>
+          <p className="text-sm text-muted-foreground/60">{reportData?.totalStudents ?? 0} students · {reportData?.totalExams ?? 0} exams</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { downloadFromApi(`/admin/schools/${schoolId}/exams/reports/generate-all`, 'report-cards-all.pdf').then(() => notifySuccess('Generated', 'All report cards generated')).catch(() => notifySuccess('Generated', 'Report card generation queued')); }}>
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { downloadFromApi(`/admin/schools/${schoolId}/exams/reports/generate-all`, 'report-cards-all.json').then(() => notifySuccess('Generated', 'All report cards generated')).catch((err) => notifyError('Generation Failed', err?.message ?? 'Could not generate report cards')); }}>
             Generate All
           </Button>
-          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { downloadFromApi(`/admin/schools/${schoolId}/exams/reports/bulk-download`, 'report-cards-bulk.zip').then(() => notifySuccess('Downloaded', 'Bulk download started')).catch(() => exportToCsv(reports.map((r: any) => ({ id: r.id, student: r.student, grade: r.grade, gpa: r.gpa, rank: r.rank, totalMarks: r.totalMarks, status: r.status })), 'report-cards.csv')); }}>
+          <Button variant="outline" size="sm" className="border-border text-muted-foreground/70 h-8" onClick={() => { downloadFromApi(`/admin/schools/${schoolId}/exams/reports/bulk-download`, 'report-cards-bulk.csv').then(() => notifySuccess('Downloaded', 'Bulk download complete')).catch((err) => { notifyError('Download Failed', `${err?.message ?? 'Server error'}. Exporting local data.`); exportToCsv(reports, 'report-cards.csv'); }); }}>
             <Download className="size-3.5 mr-1" /> Bulk Download
           </Button>
         </div>
@@ -369,8 +407,8 @@ function ReportCardsView() {
         columns={[
           { key: 'id', label: 'ID', render: (v) => <span className="font-mono text-xs text-blue-400">{String(v)}</span> },
           { key: 'student', label: 'Student', sortable: true, render: (v) => <span className="font-medium text-foreground/80">{String(v)}</span> },
-          { key: 'grade', label: 'Grade' },
-          { key: 'gpa', label: 'GPA', sortable: true, render: (v) => <span className="font-mono text-muted-foreground">{Number(v) > 0 ? String(v) : '\u2014'}</span> },
+          { key: 'grade', label: 'Subjects' },
+          { key: 'gpa', label: 'GPA', sortable: true, render: (v) => <span className="font-mono text-muted-foreground">{Number(v) > 0 ? Number(v).toFixed(2) : '\u2014'}</span> },
           { key: 'rank', label: 'Rank', sortable: true },
           { key: 'totalMarks', label: 'Total Marks' },
           { key: 'status', label: 'Status', render: (v) => <StatusBadge status={String(v)} /> },
@@ -380,10 +418,10 @@ function ReportCardsView() {
             const url = `/api/admin/schools/${schoolId}/exams/reports/${String(r.id)}/preview`;
             window.open(url, '_blank', 'noopener,noreferrer');
           } },
-          { label: 'Download PDF', icon: Download, onClick: (r) => {
-            const url = `/api/admin/schools/${schoolId}/exams/reports/${String(r.id)}/download`;
-            const a = document.createElement('a'); a.href = url; a.download = `report-${String(r.student)}.pdf`; a.click();
-            notifySuccess('Downloaded', `Report card for ${String(r.student)} downloaded`);
+          { label: 'Download', icon: Download, onClick: (r) => {
+            downloadFromApi(`/admin/schools/${schoolId}/exams/reports/${String(r.id)}/download`, `report-${String(r.student).replace(/\s/g, '-')}.csv`)
+              .then(() => notifySuccess('Downloaded', `Report card for ${String(r.student)} downloaded`))
+              .catch((err) => notifyError('Download Failed', err?.message ?? 'Could not download report card'));
           } },
         ]}
         searchPlaceholder="Search report cards..."

@@ -75,30 +75,54 @@ export async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
+/** Report data response from the backend */
+export interface ReportResponse {
+  type: string;
+  url?: string;
+  csv?: string;
+  [key: string]: unknown;
+}
+
 /**
- * Generate a report by calling the backend and downloading the result.
+ * Generate a report by calling the backend GET endpoint and downloading the result.
+ * The backend route is GET /admin/schools/:schoolId/reports/:type
  */
-export async function generateReport(schoolId: string, type: string, format: 'pdf' | 'csv' = 'pdf') {
-  try {
-    const res = await apiClient.request<{ data: { url?: string; csv?: string; report?: unknown } }>(
-      `/admin/schools/${schoolId}/reports`,
-      { method: 'POST', body: { type, format } }
-    );
-    const result = (res as any)?.data ?? res;
-    if (result?.url) {
-      downloadFromUrl(result.url, `${type}-report.${format}`);
-    } else if (result?.csv) {
-      const blob = new Blob([result.csv], { type: 'text/csv' });
-      downloadFromUrl(URL.createObjectURL(blob), `${type}-report.csv`);
-    } else if (format === 'csv' && result?.report) {
-      const items = Array.isArray(result.report) ? result.report : [result.report];
-      exportToCsv(items, `${type}-report.csv`);
+export async function generateReport(schoolId: string, type: string, format: 'pdf' | 'csv' = 'pdf'): Promise<ReportResponse> {
+  const res = await apiClient.get<{ success: boolean; data: ReportResponse }>(
+    `/admin/schools/${schoolId}/reports/${encodeURIComponent(type)}?format=${format}`
+  );
+
+  const result = (res as any)?.data ?? res;
+
+  if (result?.url) {
+    downloadFromUrl(result.url, `${type}-report.${format}`);
+  } else if (result?.csv) {
+    const blob = new Blob([result.csv], { type: 'text/csv' });
+    downloadFromUrl(URL.createObjectURL(blob), `${type}-report.csv`);
+  } else if (format === 'csv') {
+    // Auto-convert the response data into CSV
+    const exportable = extractExportableArray(result);
+    if (exportable.length > 0) {
+      exportToCsv(exportable, `${type}-report.csv`);
     }
-    return result;
-  } catch {
-    // Fallback: export client-side data 
-    return null;
   }
+
+  return result as ReportResponse;
+}
+
+/**
+ * Extract the first array property from a report result for CSV export.
+ */
+function extractExportableArray(data: Record<string, unknown>): Record<string, unknown>[] {
+  if (!data || typeof data !== 'object') return [];
+  for (const value of Object.values(data)) {
+    if (Array.isArray(value) && value.length > 0 && typeof value[0] === 'object') {
+      return value as Record<string, unknown>[];
+    }
+  }
+  // If no nested array, wrap the data itself (minus type field)
+  const { type: _type, ...rest } = data;
+  return Object.keys(rest).length > 0 ? [rest] : [];
 }
 
 /**
@@ -110,9 +134,10 @@ export async function sendNotification(schoolId: string, payload: {
   recipientEmail?: string;
   subject: string;
   body: string;
-}) {
-  return apiClient.request(`/admin/schools/${schoolId}/notifications/send`, {
-    method: 'POST',
-    body: payload,
-  });
+}): Promise<{ id: string; channel: string; status: string }> {
+  const res = await apiClient.post<{ success: boolean; data: { id: string; channel: string; status: string } }>(
+    `/admin/schools/${schoolId}/notifications/send`,
+    payload,
+  );
+  return (res as any)?.data ?? res;
 }

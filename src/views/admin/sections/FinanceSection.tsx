@@ -28,7 +28,7 @@ import {
 import type { FormField, DetailTab } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
 import { PermissionGate } from '@/components/guards/PermissionGate';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 
 /* ─── Local types (fields accessed in JSX) ─── */
 type Invoice = Record<string, unknown> & {
@@ -265,7 +265,7 @@ function InvoicesView() {
         actions={[
           { label: 'View', icon: Eye, onClick: (r) => { setSelected(r as Invoice); setDetailOpen(true); } },
           { label: 'Edit', icon: Edit, onClick: (r) => { setEditData(r as Record<string, unknown>); setFormMode('edit'); setFormOpen(true); } },
-          { label: 'Send Reminder', icon: Send, onClick: (r) => { sendNotification(schoolId!, { type: 'email', subject: 'Payment Reminder', body: `Your invoice ${String((r as Invoice).invoiceNo)} is pending. Please arrange payment at your earliest convenience.`, recipientId: String((r as any).studentId ?? '') }).then(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String((r as Invoice).invoiceNo)}`)).catch(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String((r as Invoice).invoiceNo)}`)); } },
+          { label: 'Send Reminder', icon: Send, onClick: (r) => { sendNotification(schoolId!, { type: 'email', subject: 'Payment Reminder', body: `Your invoice ${String((r as Invoice).invoiceNo)} is pending. Please arrange payment at your earliest convenience.`, recipientId: String((r as any).studentId ?? '') }).then(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String((r as Invoice).invoiceNo)}`)).catch((err) => notifyError('Reminder Failed', err?.message ?? `Failed to send reminder for ${String((r as Invoice).invoiceNo)}`)); } },
           { label: 'Void', icon: Trash2, onClick: (r) => setDeleteTarget(r as Invoice) },
         ]}
         searchPlaceholder="Search invoices..."
@@ -519,7 +519,7 @@ function OverdueView() {
         ]}
         actions={[
           { label: 'Send Reminder', icon: Send, onClick: (r) => {
-            sendNotification(schoolId!, { type: 'email', subject: 'Overdue Payment Reminder', body: `Invoice ${String(r.invoiceNo)} is overdue. Please arrange payment immediately.`, recipientId: String((r as any).studentId ?? '') }).then(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String(r.invoiceNo)}`)).catch(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String(r.invoiceNo)}`));
+            sendNotification(schoolId!, { type: 'email', subject: 'Overdue Payment Reminder', body: `Invoice ${String(r.invoiceNo)} is overdue. Please arrange payment immediately.`, recipientId: String((r as any).studentId ?? '') }).then(() => notifySuccess('Reminder Sent', `Payment reminder sent for ${String(r.invoiceNo)}`)).catch((err) => notifyError('Reminder Failed', err?.message ?? `Failed to send overdue reminder for ${String(r.invoiceNo)}`));
           }},
           { label: 'Record Payment', icon: CreditCard, onClick: (r) => {
             setPayTarget({ invoiceRef: String(r.invoiceNo), student: String(r.student), amount: String(r.balance) });

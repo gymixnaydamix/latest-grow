@@ -1,17 +1,23 @@
 /* ─── ControlCenterSection ─── Operations hub for school admin ─── */
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
+import { useAdminStore } from '@/store/admin-data.store';
 import {
   useApprovalHistory,
   useLeaveRequests,
   useApproveLeave,
   useComplianceTasks,
   useUpdateComplianceTask,
+  useExamSchedule,
 } from '@/hooks/api/use-school-ops';
 import { useEvents, useCreateEvent, useDeleteEvent } from '@/hooks/api/use-operations';
 import { useDashboardKPIs } from '@/hooks/api/use-school';
+import { useStaff } from '@/hooks/api/use-admin';
+import { useAnnouncements } from '@/hooks/api/use-announcements';
+import { useInvoices } from '@/hooks/api/use-finance';
+import { useTransportRoutes } from '@/hooks/api/use-transport';
 import {
   AlertTriangle,
   Plus, ChevronRight, Users, Check, X,
@@ -28,6 +34,7 @@ import {
 } from '@/components/features/school-admin';
 import type { FormField } from '@/components/features/school-admin';
 import { ConfirmDialog } from '@/components/features/ConfirmDialog';
+import { AdminStatsStrip } from '@/components/features/AdminStatsStrip';
 import { notifySuccess } from '@/lib/notify';
 
 /* ── Local types ── */
@@ -157,30 +164,103 @@ function ActionInboxView() {
 /* ─────────────── Today's Snapshot View ─────────────── */
 function TodaySnapshotView() {
   const { schoolId } = useAuthStore();
-  /* KPI data loaded for future widget integration */
-  useDashboardKPIs(schoolId);
-  const snap = {
-    classesRunning: 28,
-    totalClasses: 32,
-    absentTeachers: [
-      { name: 'Mr. Singh', subject: 'Mathematics', substitute: 'Mrs. Rao' },
-      { name: 'Mrs. Patel', subject: 'English', substitute: 'Unassigned' },
-    ],
-    transportTrips: { completed: 4, inProgress: 2, pending: 2, issues: 0 },
-    paymentsDue: { count: 12, total: '$15,400' },
-    examsToday: [
-      { subject: 'Math — Grade 10', room: 'Hall B', invigilator: 'Mrs. Chen', time: '9:00 AM' },
-      { subject: 'English — Grade 8', room: 'Room 204', invigilator: 'Mr. Davis', time: '11:00 AM' },
-    ],
-    announcements: [
-      { text: 'Parent-teacher meetings rescheduled to March 25', priority: 'info' },
-      { text: 'Water supply interruption expected from 2-4 PM', priority: 'warning' },
-    ],
-    complianceAlerts: [
-      { text: 'Fire drill certification expires in 5 days', level: 'warning' },
-      { text: 'Background check pending for 2 staff members', level: 'critical' },
-    ],
-  };
+  const { updateSnapshot } = useAdminStore();
+
+  /* ── Real API data sources ── */
+  const { data: kpis } = useDashboardKPIs(schoolId);
+  const { data: staffData } = useStaff(schoolId);
+  const { data: examData } = useExamSchedule(schoolId);
+  const { data: announcementData } = useAnnouncements(schoolId);
+  const { data: invoiceData } = useInvoices(schoolId);
+  const { data: complianceData } = useComplianceTasks(schoolId);
+  const { data: transportData } = useTransportRoutes(schoolId);
+
+  /* ── Derive snapshot from live data ── */
+  const snap = useMemo(() => {
+    /* KPI quick stats */
+    const kpiArr = Array.isArray(kpis) ? kpis : [];
+    const kpiMap = Object.fromEntries(kpiArr.map((k: any) => [k.label, k.value]));
+    const totalStudents = Number(kpiMap['Total Students'] ?? 0);
+    const activeCourses = Number(kpiMap['Active Courses'] ?? 0);
+
+    /* Absent teachers */
+    const staffArr: any[] = Array.isArray(staffData) ? staffData : (staffData as any)?.items ?? [];
+    const absentTeachers = staffArr
+      .filter((s: any) => s.status === 'Absent' || s.status === 'absent' || s.status === 'Leave' || s.status === 'leave')
+      .map((s: any) => ({
+        name: s.name ?? s.fullName ?? `${s.firstName ?? ''} ${s.lastName ?? ''}`.trim(),
+        subject: s.department ?? s.role ?? 'Staff',
+        substitute: s.substitute ?? 'Unassigned',
+      }));
+
+    /* Exams today */
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const examArr: any[] = Array.isArray(examData) ? examData : (examData as any)?.items ?? [];
+    const examsToday = examArr
+      .filter((e: any) => (e.date ?? e.startDate ?? '').slice(0, 10) === todayStr)
+      .map((e: any) => ({
+        subject: `${e.subject ?? e.name ?? 'Exam'} — ${e.grade ?? ''}`.trim(),
+        room: e.room ?? '—',
+        invigilator: e.invigilator ?? '—',
+        time: e.time ?? e.startTime ?? '—',
+      }));
+
+    /* Transport */
+    const routeArr: any[] = Array.isArray(transportData) ? transportData : (transportData as any)?.items ?? [];
+    const tCompleted = routeArr.filter((r: any) => r.status === 'completed' || r.status === 'Completed').length;
+    const tInProgress = routeArr.filter((r: any) => r.status === 'in_progress' || r.status === 'Active' || r.status === 'active').length;
+    const tPending = routeArr.filter((r: any) => r.status === 'pending' || r.status === 'Pending' || r.status === 'scheduled').length;
+    const tIssues = routeArr.filter((r: any) => r.status === 'incident' || r.status === 'delayed').length;
+
+    /* Invoices */
+    const invArr: any[] = Array.isArray(invoiceData) ? invoiceData : (invoiceData as any)?.items ?? [];
+    const pendingInv = invArr.filter((i: any) => i.status === 'ISSUED' || i.status === 'OVERDUE' || i.status === 'PARTIALLY_PAID');
+    const pendingTotal = pendingInv.reduce((sum: number, inv: any) => sum + Number(inv.balance ?? inv.amountDue ?? inv.amount ?? 0), 0);
+
+    /* Announcements */
+    const annArr: any[] = Array.isArray(announcementData) ? announcementData : (announcementData as any)?.items ?? [];
+    const announcements = annArr.slice(0, 5).map((a: any) => ({
+      text: a.title ?? a.body ?? '',
+      priority: (a.priority === 'warning' || a.priority === 'critical' ? a.priority : 'info') as 'info' | 'warning' | 'critical',
+    }));
+
+    /* Compliance alerts */
+    const compArr: any[] = Array.isArray(complianceData) ? complianceData : (complianceData as any)?.items ?? [];
+    const complianceAlerts = compArr
+      .filter((c: any) => c.status !== 'completed' && c.status !== 'resolved')
+      .slice(0, 5)
+      .map((c: any) => ({
+        text: c.description ?? c.title ?? '',
+        level: (c.priority === 'critical' || c.severity === 'critical' ? 'critical' : 'warning') as 'warning' | 'critical',
+      }));
+
+    return {
+      totalStudents,
+      activeCourses,
+      classesRunning: activeCourses,
+      totalClasses: activeCourses || 0,
+      absentTeachers,
+      transportTrips: { completed: tCompleted, inProgress: tInProgress, pending: tPending, issues: tIssues },
+      paymentsDue: { count: pendingInv.length, total: `$${pendingTotal.toLocaleString()}` },
+      examsToday,
+      announcements,
+      complianceAlerts,
+    };
+  }, [kpis, staffData, examData, transportData, invoiceData, announcementData, complianceData]);
+
+  /* ── Sync into admin-data store ── */
+  useEffect(() => {
+    updateSnapshot({
+      classesRunning: snap.classesRunning,
+      totalClasses: snap.totalClasses,
+      absentTeachers: snap.absentTeachers,
+      transportTrips: snap.transportTrips,
+      examsToday: snap.examsToday,
+      paymentsDue: snap.paymentsDue,
+      announcements: snap.announcements,
+      complianceAlerts: snap.complianceAlerts,
+    });
+  }, [snap, updateSnapshot]);
 
   return (
     <div className="space-y-4">
@@ -191,7 +271,7 @@ function TodaySnapshotView() {
 
       {/* Operational blocks */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-        <OperationBlock icon={BookOpen} label="Classes Running" value={`${snap.classesRunning}/${snap.totalClasses}`} sublabel="4 cancelled / study period" />
+        <OperationBlock icon={BookOpen} label="Classes Running" value={`${snap.classesRunning}/${snap.totalClasses}`} sublabel={`${snap.totalStudents} students enrolled`} />
         <OperationBlock icon={Users} label="Absent Teachers" value={snap.absentTeachers.length} sublabel={snap.absentTeachers.map(t => t.name).join(', ')} color="text-amber-400" />
         <OperationBlock icon={Bus} label="Transport Trips" value={`${snap.transportTrips.completed + snap.transportTrips.inProgress}/${snap.transportTrips.completed + snap.transportTrips.inProgress + snap.transportTrips.pending}`} sublabel={snap.transportTrips.issues > 0 ? `${snap.transportTrips.issues} issue` : 'All OK'} />
         <OperationBlock icon={CreditCard} label="Payments Due" value={snap.paymentsDue.count} sublabel={snap.paymentsDue.total} color="text-red-400" />
@@ -216,6 +296,7 @@ function TodaySnapshotView() {
               </div>
             </div>
           ))}
+          {snap.absentTeachers.length === 0 && <p className="text-xs text-muted-foreground/60 text-center py-4">All teachers present today.</p>}
         </CardContent>
       </Card>
 
@@ -234,6 +315,7 @@ function TodaySnapshotView() {
               <Badge variant="outline" className="text-xs border-blue-500/30 text-blue-400">{ex.time}</Badge>
             </div>
           ))}
+          {snap.examsToday.length === 0 && <p className="text-xs text-muted-foreground/60 text-center py-4">No exams scheduled today.</p>}
         </CardContent>
       </Card>
 
@@ -250,6 +332,7 @@ function TodaySnapshotView() {
                 <span className="text-muted-foreground">{a.text}</span>
               </div>
             ))}
+            {snap.announcements.length === 0 && <p className="text-xs text-muted-foreground/60 text-center py-4">No recent announcements.</p>}
           </CardContent>
         </Card>
         <Card className="border-border bg-card backdrop-blur-xl">
@@ -263,6 +346,7 @@ function TodaySnapshotView() {
                 <span className={a.level === 'critical' ? 'text-red-400' : 'text-amber-400'}>{a.text}</span>
               </div>
             ))}
+            {snap.complianceAlerts.length === 0 && <p className="text-xs text-muted-foreground/60 text-center py-4">No compliance alerts.</p>}
           </CardContent>
         </Card>
       </div>
@@ -707,6 +791,11 @@ export function ControlCenterSection() {
             </div>
           </SheetContent>
         </Sheet>
+      </div>
+
+      {/* KPI Stats Strip */}
+      <div data-animate>
+        <AdminStatsStrip />
       </div>
 
       <div data-animate>{content}</div>

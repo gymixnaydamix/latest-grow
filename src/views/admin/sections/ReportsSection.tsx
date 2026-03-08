@@ -19,7 +19,7 @@ import { OperationBlock } from '@/components/features/school-admin';
 import { NeonBarChart } from '@/components/features/charts/BarChart';
 import { GlowDonutChart } from '@/components/features/charts/DonutChart';
 import { GlowLineChart } from '@/components/features/charts/LineChart';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 
 /* ---- Admissions Report ---- */
 function AdmissionsReportView() {
@@ -71,7 +71,7 @@ function AdmissionsReportView() {
           <h2 className="text-lg font-semibold text-foreground">Admissions Report</h2>
           <p className="text-sm text-muted-foreground/60">Enrollment funnel and conversion metrics</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'admissions').then(() => notifySuccess('Report Exported', 'Admissions report exported')).catch(() => exportToCsv(admissions.map((a: any) => ({ id: a.id, name: a.studentName ?? a.name, stage: a.stage, grade: a.grade, date: a.appliedDate ?? a.createdAt })), 'admissions-report.csv')); }}>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'admissions', 'csv').then(() => notifySuccess('Report Exported', 'Admissions report exported')).catch((err) => { notifyError('Export Failed', `Server error: ${err?.message ?? 'unknown'}. Exporting local data.`); exportToCsv(admissions.map((a: any) => ({ id: a.id, name: a.studentName ?? a.name, stage: a.stage, grade: a.grade, date: a.appliedDate ?? a.createdAt })), 'admissions-report.csv'); }); }}>
           <Download className="size-3 mr-1" /> Export
         </Button>
       </div>
@@ -174,7 +174,7 @@ function FinanceReportView() {
           <h2 className="text-lg font-semibold text-foreground">Finance Report</h2>
           <p className="text-sm text-muted-foreground/60">Revenue, collection, and outstanding analysis</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'finance').then(() => notifySuccess('Report Exported', 'Finance report exported')).catch(() => exportToCsv(invoices.map((inv: any) => ({ id: inv.id, student: inv.student, amount: inv.amount, paid: inv.paid, balance: inv.balance, status: inv.status, dueDate: inv.dueDate })), 'finance-report.csv')); }}>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'finance', 'csv').then(() => notifySuccess('Report Exported', 'Finance report exported')).catch((err) => { notifyError('Export Failed', `Server error: ${err?.message ?? 'unknown'}. Exporting local data.`); exportToCsv(invoices.map((inv: any) => ({ id: inv.id, student: inv.student, amount: inv.amount, paid: inv.paid, balance: inv.balance, status: inv.status, dueDate: inv.dueDate })), 'finance-report.csv'); }); }}>
           <Download className="size-3 mr-1" /> Export
         </Button>
       </div>
@@ -276,7 +276,7 @@ function AttendanceReportView() {
           <h2 className="text-lg font-semibold text-foreground">Attendance Report</h2>
           <p className="text-sm text-muted-foreground/60">Student and staff attendance analytics</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'attendance').then(() => notifySuccess('Report Exported', 'Attendance report exported')).catch(() => exportToCsv(records.map((r: any) => ({ id: r.id, student: r.studentName ?? r.student, grade: r.grade, date: r.date, status: r.status })), 'attendance-report.csv')); }}>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'attendance', 'csv').then(() => notifySuccess('Report Exported', 'Attendance report exported')).catch((err) => { notifyError('Export Failed', `Server error: ${err?.message ?? 'unknown'}. Exporting local data.`); exportToCsv(records.map((r: any) => ({ id: r.id, student: r.studentName ?? r.student, grade: r.grade, date: r.date, status: r.status })), 'attendance-report.csv'); }); }}>
           <Download className="size-3 mr-1" /> Export
         </Button>
       </div>
@@ -362,7 +362,7 @@ function GradesReportView() {
           <h2 className="text-lg font-semibold text-foreground">Grades Report</h2>
           <p className="text-sm text-muted-foreground/60">Academic performance analysis</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'grades').then(() => notifySuccess('Report Exported', 'Grades report exported')).catch(() => exportToCsv(students.map((s: any) => ({ id: s.id, name: s.name ?? `${s.firstName} ${s.lastName}`, grade: s.grade, gpa: s.gpa })), 'grades-report.csv')); }}>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'grades', 'csv').then(() => notifySuccess('Report Exported', 'Grades report exported')).catch((err) => { notifyError('Export Failed', `Server error: ${err?.message ?? 'unknown'}. Exporting local data.`); exportToCsv(students.map((s: any) => ({ id: s.id, name: s.name ?? `${s.firstName} ${s.lastName}`, grade: s.grade, gpa: s.gpa })), 'grades-report.csv'); }); }}>
           <Download className="size-3 mr-1" /> Export
         </Button>
       </div>
@@ -451,7 +451,7 @@ function StaffReportView() {
           <h2 className="text-lg font-semibold text-foreground">Staff Report</h2>
           <p className="text-sm text-muted-foreground/60">HR analytics and staffing overview</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'staff').then(() => notifySuccess('Report Exported', 'Staff report exported')).catch(() => exportToCsv(staff.map((s: any) => ({ id: s.id, name: s.name ?? `${s.firstName} ${s.lastName}`, department: s.department, role: s.role, status: s.status })), 'staff-report.csv')); }}>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'staff', 'csv').then(() => notifySuccess('Report Exported', 'Staff report exported')).catch((err) => { notifyError('Export Failed', `Server error: ${err?.message ?? 'unknown'}. Exporting local data.`); exportToCsv(staff.map((s: any) => ({ id: s.id, name: s.name ?? `${s.firstName} ${s.lastName}`, department: s.department, role: s.role, status: s.status })), 'staff-report.csv'); }); }}>
           <Download className="size-3 mr-1" /> Export
         </Button>
       </div>
@@ -526,7 +526,7 @@ function ComplianceReportView() {
           <h2 className="text-lg font-semibold text-foreground">Compliance Report</h2>
           <p className="text-sm text-muted-foreground/60">Regulatory compliance and audit readiness</p>
         </div>
-        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'compliance').then(() => notifySuccess('Report Exported', 'Compliance report exported')).catch(() => exportToCsv(tasks.map((t: any) => ({ id: t.id, area: t.area, status: t.status, dueDate: t.dueDate, assignee: t.assignee })), 'compliance-report.csv')); }}>
+        <Button size="sm" variant="outline" className="border-border text-muted-foreground/70 h-8" onClick={() => { generateReport(schoolId!, 'compliance', 'csv').then(() => notifySuccess('Report Exported', 'Compliance report exported')).catch((err) => { notifyError('Export Failed', `Server error: ${err?.message ?? 'unknown'}. Exporting local data.`); exportToCsv(tasks.map((t: any) => ({ id: t.id, area: t.area, status: t.status, dueDate: t.dueDate, assignee: t.assignee })), 'compliance-report.csv'); }); }}>
           <Download className="size-3 mr-1" /> Export
         </Button>
       </div>

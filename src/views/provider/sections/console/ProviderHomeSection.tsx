@@ -1,5 +1,5 @@
 /* ─── ProviderHomeSection ─── Command Center with sub-page routing ─── */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -17,6 +17,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useProviderConsoleStore } from '@/store/provider-console.store';
+import { useProviderStore } from '@/store/provider-data.store';
 import {
   useProviderHome,
   useProviderModuleData,
@@ -80,6 +81,43 @@ function CommandCenterView() {
   const billing = (moduleData?.invoices ?? []) as BillingExceptionItem[];
   const tickets = (moduleData?.tickets ?? []) as SupportTicketDTO[];
   const flags = (moduleData?.featureFlags ?? []) as FeatureFlagRuleDTO[];
+
+  /* ── Sync API data into provider-data store for cross-component access ── */
+  const { setTenantSummary, setPlatformHealth, setQuickStats } = useProviderStore();
+
+  useEffect(() => {
+    if (!tenants.length && !homeQuery.isSuccess) return;
+    const active = tenants.filter((t) => t.status === 'ACTIVE' || t.status === 'active');
+    const trial = tenants.filter((t) => t.status === 'TRIAL' || t.status === 'trial');
+    const totalRevenue = billing.reduce((sum, inv) => sum + (inv.amount ?? 0), 0);
+    setTenantSummary({
+      totalTenants: tenants.length,
+      activeTenants: active.length,
+      trialTenants: trial.length,
+      totalRevenue,
+    });
+  }, [tenants, billing, homeQuery.isSuccess, setTenantSummary]);
+
+  useEffect(() => {
+    const sh = home?.systemHealth;
+    if (!sh) return;
+    setPlatformHealth({
+      uptime: sh.uptimePct,
+      avgLatency: sh.queueBacklog,
+      errorRate: sh.activeIncidents,
+      activeUsers: 0,
+    });
+  }, [home?.systemHealth, setPlatformHealth]);
+
+  useEffect(() => {
+    setQuickStats({
+      actionInbox: actionInbox.length,
+      openTickets: tickets.length,
+      featureFlags: flags.length,
+      healthWatch: healthWatch.length,
+      billingExceptions: billing.length,
+    });
+  }, [actionInbox.length, tickets.length, flags.length, healthWatch.length, billing.length, setQuickStats]);
 
   const openTenant = (tenantId: string | null) => {
     if (!tenantId) return;
