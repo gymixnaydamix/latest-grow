@@ -72,4 +72,6 @@ export {
   schoolOpsAuditController,
   schoolOpsStaffController,
   schoolOpsReportsController,
+  schoolOpsNotificationsController,
+  schoolOpsExamReportsController,
 } from './school-ops.controller.js';

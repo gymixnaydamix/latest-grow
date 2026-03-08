@@ -80,9 +80,8 @@ export async function copyToClipboard(text: string): Promise<boolean> {
  */
 export async function generateReport(schoolId: string, type: string, format: 'pdf' | 'csv' = 'pdf') {
   try {
-    const res = await apiClient.request<{ data: { url?: string; csv?: string; report?: unknown } }>(
-      `/admin/schools/${schoolId}/reports`,
-      { method: 'POST', body: { type, format } }
+    const res = await apiClient.get<{ data: { url?: string; csv?: string; report?: unknown } }>(
+      `/admin/schools/${schoolId}/reports/${encodeURIComponent(type)}?format=${encodeURIComponent(format)}`
     );
     const result = (res as any)?.data ?? res;
     if (result?.url) {

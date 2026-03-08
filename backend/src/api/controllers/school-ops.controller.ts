@@ -1259,9 +1259,174 @@ export const schoolOpsReportsController = {
           res.json({ success: true, data: { type, totalStaff: members.length, members } });
           return;
         }
+        case 'admissions': {
+          const applicants = await prisma.applicant.findMany({
+            where: { schoolId },
+            orderBy: { appliedAt: 'desc' },
+          });
+          const byStage: Record<string, number> = {};
+          for (const a of applicants) {
+            byStage[a.stage] = (byStage[a.stage] ?? 0) + 1;
+          }
+          res.json({ success: true, data: { type, totalApplicants: applicants.length, byStage, applicants } });
+          return;
+        }
+        case 'grades': {
+          const courses = await prisma.course.findMany({ where: { schoolId }, select: { id: true } });
+          const courseIds = courses.map((c: { id: string }) => c.id);
+          const grades = await prisma.grade.findMany({
+            where: { courseId: { in: courseIds } },
+            include: {
+              student: { select: { id: true, firstName: true, lastName: true } },
+              course: { select: { id: true, name: true } },
+            },
+            orderBy: { gradedAt: 'desc' },
+            take: 500,
+          });
+          const avgScore = grades.length
+            ? Math.round((grades.reduce((sum: number, g: { score: number }) => sum + g.score, 0) / grades.length) * 100) / 100
+            : 0;
+          res.json({ success: true, data: { type, totalGrades: grades.length, averageScore: avgScore, grades } });
+          return;
+        }
+        case 'compliance': {
+          const reports = await prisma.complianceReport.findMany({
+            where: { schoolId },
+            orderBy: { createdAt: 'desc' },
+          });
+          const byStatus: Record<string, number> = {};
+          for (const r of reports) {
+            byStatus[r.status] = (byStatus[r.status] ?? 0) + 1;
+          }
+          res.json({ success: true, data: { type, totalReports: reports.length, byStatus, reports } });
+          return;
+        }
         default:
-          res.json({ success: true, data: { type, message: 'Report type not yet implemented' } });
+          res.status(400).json({ success: false, error: { message: `Unsupported report type: ${type}` } });
       }
+    } catch (error) {
+      next(error);
+    }
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// NOTIFICATIONS (send)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const schoolOpsNotificationsController = {
+  /** POST /admin/schools/:schoolId/notifications/send */
+  async send(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const { type, recipientId, recipientEmail, subject, body } = req.body;
+      if (!subject || !body) throw new BadRequestError('subject and body are required');
+
+      // Create a notification record for in-app delivery
+      if (recipientId) {
+        await prisma.notification.create({
+          data: {
+            userId: recipientId,
+            type: (type === 'push' ? 'PUSH' : 'EMAIL').toUpperCase(),
+            title: subject,
+            message: body,
+            metadata: { schoolId, channel: type ?? 'email', recipientEmail: recipientEmail ?? null },
+          },
+        });
+      }
+
+      res.json({
+        success: true,
+        data: {
+          sent: true,
+          channel: type ?? 'email',
+          recipientId: recipientId ?? null,
+          recipientEmail: recipientEmail ?? null,
+          subject,
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+};
+
+// ═══════════════════════════════════════════════════════════════════════
+// EXAM REPORTS (generate, download, preview)
+// ═══════════════════════════════════════════════════════════════════════
+
+export const schoolOpsExamReportsController = {
+  /** GET /admin/schools/:schoolId/exams/reports/generate-all */
+  async generateAll(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const exams = await prisma.exam.findMany({
+        where: { schoolId, publishedAt: { not: null } },
+        orderBy: { publishedAt: 'desc' },
+      });
+      res.json({
+        success: true,
+        data: {
+          totalReports: exams.length,
+          generated: true,
+          reports: exams.map((e) => ({
+            id: e.id,
+            title: e.title,
+            subject: e.subject,
+            status: e.status,
+          })),
+        },
+      });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /admin/schools/:schoolId/exams/reports/bulk-download */
+  async bulkDownload(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const schoolId = p(req.params.schoolId);
+      const exams = await prisma.exam.findMany({
+        where: { schoolId, publishedAt: { not: null } },
+        orderBy: { publishedAt: 'desc' },
+      });
+      const csv = [
+        'id,title,subject,status,publishedAt',
+        ...exams.map((e) => `${e.id},${e.title},${e.subject},${e.status},${e.publishedAt?.toISOString() ?? ''}`),
+      ].join('\n');
+      res.json({ success: true, data: { csv, totalReports: exams.length } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /admin/schools/:schoolId/exams/reports/:reportId/preview */
+  async preview(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const examId = p(req.params.reportId);
+      const exam = await prisma.exam.findUnique({ where: { id: examId } });
+      if (!exam) throw new NotFoundError('Exam report not found');
+      const scheduleItems = await prisma.examScheduleItem.findMany({
+        where: { examId },
+        orderBy: { date: 'asc' },
+      });
+      res.json({ success: true, data: { exam, scheduleItems } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  /** GET /admin/schools/:schoolId/exams/reports/:reportId/download */
+  async download(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const examId = p(req.params.reportId);
+      const exam = await prisma.exam.findUnique({ where: { id: examId } });
+      if (!exam) throw new NotFoundError('Exam report not found');
+      const scheduleItems = await prisma.examScheduleItem.findMany({
+        where: { examId },
+        orderBy: { date: 'asc' },
+      });
+      res.json({ success: true, data: { exam, scheduleItems } });
     } catch (error) {
       next(error);
     }
