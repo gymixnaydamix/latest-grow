@@ -2,6 +2,14 @@ import { create } from 'zustand';
 import { api } from '../api/client';
 import type { User, SchoolMember } from '../../types';
 
+/** Shape returned by /auth/login, /auth/register, and /auth/me */
+interface AuthResponse {
+  data: {
+    user: User;
+    memberships?: SchoolMember[];
+  };
+}
+
 interface AuthState {
   user: User | null;
   schoolId: string | null;
@@ -26,7 +34,7 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
   login: async (email, password) => {
     set({ isLoading: true, error: null });
     try {
-      const res: any = await api.post('/auth/login', { email, password });
+      const res = await api.post<AuthResponse>('/auth/login', { email, password });
       const user = res.data.user;
       const memberships: SchoolMember[] = res.data.memberships ?? [];
       set({
@@ -35,8 +43,9 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
         schoolId: memberships[0]?.schoolId ?? null,
         isLoading: false,
       });
-    } catch (err: any) {
-      set({ error: err.message || 'Login failed', isLoading: false });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Login failed';
+      set({ error: message, isLoading: false });
       throw err;
     }
   },
@@ -44,7 +53,7 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
   register: async (data) => {
     set({ isLoading: true, error: null });
     try {
-      const res: any = await api.post('/auth/register', data);
+      const res = await api.post<AuthResponse>('/auth/register', data);
       const user = res.data.user;
       const memberships: SchoolMember[] = res.data.memberships ?? [];
       set({
@@ -53,8 +62,9 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
         schoolId: memberships[0]?.schoolId ?? null,
         isLoading: false,
       });
-    } catch (err: any) {
-      set({ error: err.message || 'Registration failed', isLoading: false });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Registration failed';
+      set({ error: message, isLoading: false });
       throw err;
     }
   },
@@ -71,7 +81,7 @@ export const useAuthStore = create<AuthState>((set, _get) => ({
   fetchMe: async () => {
     set({ isLoading: true });
     try {
-      const res: any = await api.get('/auth/me');
+      const res = await api.get<AuthResponse>('/auth/me');
       const user = res.data.user;
       const memberships: SchoolMember[] = res.data.memberships ?? [];
       set({
