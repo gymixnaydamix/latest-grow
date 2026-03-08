@@ -1147,6 +1147,21 @@ export const schoolOpsAuditController = {
 // DASHBOARD ANALYTICS
 // ═══════════════════════════════════════════════════════════════════════
 
+/** Convert percentage score (0-100) to 4.0 GPA scale: GPA = score / 25 */
+const SCORE_TO_GPA_DIVISOR = 25;
+
+/** Operational health scoring: penalty per open maintenance item */
+const MAINTENANCE_PENALTY = 4;
+/** Operational health scoring: penalty per open compliance item */
+const COMPLIANCE_PENALTY = 3;
+/** Operational health scoring: penalty per critical audit event */
+const CRITICAL_AUDIT_PENALTY = 5;
+
+/** Service health: warning threshold for maintenance queue depth */
+const MAINTENANCE_WARNING_THRESHOLD = 5;
+/** Service health: warning threshold for compliance queue depth */
+const COMPLIANCE_WARNING_THRESHOLD = 3;
+
 /** Safe string coercion */
 const str = (value: unknown, fallback = ''): string =>
   typeof value === 'string' ? value : value == null ? fallback : String(value);
@@ -1252,7 +1267,7 @@ export const schoolOpsDashboardController = {
         success: true,
         data: {
           totalStudents,
-          avgGpa: Number((averageScore / 25).toFixed(2)),
+          avgGpa: Number((averageScore / SCORE_TO_GPA_DIVISOR).toFixed(2)),
           attendanceRate: Number(attendanceRate.toFixed(1)),
           courseCompletionRate: Number(Math.min(completionRate, 100).toFixed(1)),
           enrollmentTrend,
@@ -1347,7 +1362,7 @@ export const schoolOpsDashboardController = {
       const openMaintenance = maintenance.filter((item) => !['COMPLETED', 'DONE'].includes(str(item.status).toUpperCase())).length;
       const openCompliance = compliance.filter((item) => !['COMPLETED', 'CLOSED'].includes(str(item.status).toUpperCase())).length;
       const criticalAudits = audits.filter((log) => /delete|failed|denied|security/i.test(log.action)).length;
-      const operationalScore = Math.max(0, 100 - openMaintenance * 4 - openCompliance * 3 - criticalAudits * 5);
+      const operationalScore = Math.max(0, 100 - openMaintenance * MAINTENANCE_PENALTY - openCompliance * COMPLIANCE_PENALTY - criticalAudits * CRITICAL_AUDIT_PENALTY);
 
       res.json({
         success: true,
@@ -1359,8 +1374,8 @@ export const schoolOpsDashboardController = {
           activeMessageThreads: messages,
           publishedAnnouncements: announcements,
           services: [
-            { name: 'Maintenance Queue', status: openMaintenance > 5 ? 'warning' : 'healthy', metric: openMaintenance },
-            { name: 'Compliance Queue', status: openCompliance > 3 ? 'warning' : 'healthy', metric: openCompliance },
+            { name: 'Maintenance Queue', status: openMaintenance > MAINTENANCE_WARNING_THRESHOLD ? 'warning' : 'healthy', metric: openMaintenance },
+            { name: 'Compliance Queue', status: openCompliance > COMPLIANCE_WARNING_THRESHOLD ? 'warning' : 'healthy', metric: openCompliance },
             { name: 'Communications', status: 'healthy', metric: messages + announcements },
           ],
           incidents: audits.slice(0, 8).map((log) => ({
