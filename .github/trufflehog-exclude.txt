@@ -9,24 +9,23 @@
 pnpm-lock.yaml
 
 # Test fixtures with dummy credentials
-**/__tests__/fixtures/**
-**/test-data/**
+__tests__/fixtures/
+test-data/
 
 # Documentation examples
-docs/**/*.md
+docs/.*\.md
 
 # Prisma seed data (demo credentials only — never production)
-backend/prisma/seed.ts
+backend/prisma/seed\.ts
 
 # Generated files
-**/*.generated.ts
-**/node_modules/**
+.*\.generated\.ts
+node_modules/
 
 # Build outputs
-dist/**
-build/**
-.next/**
+dist/
+build/
+\.next/
 
 # Environment example (only placeholder values)
-.env.example
-backend/.env.example
+\.env\.example
