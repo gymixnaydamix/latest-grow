@@ -15,6 +15,7 @@ import {
   createFeedbackSchema,
   idParamSchema,
   schoolIdParamSchema,
+  studentIdParamSchema,
 } from '../schemas/validation.schemas.js';
 
 const router: IRouter = Router();
@@ -22,7 +23,7 @@ router.use(authenticate);
 
 // ──────── Parent Dashboard ────────
 router.get('/dashboard', authorize('PARENT'), parentController.dashboard);
-router.get('/children/:studentId/progress', authorize('PARENT'), parentController.getChildProgress);
+router.get('/children/:studentId/progress', authorize('PARENT'), validate({ params: studentIdParamSchema }), parentController.getChildProgress);
 
 // ──────── Digest Config ────────
 router.get('/digest', authorize('PARENT'), digestController.get);
@@ -62,6 +63,6 @@ router.post(
 
 // ──────── Cafeteria ────────
 router.get('/schools/:schoolId/cafeteria/menu', validate({ params: schoolIdParamSchema }), cafeteriaController.getMenu);
-router.get('/cafeteria/account/:studentId', authorize('PARENT'), cafeteriaController.getAccount);
+router.get('/cafeteria/account/:studentId', authorize('PARENT'), validate({ params: studentIdParamSchema }), cafeteriaController.getAccount);
 
 export default router;

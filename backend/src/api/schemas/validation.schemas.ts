@@ -806,6 +806,146 @@ export const returnLibraryLoanSchema = z.object({
 });
 
 // ---------------------------------------------------------------------------
+// Student schemas
+// ---------------------------------------------------------------------------
+
+export const updateStudentProfileSchema = z.object({
+  firstName: z.string().min(1).max(50).optional(),
+  lastName: z.string().min(1).max(50).optional(),
+  email: z.string().email().optional(),
+  avatar: z.string().optional(),
+  gradeLevel: z.string().optional(),
+  section: z.string().optional(),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+});
+
+export const updateAvatarSchema = z.object({
+  avatar: z.string().min(1, 'Avatar URL is required'),
+});
+
+export const payInvoiceSchema = z.object({
+  invoiceId: z.string().min(1, 'Invoice ID is required'),
+  amount: z.number().positive('Amount must be positive'),
+});
+
+export const logMoodSchema = z.object({
+  mood: z.string().min(1, 'Mood is required'),
+  note: z.string().optional(),
+});
+
+export const bookSessionSchema = z.object({
+  preferredDate: z.string().optional(),
+  type: z.string().optional().default('counseling'),
+});
+
+export const createStudentWellnessGoalSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  target: z.string().optional().default('30 days'),
+});
+
+export const createStudentJournalEntrySchema = z.object({
+  mood: z.string().min(1, 'Mood is required'),
+  moodEmoji: z.string().optional(),
+  summary: z.string().min(1, 'Summary is required'),
+});
+
+export const addPortfolioWorkSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  type: z.string().min(1, 'Type is required'),
+  subject: z.string().optional().default(''),
+  description: z.string().optional().default(''),
+  tags: z.array(z.string()).optional().default([]),
+});
+
+export const createMindMapSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  color: z.string().optional(),
+});
+
+export const generateCitationSchema = z.object({
+  sourceType: z.string().min(1, 'Source type is required'),
+  title: z.string().min(1, 'Title is required'),
+  authors: z.string().min(1, 'Authors are required'),
+  year: z.number().int().positive('Year must be a positive integer'),
+  project: z.string().optional().default(''),
+});
+
+export const createFocusSessionSchema = z.object({
+  duration: z.number().positive('Duration must be positive'),
+  task: z.string().min(1, 'Task is required'),
+});
+
+export const addPlannerBlockSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/, 'Start time must be HH:MM format'),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/, 'End time must be HH:MM format'),
+  day: z.string().min(1, 'Day is required'),
+  color: z.string().optional(),
+});
+
+export const sendStudentMessageSchema = z.object({
+  recipientId: z.string().optional(),
+  subject: z.string().optional(),
+  body: z.string().min(1, 'Message body is required'),
+});
+
+export const createCommunityPostSchema = z.object({
+  content: z.string().min(1, 'Content is required').max(5000),
+});
+
+export const submitDeptRequestSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  category: z.string().min(1, 'Category is required'),
+  description: z.string().min(1, 'Description is required'),
+});
+
+export const studentIdParamSchema = z.object({
+  studentId: z.string().min(1),
+});
+
+// ---------------------------------------------------------------------------
+// Wellness schemas (standalone wellness routes)
+// ---------------------------------------------------------------------------
+
+export const createWellnessJournalSchema = z.object({
+  mood: z.string().min(1, 'Mood is required'),
+  moodEmoji: z.string().optional().default('😐'),
+  summary: z.string().min(1, 'Summary is required'),
+});
+
+export const createWellnessGoalSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  target: z.string().optional().default('30 days'),
+});
+
+export const updateWellnessGoalSchema = z.object({
+  progress: z.number().min(0).max(100).optional(),
+  current: z.string().optional(),
+  title: z.string().min(1).max(200).optional(),
+});
+
+// ---------------------------------------------------------------------------
+// Message schemas
+// ---------------------------------------------------------------------------
+
+export const createThreadSchema = z.object({
+  subject: z.string().min(1, 'Subject is required').max(500),
+  participantIds: z.array(z.string().min(1)).min(1, 'At least one participant is required'),
+});
+
+export const sendMessageSchema = z.object({
+  body: z.string().min(1, 'Message body is required'),
+});
+
+export const threadIdParamSchema = z.object({
+  threadId: z.string().min(1),
+});
+
+// ---------------------------------------------------------------------------
 // ID param schema
 // ---------------------------------------------------------------------------
 

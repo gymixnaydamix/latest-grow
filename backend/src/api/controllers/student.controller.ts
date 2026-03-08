@@ -1,4 +1,5 @@
 import type { Request, Response, NextFunction } from 'express';
+import { NotFoundError, BadRequestError } from '../../utils/errors.js';
 
 // ---------------------------------------------------------------------------
 // In-memory student store
@@ -232,13 +233,25 @@ export const studentController = {
 
   async updateProfile(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      Object.assign(profileStore, req.body);
+      const { firstName, lastName, email, avatar, gradeLevel, section } = req.body;
+      if (firstName !== undefined) profileStore.firstName = firstName;
+      if (lastName !== undefined) profileStore.lastName = lastName;
+      if (email !== undefined) profileStore.email = email;
+      if (avatar !== undefined) profileStore.avatar = avatar;
+      if (gradeLevel !== undefined) profileStore.gradeLevel = gradeLevel;
+      if (section !== undefined) profileStore.section = section;
       res.json({ success: true, data: profileStore });
     } catch (e) { next(e); }
   },
 
-  async changePassword(_req: Request, res: Response, next: NextFunction): Promise<void> {
-    try { res.json({ success: true, data: { success: true } }); }
+  async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const { currentPassword, newPassword } = req.body;
+      if (currentPassword === newPassword) {
+        throw new BadRequestError('New password must differ from current password');
+      }
+      res.json({ success: true, data: { message: 'Password changed successfully' } });
+    }
     catch (e) { next(e); }
   },
 
@@ -258,7 +271,7 @@ export const studentController = {
   async downloadDocument(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const doc = documentsStore.find(d => d.id === req.params.id);
-      if (!doc) { res.status(404).json({ success: false, error: 'Document not found' }); return; }
+      if (!doc) throw new NotFoundError('Document not found');
       res.json({ success: true, data: { url: `/files/${doc.name}`, name: doc.name } });
     } catch (e) { next(e); }
   },
@@ -273,7 +286,7 @@ export const studentController = {
     try {
       const { invoiceId, amount } = req.body;
       const inv = invoicesStore.find(i => i.id === invoiceId);
-      if (!inv) { res.status(404).json({ success: false, error: 'Invoice not found' }); return; }
+      if (!inv) throw new NotFoundError('Invoice not found');
       inv.paidAmount = Math.min(inv.paidAmount + amount, inv.amount);
       inv.status = inv.paidAmount >= inv.amount ? 'paid' : 'pending';
       res.json({ success: true, data: inv });
@@ -458,7 +471,7 @@ export const studentController = {
   async deleteCitation(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const idx = citationsStore.findIndex(c => c.id === req.params.id);
-      if (idx === -1) { res.status(404).json({ success: false, error: 'Citation not found' }); return; }
+      if (idx === -1) throw new NotFoundError('Citation not found');
       citationsStore.splice(idx, 1);
       res.json({ success: true, data: null });
     } catch (e) { next(e); }
@@ -535,7 +548,7 @@ export const studentController = {
   async likeCommunityPost(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const post = communityPostsStore.find(p => p.id === req.params.id);
-      if (!post) { res.status(404).json({ success: false, error: 'Post not found' }); return; }
+      if (!post) throw new NotFoundError('Post not found');
       const userId = 'student-1';
       if (post.likedBy.includes(userId)) {
         post.likedBy = post.likedBy.filter(id => id !== userId);
@@ -551,7 +564,7 @@ export const studentController = {
   async bookmarkCommunityPost(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
       const post = communityPostsStore.find(p => p.id === req.params.id);
-      if (!post) { res.status(404).json({ success: false, error: 'Post not found' }); return; }
+      if (!post) throw new NotFoundError('Post not found');
       const userId = 'student-1';
       if (post.bookmarkedBy.includes(userId)) {
         post.bookmarkedBy = post.bookmarkedBy.filter(id => id !== userId);

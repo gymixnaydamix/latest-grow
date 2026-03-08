@@ -136,8 +136,9 @@ describe('wellnessController', () => {
 
       await wellnessController.updateGoal(req, res, next);
 
-      expect(res._status).toBe(404);
-      expect(res._json).toMatchObject({ success: false, message: 'Goal not found' });
+      expect(next).toHaveBeenCalledWith(
+        expect.objectContaining({ statusCode: 404, message: 'Goal not found' }),
+      );
     });
   });
 
