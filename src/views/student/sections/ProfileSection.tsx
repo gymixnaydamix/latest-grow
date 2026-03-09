@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/auth.store';
-import { useStudentStore } from '@/store/student-data.store';
+import { useStudentData } from '@/hooks/use-student-data';
 import { notifySuccess } from '@/lib/notify';
 
 type ProfileTab = 'profile' | 'account' | 'notifications' | 'appearance';
@@ -70,6 +70,7 @@ export function ProfileSection() {
 
 /* ── Profile ── */
 function ProfileView({ name }: { name: string }) {
+  const studentData = useStudentData();
   return (
     <div className="space-y-5">
       {/* Avatar & name */}
@@ -80,7 +81,7 @@ function ProfileView({ name }: { name: string }) {
               {name.split(' ').map(n => n[0]).join('')}
             </div>
             <button className="absolute bottom-0 right-0 size-7 rounded-full bg-white/10 border border-white/20 flex items-center justify-center hover:bg-white/20 transition-colors"
-              onClick={() => { useStudentStore.getState().updateAvatar('new-avatar.jpg'); notifySuccess('Avatar', 'Profile picture updated'); }}>
+              onClick={() => { studentData.updateAvatar('new-avatar.jpg'); notifySuccess('Avatar', 'Profile picture updated'); }}>
               <Camera className="size-3 text-white/60" />
             </button>
           </div>
@@ -135,6 +136,7 @@ function ProfileView({ name }: { name: string }) {
 
 /* ── Account ── */
 function AccountView() {
+  const studentData = useStudentData();
   return (
     <div className="space-y-5">
       <Card className="border-white/8 bg-white/[0.02]">
@@ -146,7 +148,7 @@ function AccountView() {
           <div className="flex items-center justify-between py-2">
             <div className="flex items-center gap-3"><Lock className="size-4 text-white/30" /><span className="text-sm text-white/60">Password</span></div>
             <Button size="sm" variant="outline" className="text-xs border-white/10 text-white/50"
-              onClick={() => { useStudentStore.getState().changePassword('old', 'new'); notifySuccess('Password', 'Password changed successfully'); }}>Change Password</Button>
+              onClick={() => { studentData.changePassword('old', 'new'); }}>Change Password</Button>
           </div>
           <Separator className="bg-white/5" />
           <div className="flex items-center justify-between py-2">

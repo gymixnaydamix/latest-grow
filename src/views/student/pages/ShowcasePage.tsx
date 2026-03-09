@@ -27,8 +27,7 @@ const WORK_COLORS: Record<WorkType, { text: string; bg: string }> = {
   code: { text: 'text-cyan-400', bg: 'bg-cyan-400/10' },
 };
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _PORTFOLIO: PortfolioItem[] = [
+const FALLBACK_PORTFOLIO: PortfolioItem[] = [
   { id: '1', title: 'Climate Change Research Paper', type: 'essay', subject: 'Science', date: '2025-03-10', grade: 'A', tags: ['research', 'environment'], featured: true, description: 'In-depth analysis of climate change effects on coastal ecosystems.', views: 45 },
   { id: '2', title: 'Solar System 3D Model', type: 'project', subject: 'Physics', date: '2025-03-05', grade: 'A+', tags: ['3d', 'physics', 'space'], featured: true, description: 'Interactive 3D model of the solar system with orbital mechanics.', views: 128 },
   { id: '3', title: 'Self-Portrait in Oil', type: 'artwork', subject: 'Art', date: '2025-02-28', tags: ['painting', 'portrait'], featured: false, description: 'Oil painting self-portrait exploring impressionist technique.', views: 67 },
@@ -45,7 +44,7 @@ export default function ShowcasePage() {
 
   /* ── API data ── */
   const { data: _apiPortfolio } = useStudentPortfolio();
-  const portfolio = (_apiPortfolio as any[]) ?? [];
+  const portfolio = (_apiPortfolio as any[])?.length > 0 ? (_apiPortfolio as any[]) : FALLBACK_PORTFOLIO;
 
   const filtered = filter === 'all' ? portfolio
     : filter === 'featured' ? portfolio.filter((p: any) => p.featured)

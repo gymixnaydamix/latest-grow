@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
-import { NotFoundError, AppError } from '../../utils/errors.js';
+import bcrypt from 'bcryptjs';
+import { NotFoundError, AppError, UnauthorizedError } from '../../utils/errors.js';
+import { prisma } from '../../db/prisma.service.js';
 
 // ---------------------------------------------------------------------------
 // In-memory student store
@@ -238,9 +240,23 @@ export const studentController = {
     } catch (e) { next(e); }
   },
 
-  async changePassword(_req: Request, _res: Response, next: NextFunction): Promise<void> {
-    // TODO: implement real password change against auth service
-    next(new AppError('Password change not yet implemented for in-memory student store', 501));
+  async changePassword(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const userId = (req as any).user?.id;
+      if (!userId) throw new UnauthorizedError('Not authenticated');
+
+      const { currentPassword, newPassword } = req.body;
+      const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+      if (!user) throw new NotFoundError('User not found');
+
+      const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+      if (!isValid) throw new AppError('Current password is incorrect', 400);
+
+      const passwordHash = await bcrypt.hash(newPassword, 12);
+      await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+      res.json({ success: true, data: { message: 'Password changed successfully' } });
+    } catch (e) { next(e); }
   },
 
   async updateAvatar(req: Request, res: Response, next: NextFunction): Promise<void> {
@@ -346,8 +362,19 @@ export const studentController = {
 
   async submitAssignment(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      // TODO: persist submission to database when assignment store is real
-      res.status(201).json({ success: true, data: { id: req.params.id, status: 'submitted', submittedAt: new Date().toISOString() } });
+      const userId = (req as any).user?.id;
+      if (!userId) throw new AppError('Not authenticated', 401);
+
+      const assignmentId = String(req.params.id);
+      const { content } = req.body;
+
+      const submission = await prisma.submission.upsert({
+        where: { assignmentId_studentId: { assignmentId, studentId: String(userId) } },
+        update: { content: content ?? '', submittedAt: new Date() },
+        create: { assignmentId, studentId: userId, content: content ?? '' },
+      });
+
+      res.status(201).json({ success: true, data: { id: submission.id, status: 'submitted', submittedAt: submission.submittedAt.toISOString() } });
     } catch (e) { next(e); }
   },
 

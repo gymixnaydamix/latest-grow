@@ -9,7 +9,7 @@ import {
   useParentV2Announcements,
   useSaveParentV2Announcement,
 } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateTimeLabel, parentAnnouncementsDemo as FALLBACK_ANNOUNCEMENTS } from './parent-v2-demo-data';
+import { childDisplayName, formatDateTimeLabel } from './parent-v2-demo-data';
 import type { ParentAnnouncementDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -22,7 +22,7 @@ export function AnnouncementsSection({ scope, childId }: ParentSectionProps) {
   const markRead = useMarkParentV2AnnouncementRead();
   const saveAnnouncement = useSaveParentV2Announcement();
 
-  const allRows: ParentAnnouncementDemo[] = (rawRows as ParentAnnouncementDemo[] | undefined) ?? filterByChild(FALLBACK_ANNOUNCEMENTS, childId, scope);
+  const allRows: ParentAnnouncementDemo[] = (rawRows as ParentAnnouncementDemo[] | undefined) ?? [];
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<(typeof CATEGORY_FILTERS)[number]>('ALL');
   const [readFilter, setReadFilter] = useState<(typeof READ_FILTERS)[number]>('ALL');

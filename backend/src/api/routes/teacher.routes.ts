@@ -22,6 +22,23 @@ import {
   savePreferencesSchema,
   addCommentBankSchema,
   uploadResourceSchema,
+  // Messaging settings schemas
+  updateMsgDefaultsSchema,
+  updateMsgReplySettingsSchema,
+  updateMsgSchedulingSchema,
+  updateMsgNotifChannelsSchema,
+  updateMsgNotifRulesSchema,
+  updateMsgQuietHoursSchema,
+  createSLAPolicySchema,
+  updateSLAPolicySchema,
+  createSLAEscalationRuleSchema,
+  createLegalTemplateSchema,
+  updateLegalTemplateSchema,
+  createEmailTemplateSchema,
+  updateEmailTemplateSchema,
+  updateMsgAppearanceThemeSchema,
+  updateMsgAppearanceLayoutSchema,
+  updateMsgSignatureSchema,
 } from '../schemas/validation.schemas.js';
 
 const router: IRouter = Router();
@@ -73,11 +90,50 @@ router.post('/comment-bank', validate({ body: addCommentBankSchema }), tc.addCom
 router.get('/exams', tc.getExams);
 router.post('/exams/marks', validate({ body: saveExamMarksSchema }), tc.saveExamMarks);
 
-// Messages
+// Messages — static sub-routes MUST come before /:threadId param
 router.get('/messages', tc.getMessages);
-router.get('/messages/:threadId', tc.getThreadMessages);
 router.post('/messages', validate({ body: createTeacherThreadSchema }), tc.createThread);
 router.post('/messages/reply', validate({ body: replyMessageSchema }), tc.replyToMessage);
+
+// Messaging Settings (must be before :threadId)
+router.get('/messages/settings/defaults', tc.getMsgDefaults);
+router.patch('/messages/settings/defaults', validate({ body: updateMsgDefaultsSchema }), tc.updateMsgDefaults);
+router.get('/messages/settings/reply', tc.getMsgReplySettings);
+router.patch('/messages/settings/reply', validate({ body: updateMsgReplySettingsSchema }), tc.updateMsgReplySettings);
+router.get('/messages/settings/scheduling', tc.getMsgScheduling);
+router.patch('/messages/settings/scheduling', validate({ body: updateMsgSchedulingSchema }), tc.updateMsgScheduling);
+router.get('/messages/settings/notif-channels', tc.getMsgNotifChannels);
+router.patch('/messages/settings/notif-channels', validate({ body: updateMsgNotifChannelsSchema }), tc.updateMsgNotifChannels);
+router.get('/messages/settings/notif-rules', tc.getMsgNotifRules);
+router.put('/messages/settings/notif-rules', validate({ body: updateMsgNotifRulesSchema }), tc.updateMsgNotifRules);
+router.get('/messages/settings/quiet-hours', tc.getMsgQuietHours);
+router.patch('/messages/settings/quiet-hours', validate({ body: updateMsgQuietHoursSchema }), tc.updateMsgQuietHours);
+router.get('/messages/sla-policies', tc.getSLAPolicies);
+router.post('/messages/sla-policies', validate({ body: createSLAPolicySchema }), tc.createSLAPolicy);
+router.patch('/messages/sla-policies/:id', validate({ body: updateSLAPolicySchema }), tc.updateSLAPolicy);
+router.delete('/messages/sla-policies/:id', tc.deleteSLAPolicy);
+router.get('/messages/sla-escalation', tc.getSLAEscalationRules);
+router.post('/messages/sla-escalation', validate({ body: createSLAEscalationRuleSchema }), tc.createSLAEscalationRule);
+router.delete('/messages/sla-escalation/:id', tc.deleteSLAEscalationRule);
+router.get('/messages/legal-templates', tc.getLegalTemplates);
+router.post('/messages/legal-templates', validate({ body: createLegalTemplateSchema }), tc.createLegalTemplate);
+router.patch('/messages/legal-templates/:id', validate({ body: updateLegalTemplateSchema }), tc.updateLegalTemplate);
+router.delete('/messages/legal-templates/:id', tc.deleteLegalTemplate);
+router.get('/messages/legal-categories', tc.getLegalCategories);
+router.get('/messages/email-templates', tc.getEmailTemplates);
+router.post('/messages/email-templates', validate({ body: createEmailTemplateSchema }), tc.createEmailTemplate);
+router.patch('/messages/email-templates/:id', validate({ body: updateEmailTemplateSchema }), tc.updateEmailTemplate);
+router.delete('/messages/email-templates/:id', tc.deleteEmailTemplate);
+router.get('/messages/email-variables', tc.getEmailVariables);
+router.get('/messages/appearance/theme', tc.getMsgAppearanceTheme);
+router.patch('/messages/appearance/theme', validate({ body: updateMsgAppearanceThemeSchema }), tc.updateMsgAppearanceTheme);
+router.get('/messages/appearance/layout', tc.getMsgAppearanceLayout);
+router.patch('/messages/appearance/layout', validate({ body: updateMsgAppearanceLayoutSchema }), tc.updateMsgAppearanceLayout);
+router.get('/messages/appearance/signature', tc.getMsgSignature);
+router.patch('/messages/appearance/signature', validate({ body: updateMsgSignatureSchema }), tc.updateMsgSignature);
+
+// Thread detail (param route — MUST be after all static /messages/* routes)
+router.get('/messages/:threadId', tc.getThreadMessages);
 
 // Announcements
 router.get('/announcements', tc.getAnnouncements);

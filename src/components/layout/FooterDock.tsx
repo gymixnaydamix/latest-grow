@@ -21,6 +21,8 @@ import {
 } from 'lucide-react';
 import { overlayAppList } from '@/overlay/overlay-registry';
 import type { OverlayAppDefinition, OverlayAppId } from '@/overlay/overlay-registry';
+import { canAccessOverlayApp } from '@/overlay/overlay-access';
+import { useAuthStore } from '@/store/auth.store';
 import { useOverlayStore } from '@/store/overlay.store';
 
 interface LegacyDockApp {
@@ -158,6 +160,7 @@ function OverlayAppButton({
 }
 
 function OverlayV2FooterDock() {
+  const role = useAuthStore((s) => s.user?.role);
   const launcherOpen = useOverlayStore((s) => s.launcherOpen);
   const activeAppId = useOverlayStore((s) => s.activeAppId);
   const minimizedApps = useOverlayStore((s) => s.minimizedApps);
@@ -167,8 +170,8 @@ function OverlayV2FooterDock() {
   const restoreApp = useOverlayStore((s) => s.restoreApp);
 
   const enabledOverlayApps = useMemo(
-    () => overlayAppList.filter((app) => enabledApps[app.id]),
-    [enabledApps],
+    () => overlayAppList.filter((app) => enabledApps[app.id] && canAccessOverlayApp(app.id, role)),
+    [enabledApps, role],
   );
 
   const splitPoint = Math.floor(enabledOverlayApps.length / 2);
@@ -177,7 +180,7 @@ function OverlayV2FooterDock() {
 
   const minimizedEnabledApps = minimizedApps
     .map((id) => overlayAppList.find((app) => app.id === id))
-    .filter((app): app is OverlayAppDefinition => Boolean(app && enabledApps[app.id]));
+    .filter((app): app is OverlayAppDefinition => Boolean(app && enabledApps[app.id] && canAccessOverlayApp(app.id, role)));
 
   useEffect(() => {
     if (!launcherOpen) return;
@@ -250,7 +253,7 @@ function OverlayV2FooterDock() {
           )}
         </div>
 
-        {activeAppId && (
+        {activeAppId && canAccessOverlayApp(activeAppId, role) && (
           <p className="mt-1 text-center text-[10px] text-muted-foreground/70">
             Active: {overlayAppList.find((app) => app.id === activeAppId)?.label}
           </p>

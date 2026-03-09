@@ -268,6 +268,209 @@ model Course {
   @@index([departmentId])
 }
 
+// ---------------------------------------------------------------------------
+// Gamification
+// ---------------------------------------------------------------------------
+
+model Quiz {
+  id             String        @id @default(cuid())
+  title          String
+  status         String
+  difficulty     String        @default("MEDIUM")
+  metadata       Json          @default("{}")
+  createdById    String?
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+  sections       QuizSection[]
+  questions      Question[]
+  reports        SavedReport[]
+  creator        User?         @relation(fields: [createdById], references: [id], onDelete: SetNull)
+}
+
+model QuizSection {
+  id         String   @id @default(cuid())
+  quizId     String
+  title      String
+  orderIndex Int
+  settings   Json     @default("{}")
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  quiz       Quiz     @relation(fields: [quizId], references: [id], onDelete: Cascade)
+}
+
+model Question {
+  id          String           @id @default(cuid())
+  quizId       String?
+  prompt      String
+  type        String
+  difficulty  String           @default("MEDIUM")
+  metadata    Json             @default("{}")
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  quiz        Quiz?            @relation(fields: [quizId], references: [id], onDelete: SetNull)
+  options     QuestionOption[]
+}
+
+model QuestionOption {
+  id          String   @id @default(cuid())
+  questionId  String
+  label       String
+  isCorrect   Boolean  @default(false)
+  metadata    Json     @default("{}")
+  question    Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+}
+
+model Challenge {
+  id           String               @id @default(cuid())
+  title        String
+  status       String
+  metadata     Json                 @default("{}")
+  createdById  String?
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+  creator      User?                @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  milestones   ChallengeMilestone[]
+}
+
+model ChallengeMilestone {
+  id           String    @id @default(cuid())
+  challengeId  String
+  title        String
+  status       String
+  metadata     Json      @default("{}")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  challenge    Challenge @relation(fields: [challengeId], references: [id], onDelete: Cascade)
+}
+
+model Reward {
+  id            String             @id @default(cuid())
+  title         String
+  type          String
+  status        String
+  pointsCost    Int
+  inventory     Int               @default(0)
+  metadata      Json              @default("{}")
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  redemptions   RewardRedemption[]
+}
+
+model RewardRedemption {
+  id           String   @id @default(cuid())
+  rewardId     String
+  userId       String
+  status       String
+  metadata     Json     @default("{}")
+  redeemedAt   DateTime @default(now())
+  reward       Reward   @relation(fields: [rewardId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Badge {
+  id           String   @id @default(cuid())
+  title        String
+  rarity       String
+  status       String
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PointRule {
+  id           String   @id @default(cuid())
+  title        String
+  trigger      String
+  delta        Int
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model PointTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  source       String
+  delta        Int
+  metadata     Json     @default("{}")
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Leaderboard {
+  id           String              @id @default(cuid())
+  title        String
+  status       String
+  visibility   String
+  metadata     Json                @default("{}")
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  seasons      LeaderboardSeason[]
+}
+
+model LeaderboardSeason {
+  id             String      @id @default(cuid())
+  leaderboardId  String
+  label          String
+  status         String
+  metadata       Json        @default("{}")
+  startsAt       DateTime?
+  endsAt         DateTime?
+  leaderboard    Leaderboard @relation(fields: [leaderboardId], references: [id], onDelete: Cascade)
+}
+
+model EngagementMetric {
+  id           String   @id @default(cuid())
+  label        String
+  value        Float
+  segment      String?
+  recordedAt   DateTime @default(now())
+  metadata     Json     @default("{}")
+}
+
+model PerformanceMetric {
+  id           String   @id @default(cuid())
+  label        String
+  value        Float
+  segment      String?
+  recordedAt   DateTime @default(now())
+  metadata     Json     @default("{}")
+}
+
+model ProgressRecord {
+  id             String   @id @default(cuid())
+  subjectId      String
+  stage          String
+  completionRate Float
+  metadata       Json     @default("{}")
+  recordedAt     DateTime @default(now())
+}
+
+model SavedReport {
+  id          String   @id @default(cuid())
+  title       String
+  ownerId     String?
+  quizId      String?
+  config      Json     @default("{}")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  owner       User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+  quiz        Quiz?    @relation(fields: [quizId], references: [id], onDelete: SetNull)
+}
+
+model ScheduledExportJob {
+  id           String   @id @default(cuid())
+  label        String
+  frequency    String
+  status       String
+  destination  String
+  config       Json     @default("{}")
+  ownerId      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  owner        User?    @relation(fields: [ownerId], references: [id], onDelete: SetNull)
+}
+
 model CourseSession {
   id          String   @id @default(cuid())
   courseId    String

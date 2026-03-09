@@ -14,6 +14,7 @@ import {
   providerCreateSupportTicketSchema,
   providerUpdateTicketStatusSchema,
   providerCreateIncidentSchema,
+  providerResolveIncidentSchema,
   providerUpdateFlagSchema,
   providerSubscriptionLifecycleSchema,
   providerRetryInvoiceSchema,
@@ -47,6 +48,21 @@ import {
   providerUpdateEmailTemplateSchema,
   providerApplyThemeSchema,
   providerCustomCssSchema,
+  providerUpdateGeneralConfigSchema,
+  providerUpdateProvisioningRulesSchema,
+  providerUpdateRetentionPolicySchema,
+  providerUpdateAlertChannelsSchema,
+  providerUpdateEscalationRulesSchema,
+  providerUpdateNotifQuietHoursSchema,
+  providerCreateSLAPolicySchema,
+  providerUpdateSLAPolicySchema,
+  providerCreateSLAEscalationRuleSchema,
+  providerCreateLegalTemplateV2Schema,
+  providerUpdateLegalTemplateV2Schema,
+  providerCreateEmailTemplateV2Schema,
+  providerUpdateEmailTemplateV2Schema,
+  providerUpdateThemeSchema,
+  providerUpdateLayoutSettingsSchema,
   providerCreateAnnouncementSchema,
   providerSendMessageSchema,
   providerComposeEmailSchema,
@@ -123,6 +139,7 @@ router.patch('/support/tickets/:ticketId/status', requireProviderPermission('pro
 // Incidents + status
 router.get('/incidents', requireProviderPermission('provider.incidents.read'), providerController.listIncidents);
 router.post('/incidents', requireProviderPermission('provider.incidents.write'), validateCsrf, requireActionReason, validate({ body: providerCreateIncidentSchema }), providerController.createIncident);
+router.patch('/incidents/:incidentId', requireProviderPermission('provider.incidents.write'), validateCsrf, requireActionReason, validate({ body: providerResolveIncidentSchema }), providerController.resolveIncident);
 router.get('/status', requireProviderPermission('provider.incidents.read'), providerController.getStatus);
 
 // Releases + flags
@@ -197,6 +214,7 @@ router.get('/security/extras', requireProviderPermission('provider.security.read
 router.post('/security/ip-allowlist', requireProviderPermission('provider.security.write'), validateCsrf, requireActionReason, validate({ body: providerIpRuleSchema }), providerController.addIpRule);
 router.delete('/security/ip-allowlist/:ruleId', requireProviderPermission('provider.security.write'), validateCsrf, requireActionReason, providerController.removeIpRule);
 router.post('/security/sessions/revoke', requireProviderPermission('provider.security.write'), validateCsrf, requireActionReason, validate({ body: providerRevokeSessionsSchema }), providerController.revokeSessions);
+router.post('/security/compliance/report', requireProviderPermission('provider.compliance.read'), validateCsrf, requireActionReason, providerController.requestComplianceReport);
 
 // ── API Management ──
 router.get('/api-management', requireProviderPermission('provider.security.read'), providerController.getApiManagement);
@@ -207,6 +225,48 @@ router.post('/api-management/webhooks', requireProviderPermission('provider.secu
 router.patch('/api-management/webhooks/:webhookId', requireProviderPermission('provider.security.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateApiWebhookSchema }), providerController.updateApiWebhook);
 router.post('/api-management/webhooks/:webhookId/test', requireProviderPermission('provider.security.write'), validateCsrf, providerController.testApiWebhook);
 router.patch('/api-management/rate-limits', requireProviderPermission('provider.security.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateRateLimitSchema }), providerController.updateRateLimit);
+
+// ── Settings: Granular sub-view routes ──
+// Defaults
+router.get('/settings/general-config', requireProviderPermission('provider.home.read'), providerController.getGeneralConfig);
+router.patch('/settings/general-config', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateGeneralConfigSchema }), providerController.updateGeneralConfig);
+router.get('/settings/provisioning-rules', requireProviderPermission('provider.home.read'), providerController.getProvisioningRules);
+router.patch('/settings/provisioning-rules', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateProvisioningRulesSchema }), providerController.updateProvisioningRules);
+router.get('/settings/retention-policy', requireProviderPermission('provider.home.read'), providerController.getRetentionPolicy);
+router.patch('/settings/retention-policy', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateRetentionPolicySchema }), providerController.updateRetentionPolicy);
+// Notifications
+router.get('/settings/alert-channels', requireProviderPermission('provider.home.read'), providerController.getAlertChannels);
+router.patch('/settings/alert-channels', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateAlertChannelsSchema }), providerController.updateAlertChannels);
+router.get('/settings/escalation-rules', requireProviderPermission('provider.home.read'), providerController.getSettingsEscalationRules);
+router.patch('/settings/escalation-rules', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateEscalationRulesSchema }), providerController.updateSettingsEscalationRules);
+router.get('/settings/quiet-hours', requireProviderPermission('provider.home.read'), providerController.getNotifQuietHours);
+router.patch('/settings/quiet-hours', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateNotifQuietHoursSchema }), providerController.updateNotifQuietHours);
+// SLA Policies
+router.get('/settings/sla-policies', requireProviderPermission('provider.home.read'), providerController.getSlaPoliciesV2);
+router.post('/settings/sla-policies', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerCreateSLAPolicySchema }), providerController.createSlaPolicy);
+router.patch('/settings/sla-policies/:policyId', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateSLAPolicySchema }), providerController.updateSlaPolicy);
+router.delete('/settings/sla-policies/:policyId', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, providerController.deleteSlaPolicy);
+router.get('/settings/sla-escalation-rules', requireProviderPermission('provider.home.read'), providerController.getSlaEscalationRules);
+router.post('/settings/sla-escalation-rules', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerCreateSLAEscalationRuleSchema }), providerController.createSlaEscalationRule);
+router.delete('/settings/sla-escalation-rules/:ruleId', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, providerController.deleteSlaEscalationRule);
+// Legal Templates V2
+router.get('/settings/legal-templates-v2', requireProviderPermission('provider.home.read'), providerController.getLegalTemplatesV2);
+router.post('/settings/legal-templates-v2', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerCreateLegalTemplateV2Schema }), providerController.createLegalTemplateV2);
+router.patch('/settings/legal-templates-v2/:templateId', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateLegalTemplateV2Schema }), providerController.updateLegalTemplateV2);
+router.delete('/settings/legal-templates-v2/:templateId', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, providerController.deleteLegalTemplateV2);
+router.get('/settings/legal-categories', requireProviderPermission('provider.home.read'), providerController.getLegalCategories);
+// Email Templates V2
+router.get('/settings/email-templates-v2', requireProviderPermission('provider.home.read'), providerController.getEmailTemplatesV2);
+router.post('/settings/email-templates-v2', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerCreateEmailTemplateV2Schema }), providerController.createEmailTemplateV2);
+router.patch('/settings/email-templates-v2/:templateId', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateEmailTemplateV2Schema }), providerController.updateEmailTemplateV2);
+router.delete('/settings/email-templates-v2/:templateId', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, providerController.deleteEmailTemplateV2);
+router.get('/settings/email-variables', requireProviderPermission('provider.home.read'), providerController.getEmailVariables);
+// Appearance
+router.get('/settings/appearance-theme', requireProviderPermission('provider.home.read'), providerController.getAppearanceTheme);
+router.patch('/settings/appearance-theme', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateThemeSchema }), providerController.updateAppearanceTheme);
+router.get('/settings/appearance-layout', requireProviderPermission('provider.home.read'), providerController.getAppearanceLayout);
+router.patch('/settings/appearance-layout', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateLayoutSettingsSchema }), providerController.updateAppearanceLayout);
+router.get('/settings/custom-css-v2', requireProviderPermission('provider.home.read'), providerController.getCustomCss);
 
 // ── Settings mutations ──
 router.patch('/settings', requireProviderPermission('provider.home.write'), validateCsrf, requireActionReason, validate({ body: providerUpdateSettingsSchema }), providerController.updateSettings);

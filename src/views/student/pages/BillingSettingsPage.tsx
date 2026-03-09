@@ -73,13 +73,14 @@ export default function BillingSettingsPage() {
   const { data: apiFees } = useStudentFees();
   const payInvoiceMut = usePayInvoice();
   const downloadDocMut = useDownloadDocument();
-  void payInvoiceMut;
   const feesData = (apiFees as any) ?? {};
   const paymentMethods = (feesData?.paymentMethods as any[])?.length > 0 ? (feesData.paymentMethods as any[]) : FALLBACK_PAYMENT_METHODS;
   const invoices = (feesData?.invoices as any[])?.length > 0 ? (feesData.invoices as any[]) : FALLBACK_INVOICES;
   const transactions = (feesData?.transactions as any[])?.length > 0 ? (feesData.transactions as any[]) : FALLBACK_TRANSACTIONS;
   const spendingMonths = (feesData?.spendingMonths as any[])?.length > 0 ? (feesData.spendingMonths as any[]) : FALLBACK_SPENDING_MONTHS;
   const maxSpend = Math.max(...spendingMonths.map((m: any) => m.amount));
+  const totalPaidYTD = invoices.filter((inv: any) => inv.status === 'paid').reduce((s: number, inv: any) => s + parseFloat(String(inv.amount).replace(/[^\d.]/g, '') || '0'), 0);
+  const creditsAvailable = (feesData?.credits as number) ?? 10;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -88,9 +89,9 @@ export default function BillingSettingsPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Monthly Cost" value={PLAN.price} prefix="$" icon={<DollarSign className="h-5 w-5" />} accentColor="#10b981" />
-        <StatCard label="Next Payment" value={1} suffix=" Jun" icon={<Calendar className="h-5 w-5" />} />
-        <StatCard label="Total Paid (YTD)" value={147} prefix="$" icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard label="Credits Available" value={10} prefix="$" icon={<Wallet className="h-5 w-5" />} accentColor="#f59e0b" />
+        <StatCard label="Next Payment" value={(feesData?.nextPaymentDay as number) ?? PLAN.price} suffix={` ${(feesData?.nextPaymentMonth as string) ?? PLAN.cycle}`} icon={<Calendar className="h-5 w-5" />} />
+        <StatCard label="Total Paid (YTD)" value={totalPaidYTD || 147} prefix="$" icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard label="Credits Available" value={creditsAvailable} prefix="$" icon={<Wallet className="h-5 w-5" />} accentColor="#f59e0b" />
       </div>
 
       {/* Current Plan */}
@@ -216,6 +217,9 @@ export default function BillingSettingsPage() {
                       <div className="flex items-center gap-2">
                         <span className="text-xs font-semibold text-white/60">{inv.amount}</span>
                         <Badge className="text-[7px] bg-emerald-500/15 text-emerald-400 border-0 capitalize">{inv.status}</Badge>
+                        {inv.status !== 'paid' && (
+                          <Button size="sm" className="text-[10px] h-6 bg-emerald-600 hover:bg-emerald-500 text-white" onClick={(e) => { e.stopPropagation(); payInvoiceMut.mutate({ invoiceId: inv.id } as any, { onSuccess: () => notifySuccess('Payment', 'Invoice paid successfully'), onError: () => notifyError('Payment', 'Payment failed. Please try again.') }); }}>Pay</Button>
+                        )}
                         <Button size="icon" className="size-7 bg-transparent text-white/20 hover:text-white/50 hover:bg-white/5" onClick={(e) => { e.stopPropagation(); downloadDocMut.mutate({ documentId: inv.id } as any, { onSuccess: () => notifySuccess('Invoice', 'Invoice downloaded'), onError: () => notifyError('Invoice', 'Download failed') }); }}>
                           <Download className="size-3" />
                         </Button>

@@ -17,18 +17,8 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { useParentV2ChildDetail, useParentV2Children } from '@/hooks/api/use-parent-v2';
 import {
-  childDisplayName as _childDisplayName,
-  filterByChild as _filterByChild,
-  filterChildren,
   formatCurrency,
   formatDateLabel,
-  parentAssignmentsDemo as FALLBACK_ASSIGNMENTS,
-  parentAttendanceDemo as FALLBACK_ATTENDANCE,
-  parentChildrenDemo as FALLBACK_CHILDREN,
-  parentExamsDemo as FALLBACK_EXAMS,
-  parentGradesDemo as FALLBACK_GRADES,
-  parentInvoicesDemo as FALLBACK_INVOICES,
-  parentTransportDemo as FALLBACK_TRANSPORT,
 } from './parent-v2-demo-data';
 import type { ParentChildDemo, ParentInvoiceDemo, ParentTransportDemo, ParentExamDemo, ParentAssignmentDemo, ParentGradeDemo, ParentAttendanceDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
@@ -36,22 +26,22 @@ import type { ParentSectionProps } from './shared';
 
 export function MyChildrenSection({ scope, childId }: ParentSectionProps) {
   const { data: childrenRaw } = useParentV2Children({ scope, childId });
-  const children: ParentChildDemo[] = (childrenRaw as ParentChildDemo[] | undefined) ?? filterChildren(FALLBACK_CHILDREN, childId, scope);
+  const children: ParentChildDemo[] = (childrenRaw as ParentChildDemo[] | undefined) ?? [];
 
-  const [activeChildId, setActiveChildId] = useState<string>(childId ?? children[0]?.id ?? FALLBACK_CHILDREN[0].id);
+  const [activeChildId, setActiveChildId] = useState<string>(childId ?? children[0]?.id ?? '');
   const { data: childDetail } = useParentV2ChildDetail(activeChildId);
 
   const activeChild = useMemo(
-    () => children.find((entry) => entry.id === activeChildId) ?? FALLBACK_CHILDREN.find((entry) => entry.id === activeChildId),
+    () => children.find((entry) => entry.id === activeChildId),
     [children, activeChildId],
   );
 
-  const invoiceSummary = ((childDetail as Record<string, unknown> | undefined)?.invoices as ParentInvoiceDemo[] | undefined) ?? FALLBACK_INVOICES.filter((entry) => entry.childId === activeChildId);
-  const transportSummary = ((childDetail as Record<string, unknown> | undefined)?.transport as ParentTransportDemo | undefined) ?? FALLBACK_TRANSPORT.find((entry) => entry.childId === activeChildId);
-  const childExams = (((childDetail as Record<string, unknown> | undefined)?.exams as ParentExamDemo[] | undefined) ?? FALLBACK_EXAMS).filter((e) => e.childId === activeChildId && e.status === 'UPCOMING');
-  const childAssignments = (((childDetail as Record<string, unknown> | undefined)?.assignments as ParentAssignmentDemo[] | undefined) ?? FALLBACK_ASSIGNMENTS).filter((a) => a.childId === activeChildId);
-  const childGrades = (((childDetail as Record<string, unknown> | undefined)?.grades as ParentGradeDemo[] | undefined) ?? FALLBACK_GRADES).filter((g) => g.childId === activeChildId);
-  const childAttendance = (((childDetail as Record<string, unknown> | undefined)?.attendance as ParentAttendanceDemo[] | undefined) ?? FALLBACK_ATTENDANCE).filter((a) => a.childId === activeChildId);
+  const invoiceSummary = ((childDetail as Record<string, unknown> | undefined)?.invoices as ParentInvoiceDemo[] | undefined) ?? [];
+  const transportSummary = (childDetail as Record<string, unknown> | undefined)?.transport as ParentTransportDemo | undefined;
+  const childExams = (((childDetail as Record<string, unknown> | undefined)?.exams as ParentExamDemo[] | undefined) ?? []).filter((e) => e.childId === activeChildId && e.status === 'UPCOMING');
+  const childAssignments = (((childDetail as Record<string, unknown> | undefined)?.assignments as ParentAssignmentDemo[] | undefined) ?? []).filter((a) => a.childId === activeChildId);
+  const childGrades = (((childDetail as Record<string, unknown> | undefined)?.grades as ParentGradeDemo[] | undefined) ?? []).filter((g) => g.childId === activeChildId);
+  const childAttendance = (((childDetail as Record<string, unknown> | undefined)?.attendance as ParentAttendanceDemo[] | undefined) ?? []).filter((a) => a.childId === activeChildId);
   const missingAssignments = childAssignments.filter((a) => a.status === 'MISSING' || a.status === 'LATE');
   const recentAbsences = childAttendance.filter((a) => a.status === 'ABSENT');
   const totalOwed = invoiceSummary.reduce((s, i) => s + Math.max(i.totalAmount - i.amountPaid, 0), 0);

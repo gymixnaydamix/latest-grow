@@ -60,7 +60,7 @@ export default function InboxPage() {
         <StatCard label="Total Messages" value={threads.length} icon={<Mail className="h-5 w-5" />} />
         <StatCard label="Unread" value={unreadCount} icon={<Inbox className="h-5 w-5" />} accentColor="text-amber-400" />
         <StatCard label="Starred" value={threads.filter((t) => t.isStarred).length} icon={<Star className="h-5 w-5" />} accentColor="text-yellow-400" />
-        <StatCard label="Response Rate" value={94} suffix="%" icon={<CheckCircle2 className="h-5 w-5" />} trend="up" />
+        <StatCard label="Response Rate" value={threads.length > 0 ? Math.round((threads.filter((t) => t.isRead).length / threads.length) * 100) : 94} suffix="%" icon={<CheckCircle2 className="h-5 w-5" />} trend="up" />
       </div>
 
       {/* Toolbar */}
@@ -89,12 +89,12 @@ export default function InboxPage() {
       </div>
 
       {/* Thread list + detail */}
-      <div className="flex gap-4 min-h-[500px]">
+      <div className="flex gap-4 min-h-125">
         {/* Thread list */}
         <div className="w-full max-w-sm shrink-0 space-y-1 overflow-y-auto" data-animate>
           {threads.length === 0 ? (
             <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
-              <CardContent className="flex min-h-[300px] items-center justify-center">
+              <CardContent className="flex min-h-75 items-center justify-center">
                 <div className="text-center text-white/30">
                   <Inbox className="mx-auto mb-2 size-8" />
                   <p className="text-sm">Inbox is empty</p>
@@ -154,7 +154,7 @@ export default function InboxPage() {
                 </div>
               </div>
               <Separator className="bg-white/6" />
-              <div className="space-y-3 max-h-[350px] overflow-y-auto">
+              <div className="space-y-3 max-h-87.5 overflow-y-auto">
                 {selectedThread.messages?.map((msg) => (
                   <div key={msg.id} className="rounded-xl border border-white/6 bg-white/2 p-3">
                     <div className="flex items-center justify-between mb-1">
@@ -177,7 +177,7 @@ export default function InboxPage() {
               </div>
             </CardContent>
           ) : (
-            <CardContent className="flex min-h-[500px] items-center justify-center">
+            <CardContent className="flex min-h-125 items-center justify-center">
               <div className="text-center text-white/25">
                 <MailOpen className="mx-auto mb-2 size-10" />
                 <p className="text-sm">Select a message to read</p>

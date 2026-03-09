@@ -1397,16 +1397,38 @@ export const providerConsoleService = {
 
   /* ── Incidents & maintenance windows ───────────────────── */
 
+  resolveIncident(input: { incidentId: string; status: 'MONITORING' | 'RESOLVED'; note?: string; actorEmail: string; reason: string }): Incident {
+    const incident = state.incidents.find((entry) => entry.id === input.incidentId);
+    if (!incident) throw new Error('Incident not found.');
+    const reason = requireReason(input.reason);
+    const before = { status: incident.status };
+    incident.status = input.status;
+    incident.updatedAt = new Date().toISOString();
+    if (input.status === 'RESOLVED') {
+      for (const tenantId of incident.tenantIds) {
+        const tenant = state.tenants.find((t) => t.id === tenantId);
+        if (tenant && tenant.incidentsOpen > 0) {
+          tenant.incidentsOpen -= 1;
+          if (tenant.incidentsOpen === 0) tenant.health = 'HEALTHY';
+        }
+      }
+    }
+    logAudit('incident.resolve', 'Incident', incident.id, null, input.actorEmail, reason, before, { status: incident.status, note: input.note });
+    refreshAutomations();
+    return incident;
+  },
+
   listMaintenanceWindows(): Array<Record<string, unknown>> {
     return [
-      { id: 'mw_1', title: 'Database maintenance', start: iso(7 * DAY_MS), end: iso(7 * DAY_MS + 4 * 3600_000), status: 'SCHEDULED' },
-      { id: 'mw_2', title: 'Network upgrade', start: iso(14 * DAY_MS), end: iso(14 * DAY_MS + 2 * 3600_000), status: 'SCHEDULED' },
+      { id: 'mw_1', title: 'Database maintenance', startAt: iso(7 * DAY_MS), endAt: iso(7 * DAY_MS + 4 * 3600_000), status: 'SCHEDULED', affectedServices: ['database', 'api'], notified: true },
+      { id: 'mw_2', title: 'Network upgrade', startAt: iso(14 * DAY_MS), endAt: iso(14 * DAY_MS + 2 * 3600_000), status: 'SCHEDULED', affectedServices: ['websocket', 'api'], notified: false },
+      { id: 'mw_3', title: 'SSL certificate rotation', startAt: iso(-3 * DAY_MS), endAt: iso(-3 * DAY_MS + 1 * 3600_000), status: 'COMPLETED', affectedServices: ['auth', 'api'], notified: true },
     ];
   },
 
-  createMaintenanceWindow(input: { title: string; componentId?: string; startsAt: string; endsAt: string; scope?: string; actorEmail: string; reason: string }): Record<string, unknown> {
+  createMaintenanceWindow(input: { title: string; startAt: string; endAt: string; affectedServices: string[]; notify: boolean; actorEmail: string; reason: string }): Record<string, unknown> {
     const reason = requireReason(input.reason);
-    const window = { id: `mw_${Date.now()}`, title: input.title, componentId: input.componentId ?? null, startsAt: input.startsAt, endsAt: input.endsAt, scope: input.scope ?? 'PUBLIC', status: 'SCHEDULED', createdAt: new Date().toISOString() };
+    const window = { id: `mw_${Date.now()}`, title: input.title, startAt: input.startAt, endAt: input.endAt, affectedServices: input.affectedServices, notified: input.notify, status: 'SCHEDULED', createdAt: new Date().toISOString() };
     logAudit('maintenance.window.create', 'MaintenanceWindow', window.id, null, input.actorEmail, reason, null, window);
     return window;
   },
@@ -1452,13 +1474,25 @@ export const providerConsoleService = {
 
   getSecurityExtras(): Record<string, unknown> {
     return {
-      ipRules: [
-        { id: 'ip_1', cidr: '10.0.0.0/8', type: 'ALLOW', description: 'Internal network' },
-        { id: 'ip_2', cidr: '192.168.1.0/24', type: 'ALLOW', description: 'Office VPN' },
+      complianceItems: [
+        { id: 'comp_1', framework: 'SOC 2 Type II', status: 'COMPLIANT', lastAudit: iso(-30 * DAY_MS).slice(0, 10), nextAudit: iso(335 * DAY_MS).slice(0, 10), coverage: 96 },
+        { id: 'comp_2', framework: 'GDPR', status: 'COMPLIANT', lastAudit: iso(-60 * DAY_MS).slice(0, 10), nextAudit: iso(305 * DAY_MS).slice(0, 10), coverage: 91 },
+        { id: 'comp_3', framework: 'FERPA', status: 'IN_PROGRESS', lastAudit: iso(-90 * DAY_MS).slice(0, 10), nextAudit: iso(275 * DAY_MS).slice(0, 10), coverage: 78 },
+        { id: 'comp_4', framework: 'ISO 27001', status: 'NOT_STARTED', lastAudit: '—', nextAudit: iso(180 * DAY_MS).slice(0, 10), coverage: 22 },
+        { id: 'comp_5', framework: 'COPPA', status: 'COMPLIANT', lastAudit: iso(-45 * DAY_MS).slice(0, 10), nextAudit: iso(320 * DAY_MS).slice(0, 10), coverage: 100 },
       ],
-      activeSessions: 42,
-      mfaAdoption: 87.5,
-      lastSecurityScan: iso(-2 * DAY_MS),
+      ipAllowlist: [
+        { id: 'ip_1', cidr: '10.0.0.0/8', label: 'Internal network', createdAt: iso(-120 * DAY_MS), lastSeen: iso(-1 * HOUR_MS), hits: 48_320 },
+        { id: 'ip_2', cidr: '192.168.1.0/24', label: 'Office VPN', createdAt: iso(-90 * DAY_MS), lastSeen: iso(-3 * HOUR_MS), hits: 12_450 },
+        { id: 'ip_3', cidr: '172.16.0.0/12', label: 'Staging environment', createdAt: iso(-60 * DAY_MS), lastSeen: iso(-12 * HOUR_MS), hits: 3_210 },
+      ],
+      sessions: [
+        { id: 'sess_1', user: 'admin@growyourneed.dev', role: 'super_admin', ip: '10.0.1.42', device: 'Chrome 122 / macOS', startedAt: iso(-2 * HOUR_MS), lastActive: iso(-5 * 60_000), status: 'ACTIVE' },
+        { id: 'sess_2', user: 'ops@growyourneed.dev', role: 'operations', ip: '10.0.1.88', device: 'Firefox 124 / Ubuntu', startedAt: iso(-4 * HOUR_MS), lastActive: iso(-30 * 60_000), status: 'ACTIVE' },
+        { id: 'sess_3', user: 'dev@growyourneed.dev', role: 'developer', ip: '192.168.1.15', device: 'Chrome 122 / Windows', startedAt: iso(-6 * HOUR_MS), lastActive: iso(-2 * HOUR_MS), status: 'ACTIVE' },
+        { id: 'sess_4', user: 'support@growyourneed.dev', role: 'support_agent', ip: '172.16.0.5', device: 'Safari 17 / iOS', startedAt: iso(-8 * HOUR_MS), lastActive: iso(-4 * HOUR_MS), status: 'IDLE' },
+        { id: 'sess_5', user: 'finance@growyourneed.dev', role: 'finance', ip: '10.0.2.33', device: 'Edge 122 / Windows', startedAt: iso(-1 * DAY_MS), lastActive: iso(-8 * HOUR_MS), status: 'IDLE' },
+      ],
     };
   },
 
@@ -1466,15 +1500,31 @@ export const providerConsoleService = {
 
   getApiManagement(): Record<string, unknown> {
     return {
-      keys: [
-        { id: 'key_1', name: 'Production Key', prefix: 'gyn_prod_', status: 'ACTIVE', createdAt: iso(-90 * DAY_MS), lastUsedAt: iso(-1 * DAY_MS) },
-        { id: 'key_2', name: 'Staging Key', prefix: 'gyn_stg_', status: 'ACTIVE', createdAt: iso(-60 * DAY_MS), lastUsedAt: iso(-3 * DAY_MS) },
+      apiKeys: [
+        { id: 'key_1', name: 'Production Key', prefix: 'gyn_prod_', status: 'ACTIVE', createdAt: iso(-90 * DAY_MS), lastUsed: iso(-1 * DAY_MS), scopes: ['read:tenants', 'write:tenants', 'read:billing'] },
+        { id: 'key_2', name: 'Staging Key', prefix: 'gyn_stg_', status: 'ACTIVE', createdAt: iso(-60 * DAY_MS), lastUsed: iso(-3 * DAY_MS), scopes: ['read:tenants', 'read:students'] },
+        { id: 'key_3', name: 'CI/CD Pipeline', prefix: 'gyn_ci_', status: 'ACTIVE', createdAt: iso(-30 * DAY_MS), lastUsed: iso(-6 * HOUR_MS), scopes: ['deploy:releases'] },
+        { id: 'key_4', name: 'Old Integration', prefix: 'gyn_old_', status: 'REVOKED', createdAt: iso(-180 * DAY_MS), lastUsed: iso(-120 * DAY_MS), scopes: ['read:tenants'] },
       ],
       webhooks: [
-        { id: 'wh_1', url: 'https://hooks.example.com/events', events: ['tenant.created', 'invoice.paid'], status: 'ACTIVE' },
+        { id: 'wh_1', url: 'https://hooks.example.com/events', events: ['tenant.created', 'invoice.paid'], status: 'ACTIVE', successRate: 99.2, lastTriggered: iso(-2 * HOUR_MS) },
+        { id: 'wh_2', url: 'https://monitoring.example.com/incidents', events: ['incident.created', 'incident.resolved'], status: 'ACTIVE', successRate: 100, lastTriggered: iso(-1 * DAY_MS) },
       ],
-      rateLimits: { requestsPerMinute: 600, burstLimit: 100 },
-      usage: { last24h: 12_450, last7d: 78_200, last30d: 312_000 },
+      rateLimits: [
+        { endpoint: '/api/v1/tenants', method: 'GET', limit: '600/min', current: 142, burst: 100, status: 'OK' },
+        { endpoint: '/api/v1/students', method: 'GET', limit: '300/min', current: 88, burst: 50, status: 'OK' },
+        { endpoint: '/api/v1/billing', method: 'POST', limit: '60/min', current: 12, burst: 20, status: 'OK' },
+        { endpoint: '/api/v1/webhooks', method: 'POST', limit: '120/min', current: 115, burst: 30, status: 'WARNING' },
+      ],
+      dailyStats: [
+        { date: iso(-6 * DAY_MS).slice(0, 10), requests: 45_200, errors: 120, latencyP50: 42, latencyP99: 380 },
+        { date: iso(-5 * DAY_MS).slice(0, 10), requests: 48_100, errors: 95, latencyP50: 38, latencyP99: 350 },
+        { date: iso(-4 * DAY_MS).slice(0, 10), requests: 51_300, errors: 210, latencyP50: 55, latencyP99: 520 },
+        { date: iso(-3 * DAY_MS).slice(0, 10), requests: 47_800, errors: 88, latencyP50: 40, latencyP99: 360 },
+        { date: iso(-2 * DAY_MS).slice(0, 10), requests: 52_400, errors: 104, latencyP50: 41, latencyP99: 370 },
+        { date: iso(-1 * DAY_MS).slice(0, 10), requests: 49_600, errors: 76, latencyP50: 36, latencyP99: 320 },
+        { date: iso(0).slice(0, 10), requests: 12_450, errors: 18, latencyP50: 34, latencyP99: 290 },
+      ],
     };
   },
 
@@ -1603,16 +1653,22 @@ export const providerConsoleService = {
   listBackups(): Record<string, unknown> {
     return {
       schedules: [
-        { id: 'bs_1', name: 'Nightly Full', frequency: 'DAILY', time: '02:00 UTC', retention: '30d', status: 'ACTIVE' },
-        { id: 'bs_2', name: 'Weekly Incremental', frequency: 'WEEKLY', time: 'Sun 04:00 UTC', retention: '90d', status: 'ACTIVE' },
+        { id: 'bs_1', name: 'Nightly Full Backup', frequency: 'DAILY', retention: '30 days', lastRun: iso(-6 * HOUR_MS), status: 'SUCCESS', size: '2.4', tenants: 12 },
+        { id: 'bs_2', name: 'Weekly Incremental', frequency: 'WEEKLY', retention: '90 days', lastRun: iso(-3 * DAY_MS), status: 'SUCCESS', size: '0.8', tenants: 12 },
+        { id: 'bs_3', name: 'Hourly Transaction Logs', frequency: 'HOURLY', retention: '7 days', lastRun: iso(-HOUR_MS), status: 'SUCCESS', size: '0.1', tenants: 12 },
+        { id: 'bs_4', name: 'Monthly Archive', frequency: 'MONTHLY', retention: '365 days', lastRun: iso(-15 * DAY_MS), status: 'WARNING', size: '8.6', tenants: 12 },
       ],
       snapshots: [
-        { id: 'snap_1', type: 'FULL', size: '2.4 GB', createdAt: iso(-DAY_MS), status: 'AVAILABLE' },
-        { id: 'snap_2', type: 'INCREMENTAL', size: '340 MB', createdAt: iso(-2 * DAY_MS), status: 'AVAILABLE' },
+        { id: 'snap_1', timestamp: iso(-6 * HOUR_MS), type: 'FULL', size: '2.4 GB', status: 'AVAILABLE', verified: true },
+        { id: 'snap_2', timestamp: iso(-1 * DAY_MS), type: 'FULL', size: '2.3 GB', status: 'AVAILABLE', verified: true },
+        { id: 'snap_3', timestamp: iso(-2 * DAY_MS), type: 'INCREMENTAL', size: '340 MB', status: 'AVAILABLE', verified: true },
+        { id: 'snap_4', timestamp: iso(-3 * DAY_MS), type: 'FULL', size: '2.2 GB', status: 'AVAILABLE', verified: false },
+        { id: 'snap_5', timestamp: iso(-7 * DAY_MS), type: 'FULL', size: '2.1 GB', status: 'EXPIRED', verified: true },
       ],
       runbooks: [
-        { id: 'rb_1', name: 'Database Failover', steps: 5, lastTest: iso(-14 * DAY_MS), status: 'TESTED' },
-        { id: 'rb_2', name: 'Full DR Recovery', steps: 12, lastTest: iso(-30 * DAY_MS), status: 'TESTED' },
+        { id: 'rb_1', name: 'Database Failover', description: 'Switch to hot standby PostgreSQL replica, verify data integrity, re-route connections.', lastTested: iso(-14 * DAY_MS), severity: 'CRITICAL', steps: 5, estimatedTime: '15 min' },
+        { id: 'rb_2', name: 'Full Disaster Recovery', description: 'Complete environment rebuild from latest snapshot including DNS cutover.', lastTested: iso(-30 * DAY_MS), severity: 'CRITICAL', steps: 12, estimatedTime: '2 hours' },
+        { id: 'rb_3', name: 'Storage Failover', description: 'Switch object storage to backup region, sync missing blobs, update CDN origins.', lastTested: iso(-7 * DAY_MS), severity: 'HIGH', steps: 4, estimatedTime: '20 min' },
       ],
     };
   },
@@ -1622,11 +1678,24 @@ export const providerConsoleService = {
   getDataOpsExtras(): Record<string, unknown> {
     return {
       imports: [
-        { id: 'imp_1', source: 'CSV Upload', records: 1200, status: 'COMPLETED', completedAt: iso(-5 * DAY_MS) },
+        { id: 'imp_1', source: 'CSV Upload — Student Roster', records: 1200, status: 'COMPLETED', startedAt: iso(-5 * DAY_MS), completedAt: iso(-5 * DAY_MS + 12 * 60_000) },
+        { id: 'imp_2', source: 'Migration — Legacy SIS', records: 8400, status: 'COMPLETED', startedAt: iso(-12 * DAY_MS), completedAt: iso(-12 * DAY_MS + 45 * 60_000) },
+        { id: 'imp_3', source: 'CSV Upload — Guardian Contacts', records: 640, status: 'FAILED', startedAt: iso(-2 * DAY_MS), completedAt: null },
       ],
       repairJobs: [
-        { id: 'rj_1', type: 'ORPHAN_CLEANUP', affectedRecords: 34, status: 'COMPLETED', completedAt: iso(-3 * DAY_MS) },
-        { id: 'rj_2', type: 'INDEX_REBUILD', affectedRecords: 0, status: 'PENDING', completedAt: null },
+        { id: 'rj_1', name: 'Orphan Guardian Cleanup', target: 'guardian_links', status: 'COMPLETED', progress: 100, startedAt: iso(-3 * DAY_MS), completedAt: iso(-3 * DAY_MS + 8 * 60_000), recordsFixed: 34 },
+        { id: 'rj_2', name: 'Index Rebuild — Enrollments', target: 'enrollment_index', status: 'PENDING', progress: 0, startedAt: iso(-1 * DAY_MS), completedAt: null, recordsFixed: 0 },
+        { id: 'rj_3', name: 'Duplicate Student Merge', target: 'student_records', status: 'IN_PROGRESS', progress: 62, startedAt: iso(-2 * HOUR_MS), completedAt: null, recordsFixed: 18 },
+        { id: 'rj_4', name: 'Missing Relation Linker', target: 'course_teacher_links', status: 'COMPLETED', progress: 100, startedAt: iso(-7 * DAY_MS), completedAt: iso(-7 * DAY_MS + 3 * 60_000), recordsFixed: 7 },
+      ],
+      compatibilityChecks: [
+        { id: 'cc_1', component: 'PostgreSQL', current: '16.2', latest: '16.4', compatible: true, severity: 'LOW', checkedAt: iso(-1 * HOUR_MS) },
+        { id: 'cc_2', component: 'Redis', current: '7.2.4', latest: '7.2.4', compatible: true, severity: 'NONE', checkedAt: iso(-1 * HOUR_MS) },
+        { id: 'cc_3', component: 'Node.js Runtime', current: '20.11.0', latest: '22.0.0', compatible: true, severity: 'MEDIUM', checkedAt: iso(-1 * HOUR_MS) },
+        { id: 'cc_4', component: 'Prisma ORM', current: '6.3.0', latest: '6.5.1', compatible: true, severity: 'LOW', checkedAt: iso(-1 * HOUR_MS) },
+        { id: 'cc_5', component: 'Tenant Schema', current: 'v42', latest: 'v42', compatible: true, severity: 'NONE', checkedAt: iso(-30 * 60_000) },
+        { id: 'cc_6', component: 'Storage Driver', current: '3.1.0', latest: '3.3.0', compatible: false, severity: 'HIGH', checkedAt: iso(-1 * HOUR_MS) },
+        { id: 'cc_7', component: 'Auth Provider SDK', current: '4.8.2', latest: '5.0.0', compatible: false, severity: 'CRITICAL', checkedAt: iso(-2 * HOUR_MS) },
       ],
     };
   },

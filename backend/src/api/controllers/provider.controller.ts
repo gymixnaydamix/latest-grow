@@ -18,6 +18,130 @@ function parseCsv(value: unknown): string[] {
     .filter(Boolean);
 }
 
+/* ═══════════════════════════════════════════════════════════════════
+ *  SETTINGS — In-memory seed data stores for granular sub-views
+ * ═══════════════════════════════════════════════════════════════════ */
+const _providerSettingsData = {
+  // ── Defaults: General Config ──
+  generalConfig: {
+    timezone: 'America/New_York',
+    locale: 'en-US',
+    currency: 'USD',
+    dateFormat: 'MM/DD/YYYY',
+    schoolYearStart: '09-01',
+  },
+  // ── Defaults: Provisioning Rules ──
+  provisioningRules: {
+    autoApprove: false,
+    requireEmailVerification: true,
+    defaultPlan: 'standard',
+    trialDays: 14,
+    maxTenantsPerOwner: 5,
+    requirePaymentMethod: true,
+  },
+  // ── Defaults: Retention Policy ──
+  retentionPolicy: {
+    dataRetentionDays: 365,
+    backupRetentionDays: 90,
+    auditLogRetentionDays: 730,
+    deleteOnTenantClose: false,
+    anonymizeAfterDays: 180,
+  },
+  // ── Notifications: Alert Channels ──
+  alertChannels: {
+    email: true,
+    slack: false,
+    webhook: false,
+    sms: false,
+    inApp: true,
+  },
+  // ── Notifications: Escalation Rules ──
+  escalationRules: [
+    { id: randomUUID(), triggerEvent: 'new_incident', escalateTo: 'ops_lead', delayMinutes: 15, channel: 'email', enabled: true },
+    { id: randomUUID(), triggerEvent: 'sla_breach', escalateTo: 'manager', delayMinutes: 5, channel: 'slack', enabled: true },
+    { id: randomUUID(), triggerEvent: 'payment_failed', escalateTo: 'finance', delayMinutes: 30, channel: 'email', enabled: false },
+  ] as Record<string, unknown>[],
+  // ── Notifications: Quiet Hours ──
+  notifQuietHours: {
+    enabled: true,
+    startTime: '22:00',
+    endTime: '07:00',
+    weekendsOnly: false,
+    allowCritical: true,
+  },
+  // ── SLA Policies ──
+  slaPolicies: [
+    { id: randomUUID(), name: 'Critical SLA', priority: 'critical', firstResponseMinutes: 15, resolutionMinutes: 120, escalationMinutes: 30, category: 'infrastructure', isActive: true, createdAt: '2024-11-01T10:00:00Z' },
+    { id: randomUUID(), name: 'Standard SLA', priority: 'medium', firstResponseMinutes: 60, resolutionMinutes: 480, escalationMinutes: 120, category: 'general', isActive: true, createdAt: '2024-11-01T10:00:00Z' },
+    { id: randomUUID(), name: 'Low Priority SLA', priority: 'low', firstResponseMinutes: 240, resolutionMinutes: 1440, escalationMinutes: 480, category: 'general', isActive: false, createdAt: '2024-11-01T10:00:00Z' },
+  ] as Record<string, unknown>[],
+  slaEscalationRules: [
+    { id: randomUUID(), policyId: 'auto', triggerMinutes: 30, escalateTo: 'ops_lead', notifyVia: 'email', createdAt: '2024-11-01T10:00:00Z' },
+    { id: randomUUID(), policyId: 'auto', triggerMinutes: 60, escalateTo: 'manager', notifyVia: 'slack', createdAt: '2024-11-01T10:00:00Z' },
+  ] as Record<string, unknown>[],
+  // ── Legal Templates V2 ──
+  legalTemplatesV2: [
+    { id: randomUUID(), name: 'Terms of Service', category: 'terms_of_service', subject: 'Platform Terms of Service', body: '<h1>Terms of Service</h1><p>These terms govern your use of the platform…</p>', requiredFields: ['tenant_name', 'effective_date'], isActive: true, version: '2.1', createdAt: '2024-10-15T08:00:00Z', updatedAt: '2024-11-05T09:30:00Z' },
+    { id: randomUUID(), name: 'Privacy Policy', category: 'privacy_policy', subject: 'Privacy Policy', body: '<h1>Privacy Policy</h1><p>We take your privacy seriously…</p>', requiredFields: ['data_officer_email'], isActive: true, version: '1.3', createdAt: '2024-10-15T08:00:00Z', updatedAt: '2024-10-28T14:00:00Z' },
+    { id: randomUUID(), name: 'Data Processing Agreement', category: 'data_processing', subject: 'DPA', body: '<h1>DPA</h1><p>This agreement outlines data processing obligations…</p>', requiredFields: ['processor_name', 'controller_name'], isActive: true, version: '1.0', createdAt: '2024-10-20T08:00:00Z', updatedAt: '2024-10-20T08:00:00Z' },
+  ] as Record<string, unknown>[],
+  legalCategories: [
+    { id: 'terms_of_service', name: 'Terms of Service', count: 1 },
+    { id: 'privacy_policy', name: 'Privacy Policy', count: 1 },
+    { id: 'data_processing', name: 'Data Processing', count: 1 },
+    { id: 'consent_form', name: 'Consent Form', count: 0 },
+    { id: 'liability_waiver', name: 'Liability Waiver', count: 0 },
+    { id: 'enrollment_agreement', name: 'Enrollment Agreement', count: 0 },
+    { id: 'other', name: 'Other', count: 0 },
+  ],
+  // ── Email Templates V2 ──
+  emailTemplatesV2: [
+    { id: randomUUID(), name: 'Welcome Email', category: 'onboarding', subject: 'Welcome to {{platform_name}}!', body: '<h1>Welcome, {{user_name}}!</h1><p>Your account has been created successfully.</p>', variables: ['platform_name', 'user_name', 'login_url'], isActive: true, createdAt: '2024-10-01T08:00:00Z', updatedAt: '2024-11-10T09:00:00Z' },
+    { id: randomUUID(), name: 'Password Reset', category: 'authentication', subject: 'Reset your password', body: '<p>Click <a href="{{reset_url}}">here</a> to reset your password.</p>', variables: ['reset_url', 'user_name', 'expiry_hours'], isActive: true, createdAt: '2024-10-01T08:00:00Z', updatedAt: '2024-10-01T08:00:00Z' },
+    { id: randomUUID(), name: 'Invoice Receipt', category: 'billing', subject: 'Invoice #{{invoice_number}}', body: '<p>Thank you for your payment of {{amount}}.</p>', variables: ['invoice_number', 'amount', 'tenant_name', 'date'], isActive: true, createdAt: '2024-10-05T08:00:00Z', updatedAt: '2024-10-05T08:00:00Z' },
+    { id: randomUUID(), name: 'Enrollment Confirmation', category: 'enrollment', subject: 'Enrollment confirmed for {{student_name}}', body: '<p>{{student_name}} has been enrolled in {{program_name}} starting {{start_date}}.</p>', variables: ['student_name', 'program_name', 'start_date', 'parent_name'], isActive: true, createdAt: '2024-10-10T08:00:00Z', updatedAt: '2024-10-10T08:00:00Z' },
+  ] as Record<string, unknown>[],
+  emailVariables: [
+    { name: 'platform_name', description: 'Name of the platform', example: 'GrowYourNeed' },
+    { name: 'user_name', description: 'Full name of the recipient', example: 'Jane Doe' },
+    { name: 'login_url', description: 'Login page URL', example: 'https://app.growyourneed.com/login' },
+    { name: 'reset_url', description: 'Password reset URL', example: 'https://app.growyourneed.com/reset?token=abc123' },
+    { name: 'expiry_hours', description: 'Hours until link expires', example: '24' },
+    { name: 'invoice_number', description: 'Invoice reference number', example: 'INV-2024-0042' },
+    { name: 'amount', description: 'Payment amount with currency', example: '$149.00' },
+    { name: 'tenant_name', description: 'Organization / tenant name', example: 'Sunrise Academy' },
+    { name: 'student_name', description: 'Full name of the student', example: 'Alex Smith' },
+    { name: 'program_name', description: 'Program / course name', example: 'Summer STEM Camp' },
+    { name: 'start_date', description: 'Start date of enrollment', example: '2024-06-15' },
+    { name: 'parent_name', description: 'Full name of the parent', example: 'Maria Smith' },
+    { name: 'date', description: 'Current formatted date', example: 'November 12, 2024' },
+  ],
+  // ── Appearance: Theme ──
+  appearanceTheme: {
+    primaryColor: '#6366f1',
+    sidebarColor: '#1e1b4b',
+    accentColor: '#f59e0b',
+    textColor: '#1f2937',
+    fontFamily: 'Inter',
+    borderRadius: 'md',
+    darkMode: false,
+  },
+  // ── Appearance: Layout ──
+  appearanceLayout: {
+    sidebarPosition: 'left',
+    sidebarCollapsed: false,
+    headerFixed: true,
+    contentMaxWidth: '1280px',
+    showBreadcrumbs: true,
+    compactMode: false,
+  },
+  // ── Appearance: Custom CSS ──
+  customCss: {
+    css: '/* Custom CSS overrides */\n',
+    savedAt: '2024-11-12T10:00:00Z',
+  },
+};
+
 export const providerController = {
   async getHome(_req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
@@ -463,8 +587,8 @@ export const providerController = {
     try {
       const title = getString(req.body?.title);
       const severity = getString(req.body?.severity);
-      const affectedServices = parseCsv(req.body?.affectedServices);
-      const tenantIds = parseCsv(req.body?.tenantIds);
+      const affectedServices = Array.isArray(req.body?.affectedServices) ? req.body.affectedServices : parseCsv(req.body?.affectedServices);
+      const tenantIds = Array.isArray(req.body?.tenantIds) ? req.body.tenantIds : parseCsv(req.body?.tenantIds);
       if (!title || !severity) throw new BadRequestError('title and severity are required');
 
       const data = providerConsoleService.createIncident({
@@ -477,6 +601,24 @@ export const providerController = {
       });
 
       res.status(201).json({ success: true, data });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async resolveIncident(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const incidentId = getString(req.params.incidentId);
+      if (!incidentId) throw new BadRequestError('incidentId is required');
+      const status = getString(req.body?.status) as 'MONITORING' | 'RESOLVED';
+      const data = providerConsoleService.resolveIncident({
+        incidentId,
+        status,
+        note: req.body?.note,
+        actorEmail: getActorEmail(req),
+        reason: req.body?.reason,
+      });
+      res.json({ success: true, data });
     } catch (error) {
       next(error);
     }
@@ -1085,10 +1227,10 @@ export const providerController = {
     try {
       const data = providerConsoleService.createMaintenanceWindow({
         title: getString(req.body?.title),
-        componentId: getString(req.body?.componentId),
-        startsAt: getString(req.body?.startsAt),
-        endsAt: getString(req.body?.endsAt),
-        scope: getString(req.body?.scope) || 'PUBLIC',
+        startAt: getString(req.body?.startAt),
+        endAt: getString(req.body?.endAt),
+        affectedServices: Array.isArray(req.body?.affectedServices) ? req.body.affectedServices : [],
+        notify: req.body?.notify === true,
         actorEmail: getActorEmail(req),
         reason: req.body?.reason,
       });
@@ -1244,7 +1386,22 @@ export const providerController = {
 
   async revokeSessions(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
-      res.json({ success: true, data: { revokedCount: req.body?.all ? 42 : 1 } });
+      const sessionId = req.body?.sessionId;
+      const all = req.body?.all === true;
+      const revokedCount = all ? 5 : sessionId ? 1 : 0;
+      res.json({ success: true, data: { revokedCount, sessionId, all } });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async requestComplianceReport(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const frameworks = Array.isArray(req.body?.frameworks) ? req.body.frameworks : [];
+      res.status(201).json({
+        success: true,
+        data: { requestId: `cr_${Date.now()}`, status: 'GENERATING', frameworks, estimatedAt: new Date(Date.now() + 3600_000).toISOString() },
+      });
     } catch (error) {
       next(error);
     }
@@ -1403,6 +1560,240 @@ export const providerController = {
     } catch (error) {
       next(error);
     }
+  },
+
+  /* ═══════════════════════════════════════════════════════════════════
+   *  SETTINGS — GRANULAR SUB-VIEW ENDPOINTS
+   * ═══════════════════════════════════════════════════════════════════ */
+
+  // ── Defaults: General Config ──
+  async getGeneralConfig(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.generalConfig });
+    } catch (error) { next(error); }
+  },
+  async updateGeneralConfig(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      Object.assign(_providerSettingsData.generalConfig, req.body);
+      res.json({ success: true, data: _providerSettingsData.generalConfig });
+    } catch (error) { next(error); }
+  },
+
+  // ── Defaults: Provisioning Rules ──
+  async getProvisioningRules(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.provisioningRules });
+    } catch (error) { next(error); }
+  },
+  async updateProvisioningRules(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      Object.assign(_providerSettingsData.provisioningRules, req.body);
+      res.json({ success: true, data: _providerSettingsData.provisioningRules });
+    } catch (error) { next(error); }
+  },
+
+  // ── Defaults: Retention Policy ──
+  async getRetentionPolicy(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.retentionPolicy });
+    } catch (error) { next(error); }
+  },
+  async updateRetentionPolicy(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      Object.assign(_providerSettingsData.retentionPolicy, req.body);
+      res.json({ success: true, data: _providerSettingsData.retentionPolicy });
+    } catch (error) { next(error); }
+  },
+
+  // ── Notifications: Alert Channels ──
+  async getAlertChannels(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.alertChannels });
+    } catch (error) { next(error); }
+  },
+  async updateAlertChannels(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      Object.assign(_providerSettingsData.alertChannels, req.body);
+      res.json({ success: true, data: _providerSettingsData.alertChannels });
+    } catch (error) { next(error); }
+  },
+
+  // ── Notifications: Escalation Rules ──
+  async getSettingsEscalationRules(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.escalationRules });
+    } catch (error) { next(error); }
+  },
+  async updateSettingsEscalationRules(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      _providerSettingsData.escalationRules = (req.body?.rules ?? []).map((r: Record<string, unknown>) => ({ ...r, id: (r.id as string) || randomUUID() }));
+      res.json({ success: true, data: _providerSettingsData.escalationRules });
+    } catch (error) { next(error); }
+  },
+
+  // ── Notifications: Quiet Hours ──
+  async getNotifQuietHours(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.notifQuietHours });
+    } catch (error) { next(error); }
+  },
+  async updateNotifQuietHours(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      Object.assign(_providerSettingsData.notifQuietHours, req.body);
+      res.json({ success: true, data: _providerSettingsData.notifQuietHours });
+    } catch (error) { next(error); }
+  },
+
+  // ── SLA Policies ──
+  async getSlaPoliciesV2(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.slaPolicies });
+    } catch (error) { next(error); }
+  },
+  async createSlaPolicy(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const policy = { id: randomUUID(), ...req.body, createdAt: new Date().toISOString() };
+      _providerSettingsData.slaPolicies.push(policy);
+      res.status(201).json({ success: true, data: policy });
+    } catch (error) { next(error); }
+  },
+  async updateSlaPolicy(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = getString(req.params.policyId);
+      const idx = _providerSettingsData.slaPolicies.findIndex((p) => (p as { id: string }).id === id);
+      if (idx < 0) throw new BadRequestError('Policy not found');
+      Object.assign(_providerSettingsData.slaPolicies[idx], req.body);
+      res.json({ success: true, data: _providerSettingsData.slaPolicies[idx] });
+    } catch (error) { next(error); }
+  },
+  async deleteSlaPolicy(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = getString(req.params.policyId);
+      _providerSettingsData.slaPolicies = _providerSettingsData.slaPolicies.filter((p) => (p as { id: string }).id !== id);
+      res.json({ success: true, data: { deleted: id } });
+    } catch (error) { next(error); }
+  },
+  async getSlaEscalationRules(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.slaEscalationRules });
+    } catch (error) { next(error); }
+  },
+  async createSlaEscalationRule(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const rule = { id: randomUUID(), ...req.body, createdAt: new Date().toISOString() };
+      _providerSettingsData.slaEscalationRules.push(rule);
+      res.status(201).json({ success: true, data: rule });
+    } catch (error) { next(error); }
+  },
+  async deleteSlaEscalationRule(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = getString(req.params.ruleId);
+      _providerSettingsData.slaEscalationRules = _providerSettingsData.slaEscalationRules.filter((r) => (r as { id: string }).id !== id);
+      res.json({ success: true, data: { deleted: id } });
+    } catch (error) { next(error); }
+  },
+
+  // ── Legal Templates V2 ──
+  async getLegalTemplatesV2(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.legalTemplatesV2 });
+    } catch (error) { next(error); }
+  },
+  async createLegalTemplateV2(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const tpl = { id: randomUUID(), ...req.body, version: '1.0', createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      _providerSettingsData.legalTemplatesV2.push(tpl);
+      res.status(201).json({ success: true, data: tpl });
+    } catch (error) { next(error); }
+  },
+  async updateLegalTemplateV2(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = getString(req.params.templateId);
+      const idx = _providerSettingsData.legalTemplatesV2.findIndex((t) => (t as { id: string }).id === id);
+      if (idx < 0) throw new BadRequestError('Template not found');
+      Object.assign(_providerSettingsData.legalTemplatesV2[idx], req.body, { updatedAt: new Date().toISOString() });
+      res.json({ success: true, data: _providerSettingsData.legalTemplatesV2[idx] });
+    } catch (error) { next(error); }
+  },
+  async deleteLegalTemplateV2(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = getString(req.params.templateId);
+      _providerSettingsData.legalTemplatesV2 = _providerSettingsData.legalTemplatesV2.filter((t) => (t as { id: string }).id !== id);
+      res.json({ success: true, data: { deleted: id } });
+    } catch (error) { next(error); }
+  },
+  async getLegalCategories(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.legalCategories });
+    } catch (error) { next(error); }
+  },
+
+  // ── Email Templates V2 ──
+  async getEmailTemplatesV2(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.emailTemplatesV2 });
+    } catch (error) { next(error); }
+  },
+  async createEmailTemplateV2(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const tpl = { id: randomUUID(), ...req.body, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+      _providerSettingsData.emailTemplatesV2.push(tpl);
+      res.status(201).json({ success: true, data: tpl });
+    } catch (error) { next(error); }
+  },
+  async updateEmailTemplateV2(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = getString(req.params.templateId);
+      const idx = _providerSettingsData.emailTemplatesV2.findIndex((t) => (t as { id: string }).id === id);
+      if (idx < 0) throw new BadRequestError('Template not found');
+      Object.assign(_providerSettingsData.emailTemplatesV2[idx], req.body, { updatedAt: new Date().toISOString() });
+      res.json({ success: true, data: _providerSettingsData.emailTemplatesV2[idx] });
+    } catch (error) { next(error); }
+  },
+  async deleteEmailTemplateV2(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      const id = getString(req.params.templateId);
+      _providerSettingsData.emailTemplatesV2 = _providerSettingsData.emailTemplatesV2.filter((t) => (t as { id: string }).id !== id);
+      res.json({ success: true, data: { deleted: id } });
+    } catch (error) { next(error); }
+  },
+  async getEmailVariables(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.emailVariables });
+    } catch (error) { next(error); }
+  },
+
+  // ── Appearance: Theme ──
+  async getAppearanceTheme(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.appearanceTheme });
+    } catch (error) { next(error); }
+  },
+  async updateAppearanceTheme(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      Object.assign(_providerSettingsData.appearanceTheme, req.body);
+      res.json({ success: true, data: _providerSettingsData.appearanceTheme });
+    } catch (error) { next(error); }
+  },
+
+  // ── Appearance: Layout ──
+  async getAppearanceLayout(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.appearanceLayout });
+    } catch (error) { next(error); }
+  },
+  async updateAppearanceLayout(req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      Object.assign(_providerSettingsData.appearanceLayout, req.body);
+      res.json({ success: true, data: _providerSettingsData.appearanceLayout });
+    } catch (error) { next(error); }
+  },
+
+  // ── Appearance: Custom CSS (already exists, this is the read endpoint) ──
+  async getCustomCss(_req: Request, res: Response, next: NextFunction): Promise<void> {
+    try {
+      res.json({ success: true, data: _providerSettingsData.customCss });
+    } catch (error) { next(error); }
   },
 
   /* ═══════════════════════════════════════════════════════════════════
@@ -1811,9 +2202,21 @@ export const providerController = {
 
   async createBackupSchedule(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const { name, frequency, retention, tenants, reason } = req.body ?? {};
       res.status(201).json({
         success: true,
-        data: { id: randomUUID(), name: req.body?.name, frequency: req.body?.frequency, retention: req.body?.retention, tenants: req.body?.tenants, status: 'ACTIVE', createdAt: new Date().toISOString() },
+        data: {
+          id: randomUUID(),
+          name: name ?? 'Untitled',
+          frequency: frequency ?? 'DAILY',
+          retention: retention ?? '30 days',
+          lastRun: new Date().toISOString(),
+          status: 'SUCCESS',
+          size: '0.0',
+          tenants: tenants ?? 0,
+          createdAt: new Date().toISOString(),
+          reason,
+        },
       });
     } catch (error) {
       next(error);
@@ -1824,7 +2227,15 @@ export const providerController = {
     try {
       const scheduleId = getString(req.params.scheduleId);
       if (!scheduleId) throw new BadRequestError('scheduleId is required');
-      res.json({ success: true, data: { id: scheduleId, status: 'RUNNING', triggeredAt: new Date().toISOString() } });
+      res.json({
+        success: true,
+        data: {
+          id: scheduleId,
+          status: 'RUNNING',
+          triggeredAt: new Date().toISOString(),
+          estimatedCompletion: new Date(Date.now() + 15 * 60_000).toISOString(),
+        },
+      });
     } catch (error) {
       next(error);
     }
@@ -1834,7 +2245,15 @@ export const providerController = {
     try {
       const scheduleId = getString(req.params.scheduleId);
       if (!scheduleId) throw new BadRequestError('scheduleId is required');
-      res.json({ success: true, data: { id: scheduleId, type: req.body?.type, retention: req.body?.retention, updatedAt: new Date().toISOString() } });
+      res.json({
+        success: true,
+        data: {
+          id: scheduleId,
+          frequency: req.body?.frequency,
+          retention: req.body?.retention,
+          updatedAt: new Date().toISOString(),
+        },
+      });
     } catch (error) {
       next(error);
     }
@@ -1844,7 +2263,15 @@ export const providerController = {
     try {
       const snapshotId = getString(req.params.snapshotId);
       if (!snapshotId) throw new BadRequestError('snapshotId is required');
-      res.json({ success: true, data: { id: snapshotId, status: 'RESTORING', restoredAt: new Date().toISOString() } });
+      res.json({
+        success: true,
+        data: {
+          id: snapshotId,
+          status: 'RESTORING',
+          restoredAt: new Date().toISOString(),
+          estimatedCompletion: new Date(Date.now() + 30 * 60_000).toISOString(),
+        },
+      });
     } catch (error) {
       next(error);
     }
@@ -1852,9 +2279,20 @@ export const providerController = {
 
   async createRunbook(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const { name, description, severity, steps, estimatedTime } = req.body ?? {};
       res.status(201).json({
         success: true,
-        data: { id: randomUUID(), name: req.body?.name, description: req.body?.description, severity: req.body?.severity, steps: req.body?.steps, estimatedTime: req.body?.estimatedTime, status: 'DRAFT', createdAt: new Date().toISOString() },
+        data: {
+          id: randomUUID(),
+          name: name ?? 'Untitled Runbook',
+          description: description ?? '',
+          severity: severity ?? 'MEDIUM',
+          steps: steps ?? 1,
+          estimatedTime: estimatedTime ?? '30 min',
+          lastTested: new Date().toISOString(),
+          status: 'DRAFT',
+          createdAt: new Date().toISOString(),
+        },
       });
     } catch (error) {
       next(error);
@@ -1865,7 +2303,15 @@ export const providerController = {
     try {
       const runbookId = getString(req.params.runbookId);
       if (!runbookId) throw new BadRequestError('runbookId is required');
-      res.json({ success: true, data: { id: runbookId, status: 'RUNNING', startedAt: new Date().toISOString() } });
+      res.json({
+        success: true,
+        data: {
+          id: runbookId,
+          status: 'RUNNING',
+          startedAt: new Date().toISOString(),
+          estimatedCompletion: new Date(Date.now() + 20 * 60_000).toISOString(),
+        },
+      });
     } catch (error) {
       next(error);
     }
@@ -1885,9 +2331,19 @@ export const providerController = {
 
   async startDataImport(req: Request, res: Response, next: NextFunction): Promise<void> {
     try {
+      const { type, tenantId, config, reason } = req.body ?? {};
       res.status(201).json({
         success: true,
-        data: { id: randomUUID(), type: req.body?.type, config: req.body?.config, status: 'RUNNING', startedAt: new Date().toISOString() },
+        data: {
+          id: randomUUID(),
+          type: type ?? 'CSV',
+          tenantId: tenantId ?? null,
+          config: config ?? {},
+          status: 'RUNNING',
+          startedAt: new Date().toISOString(),
+          recordsProcessed: 0,
+          reason,
+        },
       });
     } catch (error) {
       next(error);
@@ -1898,7 +2354,16 @@ export const providerController = {
     try {
       const jobId = getString(req.params.jobId);
       if (!jobId) throw new BadRequestError('jobId is required');
-      res.json({ success: true, data: { id: jobId, status: 'RUNNING', startedAt: new Date().toISOString() } });
+      res.json({
+        success: true,
+        data: {
+          id: jobId,
+          status: 'RUNNING',
+          progress: 0,
+          startedAt: new Date().toISOString(),
+          recordsFixed: 0,
+        },
+      });
     } catch (error) {
       next(error);
     }

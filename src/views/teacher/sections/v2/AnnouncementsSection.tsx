@@ -23,7 +23,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  announcementsDemo as FALLBACK_announcementsDemo, formatDateLabel, type AnnouncementDemo,
+  formatDateLabel, type AnnouncementDemo,
 } from './teacher-demo-data';
 
 /* ── Priority accent map ── */
@@ -38,9 +38,9 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
   const header = activeHeader || 'announcement_feed';
   const createAnnouncement = useCreateTeacherAnnouncement();
 
-  const { data: apiAnnouncements } = useTeacherAnnouncements();
+  const { data: apiAnnouncements, isLoading } = useTeacherAnnouncements();
   const announcements: AnnouncementDemo[] =
-    (apiAnnouncements as unknown as AnnouncementDemo[]) ?? FALLBACK_announcementsDemo;
+    (apiAnnouncements as unknown as AnnouncementDemo[]) ?? [];
 
   const [search, setSearch] = useState('');
   const [filterPriority, setFilterPriority] = useState<string>('all');
@@ -105,6 +105,12 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
       }
     >
       {/* ── Metrics ── */}
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20 text-muted-foreground/60">Loading announcements…</div>
+      ) : announcements.length === 0 ? (
+        <EmptyState title="No announcements yet" message="Create your first announcement to get started." icon={<Megaphone className="size-8" />} />
+      ) : (
+        <>
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-animate>
         <MetricCard label="Total" value={announcements.length} accent="#818cf8" />
         <MetricCard label="Unread" value={unreadCount} accent="#f472b6" />
@@ -299,6 +305,8 @@ export function AnnouncementsSection({ schoolId: _schoolId }: TeacherSectionProp
             </div>
           </div>
         </GlassCard>
+      )}
+        </>
       )}
     </TeacherSectionShell>
   );

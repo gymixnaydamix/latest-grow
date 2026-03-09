@@ -3,8 +3,6 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { useProviderHome, useProviderPermissionContext } from '@/hooks/api/use-provider-console';
 import {
   ProviderBillingSection,
-  ProviderUsageSection,
-  ProviderTemplatesSection,
   ProviderIntegrationsSection,
   ProviderSecuritySection,
   ProviderTeamSection,
@@ -36,11 +34,9 @@ const SECTION_COMPONENT: Record<string, React.ComponentType> = {
   provider_tenants:       ProviderTenantsSection,
   provider_onboarding:    ProviderOnboardingSection,
   provider_billing:       ProviderBillingSection,
-  provider_usage:         ProviderUsageSection,
   provider_support:       ProviderSupportSection,
   provider_incidents:     ProviderIncidentsSection,
   provider_releases:      ProviderReleasesSection,
-  provider_templates:     ProviderTemplatesSection,
   provider_integrations:  ProviderIntegrationsSection,
   provider_security:      ProviderSecuritySection,
   provider_data_ops:      ProviderDataOpsSection,

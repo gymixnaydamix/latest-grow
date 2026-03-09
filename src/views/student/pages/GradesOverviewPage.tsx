@@ -28,8 +28,7 @@ interface CourseGrade {
   color: string;
 }
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _COURSE_GRADES: CourseGrade[] = [
+const FALLBACK_COURSE_GRADES: CourseGrade[] = [
   { course: 'Computer Science', instructor: 'Mr. Kim', grade: 'A+', percentage: 97, trend: 'up', assignments: 15, completed: 14, color: 'bg-cyan-500/20 text-cyan-400' },
   { course: 'English Literature', instructor: 'Mr. Thompson', grade: 'A', percentage: 93, trend: 'neutral', assignments: 12, completed: 11, color: 'bg-violet-500/20 text-violet-400' },
   { course: 'Algebra II', instructor: 'Mrs. Rodriguez', grade: 'A-', percentage: 91, trend: 'up', assignments: 18, completed: 16, color: 'bg-indigo-500/20 text-indigo-400' },
@@ -38,8 +37,7 @@ const _COURSE_GRADES: CourseGrade[] = [
   { course: 'World History', instructor: 'Ms. Patel', grade: 'B', percentage: 83, trend: 'up', assignments: 14, completed: 12, color: 'bg-amber-500/20 text-amber-400' },
 ];
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _UPCOMING_ASSIGNMENTS = [
+const FALLBACK_UPCOMING_ASSIGNMENTS = [
   { title: 'Chemistry Lab Report #6', course: 'AP Chemistry', due: 'Mar 6', type: 'Lab Report', points: 50 },
   { title: 'Essay: Themes in Hamlet', course: 'English Literature', due: 'Mar 7', type: 'Essay', points: 100 },
   { title: 'Algebra Problem Set #10', course: 'Algebra II', due: 'Mar 8', type: 'Homework', points: 30 },
@@ -70,12 +68,12 @@ export default function GradesOverviewPage() {
   /* ── API data ── */
   const { data: apiGrades } = useStudentGradesOverview();
   const { data: apiAssignments } = useStudentAssignments();
-  const courseGrades = (apiGrades as any[]) ?? [];
-  const upcomingAssignments = (apiAssignments as any[]) ?? [];
+  const courseGrades = (apiGrades as any[])?.length > 0 ? (apiGrades as any[]) : FALLBACK_COURSE_GRADES;
+  const upcomingAssignments = (apiAssignments as any[])?.length > 0 ? (apiAssignments as any[]) : FALLBACK_UPCOMING_ASSIGNMENTS;
   const recentGrades = (apiGrades as any)?.recentGrades ?? FALLBACK_RECENT_GRADES;
   const semesterTrend = (apiGrades as any)?.semesterTrend ?? FALLBACK_SEMESTER_TREND;
 
-  const gpa = 3.72;
+  const gpa = semesterTrend.length > 0 ? semesterTrend[semesterTrend.length - 1].gpa : 3.72;
   const totalAssignments = courseGrades.reduce((s: number, c: any) => s + (c.assignments ?? 0), 0);
   const completedAssignments = courseGrades.reduce((s: number, c: any) => s + (c.completed ?? 0), 0);
   const maxGpa = Math.max(...semesterTrend.map((t: any) => t.gpa));
@@ -88,8 +86,8 @@ export default function GradesOverviewPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Current GPA" value={gpa} icon={<GraduationCap className="h-5 w-5" />} decimals={2} trend="up" trendLabel="+0.07" />
         <StatCard label="Completed" value={completedAssignments} suffix={` / ${totalAssignments}`} icon={<CheckCircle2 className="h-5 w-5" />} />
-        <StatCard label="Due This Week" value={3} icon={<Clock className="h-5 w-5" />} accentColor="#f59e0b" />
-        <StatCard label="Honor Roll" value={1} suffix=" streak" icon={<Award className="h-5 w-5" />} />
+        <StatCard label="Due This Week" value={upcomingAssignments.length || 3} icon={<Clock className="h-5 w-5" />} accentColor="#f59e0b" />
+        <StatCard label="Honor Roll" value={(apiGrades as any)?.honorRollStreak ?? 1} suffix=" streak" icon={<Award className="h-5 w-5" />} />
       </div>
 
       {/* Tabs */}

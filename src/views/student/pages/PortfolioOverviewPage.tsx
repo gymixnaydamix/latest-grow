@@ -65,8 +65,7 @@ export default function PortfolioOverviewPage() {
 
   /* ── API data ── */
   const { data: apiPortfolio } = useStudentPortfolio();
-  // @ts-expect-error TS6133 — mutation available for wiring
-  const _addWorkMut = useAddPortfolioWork();
+  const addWorkMut = useAddPortfolioWork();
   const portfolioData = (apiPortfolio as any) ?? {};
   const portfolio = (portfolioData?.items as any[])?.length > 0 ? (portfolioData.items as any[]) : FALLBACK_PORTFOLIO_ITEMS;
   const workTypes = (portfolioData?.workTypes as any[])?.length > 0 ? (portfolioData.workTypes as any[]) : FALLBACK_WORK_TYPES;
@@ -84,6 +83,20 @@ export default function PortfolioOverviewPage() {
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
       <PageHeader title="Portfolio" description="Your curated showcase of achievements, projects, and skills" />
+
+      {/* Add Work (wired to API) */}
+      <div className="flex justify-end" data-animate>
+        <Button
+          size="sm"
+          className="text-xs gap-1.5 bg-indigo-500/20 text-indigo-300 border border-indigo-400/20 hover:bg-indigo-500/30"
+          onClick={() => addWorkMut.mutate(
+            { title: 'New Work', type: 'Essay' } as any,
+            { onSuccess: () => notifySuccess('Portfolio', 'Work added successfully') },
+          )}
+        >
+          <Sparkles className="size-3" /> Add Work
+        </Button>
+      </div>
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>

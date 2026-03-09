@@ -22,6 +22,7 @@ import schoolOpsRoutes from './school-ops.routes.js';
 import providerRoutes from './provider.routes.js';
 import studentRoutes from './student.routes.js';
 import teacherRoutes from './teacher.routes.js';
+import gamificationRoutes from './gamification.routes.js';
 
 const router: IRouter = Router();
 
@@ -48,6 +49,7 @@ router.use('/wellness', wellnessRoutes);
 router.use('/provider', providerRoutes);
 router.use('/student', studentRoutes);
 router.use('/teacher', teacherRoutes);
+router.use('/gamification', gamificationRoutes);
 
 // Health check
 router.get('/health', (_req, res) => {

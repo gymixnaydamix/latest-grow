@@ -46,29 +46,7 @@ const FALLBACK_SLASH_CMDS = [
 const starterMessages: ConciergeMessage[] = [
   {
     id: 's1', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'You have 3 homework assignments due today — Mathematics (Chapter 7 exercise), Science (lab observation notes), and English (essay draft). The Maths one is due by 2nd period.',
-    actionCard: {
-      id: 'ac1', type: 'HomeworkReminderCard', title: 'Homework Due Today',
-      status: 'pending', linkedEntities: [{ type: 'Subject', label: 'Mathematics', id: 'sub-101' }],
-      fields: [
-        { key: 'subject', label: 'Subject', value: 'Mathematics' },
-        { key: 'task', label: 'Task', value: 'Ch. 7 — Exercise 7.3, Problems 1–15' },
-        { key: 'due', label: 'Due', value: 'Today, Period 2' },
-      ],
-      permissionChip: 'Student',
-    },
-  },
-  {
-    id: 's2', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Your Science Unit Test marks have been posted — you scored 38/40 (95%). Class average is 32/40. Great improvement from last test!',
-  },
-  {
-    id: 's3', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Today\'s timetable: Maths → English → Hindi → Lunch → Science → Social Studies → Computer Science → Games. Your favourite — lab day in Science!',
-  },
-  {
-    id: 's4', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Your English essay "My Vision for India" has been submitted successfully. Mrs. Sharma will review it by Friday.',
+    content: 'Welcome! I\'m your Student AI Assistant. Ask me about homework, timetable, grades, submissions, or anything related to your school day.',
   },
 ];
 
@@ -134,6 +112,11 @@ export function StudentConciergeAssistant() {
   const { messages, addMessage, history } = useConciergeStore();
   const aiChat = useAIChat();
 
+  const systemPrompt = {
+    role: 'system' as const,
+    content: 'You are an AI assistant for a student in a school management platform (GrowYourNeed). Help with homework questions, timetable lookups, study tips, grades, and school activities. Be friendly, encouraging, and age-appropriate. If you don\'t know something specific, say so.',
+  };
+
   const todayChips = FALLBACK_TODAY_CHIPS;
   const slashCommands = FALLBACK_SLASH_CMDS;
 
@@ -162,13 +145,20 @@ export function StudentConciergeAssistant() {
             todayChips={todayChips}
             starterMessages={starterMessages}
             slashCommands={slashCommands}
+            isLoading={aiChat.isPending}
             onSend={(t: string) => {
-              const userMsg = { id: `u-${Date.now()}`, role: 'user' as const, content: t, timestamp: new Date().toISOString() };
+              const userMsg: ConciergeMessage = { id: `u-${Date.now()}`, role: 'user', content: t, timestamp: new Date().toISOString() };
               addMessage(userMsg);
-              const history = [...messages, userMsg].map((m) => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content }));
-              aiChat.mutate({ messages: history }, {
+              const chatHistory = [
+                systemPrompt,
+                ...[...messages, userMsg].map((m) => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content })),
+              ];
+              aiChat.mutate({ messages: chatHistory }, {
                 onSuccess: (res) => {
-                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text, timestamp: new Date().toISOString() });
+                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text || 'No response from AI.', timestamp: new Date().toISOString() });
+                },
+                onError: (err) => {
+                  addMessage({ id: `e-${Date.now()}`, role: 'assistant', content: `Error: ${err.message ?? 'Failed to get AI response.'}`, timestamp: new Date().toISOString() });
                 },
               });
             }}

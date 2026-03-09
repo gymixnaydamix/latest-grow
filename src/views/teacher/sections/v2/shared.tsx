@@ -118,7 +118,7 @@ export function MetricCard({
       style={{ borderColor: `${accent}30` }}
     >
       {/* Accent gradient line */}
-      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${accent}00, ${accent}, ${accent}00)` }} />
+      <div className="absolute inset-x-0 top-0 h-0.5" style={{ background: `linear-gradient(90deg, ${accent}00, ${accent}, ${accent}00)` }} />
       <p className="text-xs font-medium text-muted-foreground">{label}</p>
       <div className="mt-1 flex items-end gap-1.5">
         <span className="text-2xl font-bold" style={{ color: accent }}>{value}{suffix}</span>

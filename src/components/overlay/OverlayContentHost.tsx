@@ -32,7 +32,9 @@ export function OverlayContentHost({
       <View
         appId={appId}
         appLabel={appLabel}
+        primaryId={primaryId}
         primaryLabel={primaryLabel}
+        secondaryId={secondaryId}
         secondaryLabel={secondaryLabel}
       />
     </Suspense>

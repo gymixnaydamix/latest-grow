@@ -17,8 +17,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  classPerformanceDemo as FALLBACK_classPerformanceDemo, teacherClassesDemo as FALLBACK_teacherClassesDemo,
-  gradebookStudentsDemo as FALLBACK_gradebookStudentsDemo, type ClassPerformanceDemo,
+  type ClassPerformanceDemo,
 } from './teacher-demo-data';
 
 /* ── Simple hash for deterministic values ── */
@@ -75,21 +74,7 @@ interface StudentProgress {
   assignmentCompletion: number;
 }
 
-const studentProgressDemo: StudentProgress[] = FALLBACK_gradebookStudentsDemo.map(s => {
-  const h = simpleHash(s.id + s.name);
-  const baseAttendance = s.average >= 80 ? 90 : 82;
-  const hasAllScores = s.scores.hw1 !== null;
-  return {
-    id: s.id,
-    name: s.name,
-    initials: s.initials,
-    average: s.average,
-    letterGrade: s.letterGrade,
-    trend: s.trend,
-    attendanceRate: baseAttendance + (h % 10),
-    assignmentCompletion: hasAllScores ? 90 + (h % 10) : 60 + ((h >> 3) % 20),
-  };
-});
+const studentProgressDemo: StudentProgress[] = [];
 
 /* ── At-risk students with reasons ── */
 interface AtRiskStudent {
@@ -134,7 +119,7 @@ export function ReportsSection(_props: TeacherSectionProps) {
   const header = activeHeader || 'class_analytics';
 
   const { data: apiClassPerformance } = useTeacherClassPerformance();
-  const classes: ClassPerformanceDemo[] = (apiClassPerformance as unknown as ClassPerformanceDemo[]) ?? FALLBACK_classPerformanceDemo;
+  const classes: ClassPerformanceDemo[] = (apiClassPerformance as unknown as ClassPerformanceDemo[]) ?? [];
   const [search, setSearch] = useState('');
 
   const overallAvg = classes.reduce((sum, c) => sum + c.avgGrade, 0) / classes.length;
@@ -210,8 +195,7 @@ export function ReportsSection(_props: TeacherSectionProps) {
         <div className="space-y-4" data-animate>
           <div className="grid gap-4 lg:grid-cols-2">
             {classes.map(cls => {
-              const tc = FALLBACK_teacherClassesDemo.find(t => t.id === cls.classId);
-              const accent = tc?.color ?? '#818cf8';
+              const accent = '#818cf8';
               return (
                 <GlassCard key={cls.classId}>
                   <div className="flex items-center justify-between mb-4">

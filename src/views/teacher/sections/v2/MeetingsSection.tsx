@@ -22,7 +22,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  meetingsDemo as FALLBACK_meetingsDemo, formatDateLabel, formatTimeRange, type MeetingDemo,
+  formatDateLabel, formatTimeRange, type MeetingDemo,
 } from './teacher-demo-data';
 
 /* ── Meeting type styling ── */
@@ -60,9 +60,9 @@ export function MeetingsSection(_props: TeacherSectionProps) {
   const header = activeHeader || 'upcoming_meetings';
   const scheduleMeetingMut = useScheduleMeeting();
   const cancelMeetingMut = useCancelMeeting();
-  const { data: apiMeetings } = useTeacherMeetings();
+  const { data: apiMeetings, isLoading } = useTeacherMeetings();
 
-  const meetings: MeetingDemo[] = (apiMeetings as unknown as MeetingDemo[]) ?? FALLBACK_meetingsDemo;
+  const meetings: MeetingDemo[] = (apiMeetings as unknown as MeetingDemo[]) ?? [];
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -76,6 +76,7 @@ export function MeetingsSection(_props: TeacherSectionProps) {
   const [formLocation, setFormLocation] = useState('');
   const [formAttendees, setFormAttendees] = useState('');
   const [formNotes, setFormNotes] = useState('');
+  const [blockedSlotIds, setBlockedSlotIds] = useState<Set<string>>(new Set());
 
   const scheduled = meetings.filter(m => m.status === 'scheduled');
   const completed = meetings.filter(m => m.status === 'completed');
@@ -146,6 +147,12 @@ export function MeetingsSection(_props: TeacherSectionProps) {
         </Button>
       }
     >
+      {isLoading ? (
+        <div className="flex items-center justify-center py-20 text-muted-foreground/60">Loading meetings…</div>
+      ) : meetings.length === 0 && header === 'upcoming_meetings' ? (
+        <EmptyState title="No meetings scheduled" message="Schedule your first meeting to get started." icon={<Calendar className="size-8" />} />
+      ) : (
+      <>
       {/* ── Metrics ── */}
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4" data-animate>
         <MetricCard label="Upcoming" value={scheduled.length} accent="#818cf8" />
@@ -449,11 +456,16 @@ export function MeetingsSection(_props: TeacherSectionProps) {
           </GlassCard>
 
           <div className="grid gap-3 sm:grid-cols-2">
-            {officeHoursSlots.map(slot => (
+            {officeHoursSlots.map(slot => {
+              const isBlocked = blockedSlotIds.has(slot.id);
+              const effectiveStatus = isBlocked ? 'blocked' as const : slot.status;
+              return (
               <div
                 key={slot.id}
                 className={`rounded-xl border p-4 transition-all ${
-                  slot.status === 'booked'
+                  isBlocked
+                    ? 'border-rose-500/20 bg-rose-500/5 opacity-60'
+                    : effectiveStatus === 'booked'
                     ? 'border-amber-500/20 bg-amber-500/5'
                     : 'border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/8'
                 }`}
@@ -464,8 +476,8 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                     <span className="text-sm font-medium text-foreground/70">{slot.day}</span>
                   </div>
                   <StatusBadge
-                    status={slot.status === 'booked' ? 'Booked' : 'Open'}
-                    tone={slot.status === 'booked' ? 'warn' : 'good'}
+                    status={isBlocked ? 'Blocked' : slot.status === 'booked' ? 'Booked' : 'Open'}
+                    tone={isBlocked ? 'bad' : slot.status === 'booked' ? 'warn' : 'good'}
                   />
                 </div>
                 <div className="flex items-center gap-2 text-xs text-muted-foreground/80">
@@ -495,22 +507,27 @@ export function MeetingsSection(_props: TeacherSectionProps) {
                     </Button>
                   </div>
                 )}
-                {slot.status === 'open' && (
+                {slot.status === 'open' && !isBlocked && (
                   <div className="mt-2 pt-2 border-t border-border/50">
                     <Button
                       variant="ghost"
                       size="sm"
                       className="h-6 text-[9px] text-muted-foreground/70 hover:text-rose-400 hover:bg-rose-500/10 p-0 px-1.5"
-                      onClick={() => notifySuccess('Slot blocked', `${slot.day} office hours blocked`)}
+                      onClick={() => {
+                        setBlockedSlotIds(prev => { const next = new Set(prev); next.add(slot.id); return next; });
+                        notifySuccess('Slot blocked', `${slot.day} office hours blocked`);
+                      }}
                     >
                       <XCircle className="size-2.5 mr-0.5" /> Block Slot
                     </Button>
                   </div>
                 )}
               </div>
-            ))}
+            ); })}
           </div>
         </div>
+      )}
+      </>
       )}
     </TeacherSectionShell>
   );

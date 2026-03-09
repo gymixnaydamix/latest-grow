@@ -227,11 +227,14 @@ function AIAnalyticsView() {
 
 function OperationsView({ subNav }: { subNav: string }) {
   const { data: systemHealthData } = useSystemHealth();
-  void systemHealthData;
+  const healthMetrics = (systemHealthData as any);
 
   // Route to specific operations sub-views
   if (subNav === 'tenant_ai') return <TenantAIManagementView />;
   if (subNav === 'support') return <AISupportView />;
+
+  const operationMetrics = healthMetrics?.metrics ?? FALLBACK_OPERATION_METRICS;
+
   // Default: system_health
   return (
     <>
@@ -241,7 +244,7 @@ function OperationsView({ subNav }: { subNav: string }) {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2" data-animate>
-        {FALLBACK_OPERATION_METRICS.map((m) => (
+        {operationMetrics.map((m: typeof FALLBACK_OPERATION_METRICS[number]) => (
           <Card key={m.label} className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="pt-6">
               <div className="flex items-center justify-between">

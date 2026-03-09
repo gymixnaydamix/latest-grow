@@ -81,7 +81,7 @@ export default function MarketingAnalyticsView() {
       <div data-animate className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Total Impressions"
-          value={336}
+          value={Math.round(CAMPAIGN_PERFORMANCE.reduce((s: number, c: any) => s + (c.impressions ?? 0), 0) / 1000)}
           suffix="K"
           trend="up"
           trendLabel="+24% MoM"
@@ -91,18 +91,18 @@ export default function MarketingAnalyticsView() {
         />
         <StatCard
           label="Lead Conversion"
-          value={4.2}
+          value={Number((CAMPAIGN_PERFORMANCE.reduce((s: number, c: any) => s + (c.conversions ?? 0), 0) / Math.max(1, CAMPAIGN_PERFORMANCE.reduce((s: number, c: any) => s + (c.clicks ?? 0), 0)) * 100).toFixed(1))}
           suffix="%"
           decimals={1}
           trend="up"
           trendLabel="+0.8% this quarter"
           icon={<Target className="size-5" />}
           accentColor="#34d399"
-          sparklineData={CAMPAIGN_PERFORMANCE.map((c: any) => (c.conversions / c.clicks) * 100)}
+          sparklineData={CAMPAIGN_PERFORMANCE.map((c: any) => (c.conversions / Math.max(1, c.clicks)) * 100)}
         />
         <StatCard
           label="Cost per Lead"
-          value={18.50}
+          value={Number(((apiAnalytics as any)?.costPerLead ?? 18.50).toFixed(2))}
           prefix="$"
           decimals={2}
           trend="down"
@@ -112,7 +112,7 @@ export default function MarketingAnalyticsView() {
         />
         <StatCard
           label="Campaign ROI"
-          value={4.2}
+          value={ROI_TREND.at(-1)?.roi ?? 4.2}
           suffix="x"
           decimals={1}
           trend="up"

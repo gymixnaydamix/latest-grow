@@ -48,10 +48,10 @@ export default function CommunityOverviewPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Community Members" value={550} icon={<Users className="h-5 w-5" />} />
-        <StatCard label="Posts Today" value={24} icon={<MessageSquare className="h-5 w-5" />} trend="up" trendLabel="+12%" />
-        <StatCard label="Channels" value={2} icon={<Hash className="h-5 w-5" />} />
-        <StatCard label="Active Now" value={38} icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard label="Community Members" value={channels.reduce((s: number, c: any) => s + (c.members ?? 0), 0) || 550} icon={<Users className="h-5 w-5" />} />
+        <StatCard label="Posts Today" value={recentPosts.length || 24} icon={<MessageSquare className="h-5 w-5" />} trend="up" trendLabel="+12%" />
+        <StatCard label="Channels" value={channels.length || 2} icon={<Hash className="h-5 w-5" />} />
+        <StatCard label="Active Now" value={(communityData?.activeNow as number) ?? 38} icon={<TrendingUp className="h-5 w-5" />} />
       </div>
 
       {/* Channels */}

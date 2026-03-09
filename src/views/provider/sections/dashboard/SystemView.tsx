@@ -212,7 +212,7 @@ export function SystemView() {
       {/* ═══ Right sidebar ═══ */}
       <div className="hidden lg:flex w-44 flex-col gap-1.5 shrink-0 min-h-0">
         {/* Uptime tracker (30-day grid) — emerald chroma card */}
-        <div data-animate className="group flex flex-col rounded-xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-emerald-500/30 overflow-hidden" style={{ minHeight: 140 }}>
+        <div data-animate className="group flex flex-col rounded-xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-emerald-500/30 overflow-hidden" style={{ minHeight: 140 }}>
           <div className="flex items-center justify-between mb-1.5">
             <h3 className="text-[10px] font-semibold text-foreground">Uptime (30d)</h3>
             <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">99.97%</span>
@@ -224,7 +224,7 @@ export function SystemView() {
         </div>
 
         {/* Deployment pipeline — violet chroma card */}
-        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-violet-500/20 bg-linear-to-br from-violet-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-violet-500/30 overflow-hidden min-h-0">
+        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-violet-500/20 bg-linear-to-br from-violet-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-violet-500/30 overflow-hidden min-h-0">
           <div className="flex items-center justify-between mb-1.5">
             <h3 className="text-[10px] font-semibold text-foreground">Deploy Pipeline</h3>
             <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-medium text-emerald-600 dark:text-emerald-400"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Active</span>

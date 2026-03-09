@@ -5,7 +5,6 @@
   BadgeDollarSign,
   BarChart3,
   Bell,
-  BookTemplate,
   Bot,
   Brush,
   Building2,
@@ -183,18 +182,6 @@ export const providerConsoleNav = {
       ],
     },
     {
-      id: 'provider_usage',
-      label: 'Usage & Limits',
-      icon: Activity,
-      description: 'Metering, thresholds, and policy actions',
-      path: '/provider/usage',
-      headerItems: [
-        { id: 'usage_overview', label: 'Usage Explorer', icon: Activity, path: '/provider/usage' },
-        { id: 'usage_limits', label: 'Limit Policies', icon: SlidersHorizontal, path: '/provider/usage/limits' },
-        { id: 'usage_exports', label: 'Usage Exports', icon: FileClock, path: '/provider/usage/reports' },
-      ],
-    },
-    {
       id: 'provider_support',
       label: 'Support Desk',
       icon: LifeBuoy,
@@ -232,18 +219,6 @@ export const providerConsoleNav = {
         { id: 'releases_flags', label: 'Flags', icon: SlidersHorizontal, path: '/provider/releases/flags' },
         { id: 'releases_rollout', label: 'Rollouts', icon: Activity, path: '/provider/releases/rollouts' },
         { id: 'releases_notes', label: 'Release Notes', icon: ClipboardList, path: '/provider/releases/notes' },
-      ],
-    },
-    {
-      id: 'provider_templates',
-      label: 'Templates & Marketplace',
-      icon: BookTemplate,
-      description: 'Template library and add-ons',
-      path: '/provider/templates',
-      headerItems: [
-        { id: 'templates_library', label: 'Template Library', icon: BookTemplate, path: '/provider/templates' },
-        { id: 'templates_addons', label: 'Add-on Catalog', icon: BadgeDollarSign, path: '/provider/templates/addons' },
-        { id: 'templates_purchases', label: 'Tenant Purchases', icon: ClipboardList, path: '/provider/templates/purchases' },
       ],
     },
     {
@@ -309,12 +284,54 @@ export const providerConsoleNav = {
       description: 'Global defaults and policy rules',
       path: '/provider/settings',
       headerItems: [
-        { id: 'settings_defaults', label: 'Defaults', icon: SlidersHorizontal, path: '/provider/settings/defaults' },
-        { id: 'settings_notifications', label: 'Notifications', icon: Bell, path: '/provider/settings/notifications' },
-        { id: 'settings_sla', label: 'SLA Policies', icon: FileClock, path: '/provider/settings/sla' },
-        { id: 'settings_legal', label: 'Legal Templates', icon: ClipboardList, path: '/provider/settings/legal' },
-        { id: 'settings_email_templates', label: 'Email Templates', icon: Mail, path: '/provider/settings/email-templates' },
-        { id: 'settings_appearance', label: 'Appearance', icon: Paintbrush, path: '/provider/settings/appearance' },
+        {
+          id: 'settings_defaults', label: 'Defaults', icon: SlidersHorizontal, path: '/provider/settings/defaults',
+          subNav: [
+            { id: 'sd_general', label: 'General Config', path: '/provider/settings/defaults/general' },
+            { id: 'sd_provisioning', label: 'Provisioning Rules', path: '/provider/settings/defaults/provisioning' },
+            { id: 'sd_retention', label: 'Data Retention', path: '/provider/settings/defaults/retention' },
+          ],
+        },
+        {
+          id: 'settings_notifications', label: 'Notifications', icon: Bell, path: '/provider/settings/notifications',
+          subNav: [
+            { id: 'sn_channels', label: 'Alert Channels', path: '/provider/settings/notifications/channels' },
+            { id: 'sn_rules', label: 'Escalation Rules', path: '/provider/settings/notifications/rules' },
+            { id: 'sn_quiet_hours', label: 'Quiet Hours', path: '/provider/settings/notifications/quiet-hours' },
+          ],
+        },
+        {
+          id: 'settings_sla', label: 'SLA Policies', icon: FileClock, path: '/provider/settings/sla',
+          subNav: [
+            { id: 'ss_active', label: 'Active Policies', path: '/provider/settings/sla/active' },
+            { id: 'ss_create', label: 'Create Policy', path: '/provider/settings/sla/create' },
+            { id: 'ss_escalation', label: 'Escalation Rules', path: '/provider/settings/sla/escalation' },
+          ],
+        },
+        {
+          id: 'settings_legal', label: 'Legal Templates', icon: ClipboardList, path: '/provider/settings/legal',
+          subNav: [
+            { id: 'sl_all', label: 'All Templates', path: '/provider/settings/legal/all' },
+            { id: 'sl_create', label: 'Create Template', path: '/provider/settings/legal/create' },
+            { id: 'sl_categories', label: 'Categories', path: '/provider/settings/legal/categories' },
+          ],
+        },
+        {
+          id: 'settings_email_templates', label: 'Email Templates', icon: Mail, path: '/provider/settings/email-templates',
+          subNav: [
+            { id: 'se_all', label: 'All Templates', path: '/provider/settings/email-templates/all' },
+            { id: 'se_create', label: 'Create Template', path: '/provider/settings/email-templates/create' },
+            { id: 'se_variables', label: 'Variables', path: '/provider/settings/email-templates/variables' },
+          ],
+        },
+        {
+          id: 'settings_appearance', label: 'Appearance', icon: Paintbrush, path: '/provider/settings/appearance',
+          subNav: [
+            { id: 'sa_themes', label: 'Themes', path: '/provider/settings/appearance/themes' },
+            { id: 'sa_layout', label: 'Layout', path: '/provider/settings/appearance/layout' },
+            { id: 'sa_custom_css', label: 'Custom CSS', path: '/provider/settings/appearance/custom-css' },
+          ],
+        },
       ],
     },
     {

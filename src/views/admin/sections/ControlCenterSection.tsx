@@ -470,8 +470,7 @@ const calendarEventFields: FormField[] = [
   ]},
   { name: 'description', label: 'Description', type: 'textarea', placeholder: 'Optional notes...' },
 ];
-// @ts-expect-error kept for future calendar use
-const _typeColors: Record<string, string> = {
+const typeColors: Record<string, string> = {
   meeting: '#818cf8', exam: '#f59e0b', event: '#ef4444', training: '#10b981', holiday: '#ec4899', compliance: '#ef4444',
 };
 
@@ -483,7 +482,7 @@ function CalendarView() {
   const rawEvents = Array.isArray(eventsRes) ? eventsRes : (eventsRes as any)?.items ?? [];
   const calendarEvents: CalendarEvent[] = rawEvents.map((e: any) => ({
     id: e.id, title: e.title ?? e.name ?? '', date: (e.date ?? e.startDate ?? '').slice(0, 10),
-    time: e.time ?? e.startTime ?? '', type: e.type ?? 'event', color: e.color ?? '#818cf8',
+    time: e.time ?? e.startTime ?? '', type: e.type ?? 'event', color: e.color ?? typeColors[e.type ?? 'event'] ?? '#818cf8',
     description: e.description ?? '',
   }));
   const [showAdd, setShowAdd] = useState(false);

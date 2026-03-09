@@ -408,7 +408,7 @@ function AllTenantsTable({
       render: (t) => (
         <div className="flex items-center gap-1">
           <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-foreground/90">{t.modules.length}</span>
-          <span className="text-[10px] text-muted-foreground hidden xl:inline truncate max-w-[80px]">{t.modules.slice(0, 2).join(', ')}{t.modules.length > 2 ? '…' : ''}</span>
+          <span className="text-[10px] text-muted-foreground hidden xl:inline truncate max-w-20">{t.modules.slice(0, 2).join(', ')}{t.modules.length > 2 ? '…' : ''}</span>
         </div>
       ),
       sortKey: (t) => t.modules.length,
@@ -603,7 +603,7 @@ function LifecycleStatesView({
                     {status.replace('_', ' ')} <span className="ml-1 text-muted-foreground">({group.length})</span>
                   </h4>
                 </div>
-                <div className="space-y-2 max-h-[400px] overflow-y-auto">
+                <div className="space-y-2 max-h-100 overflow-y-auto">
                   {group.map((t) => (
                     <div key={t.id} className="rounded-lg border border-border/60 bg-muted/50 p-2.5 text-xs">
                       <div className="flex items-start justify-between gap-2">
@@ -1598,7 +1598,7 @@ function BulkActionsView() {
           </Button>
         </div>
       }>
-        <div className="space-y-1 max-h-[400px] overflow-y-auto">
+        <div className="space-y-1 max-h-100 overflow-y-auto">
           {filtered.map((t) => (
             <label key={t.id} className={`flex items-center gap-3 rounded-lg border px-3 py-2 text-xs cursor-pointer transition-colors ${
               selectedIds.has(t.id) ? 'border-indigo-500/30 bg-indigo-500/5' : 'border-border/60 bg-muted/50 hover:bg-muted/60'
@@ -1765,7 +1765,7 @@ function TenantFlagsView() {
                   </div>
                 </button>
                 {isExpanded && (
-                  <div className="border-t border-border px-3 py-2 bg-muted/30 max-h-[300px] overflow-y-auto">
+                  <div className="border-t border-border px-3 py-2 bg-muted/30 max-h-75 overflow-y-auto">
                     <div className="space-y-1">
                       {tenants.map((t) => {
                         const enabled = t.modules.includes(flag.moduleCode);

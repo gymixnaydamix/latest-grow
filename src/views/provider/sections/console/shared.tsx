@@ -34,11 +34,9 @@ export const sectionAccents: Record<string, SectionAccent> = {
   provider_tenants:      { border: 'border-indigo-500/20',  ring: 'ring-indigo-500/15',  bg: 'bg-indigo-500/8',   text: 'text-indigo-600 dark:text-indigo-400',   badge: 'bg-indigo-500/10 text-indigo-700 border-indigo-500/25 dark:text-indigo-300', gradient: 'from-indigo-500/8 to-indigo-500/3', dot: 'bg-indigo-500' },
   provider_onboarding:   { border: 'border-teal-500/20',    ring: 'ring-teal-500/15',    bg: 'bg-teal-500/8',     text: 'text-teal-600 dark:text-teal-400',       badge: 'bg-teal-500/10 text-teal-700 border-teal-500/25 dark:text-teal-300',         gradient: 'from-teal-500/8 to-teal-500/3',     dot: 'bg-teal-500' },
   provider_billing:      { border: 'border-emerald-500/20', ring: 'ring-emerald-500/15', bg: 'bg-emerald-500/8',  text: 'text-emerald-600 dark:text-emerald-400', badge: 'bg-emerald-500/10 text-emerald-700 border-emerald-500/25 dark:text-emerald-300', gradient: 'from-emerald-500/8 to-emerald-500/3', dot: 'bg-emerald-500' },
-  provider_usage:        { border: 'border-cyan-500/20',    ring: 'ring-cyan-500/15',    bg: 'bg-cyan-500/8',     text: 'text-cyan-600 dark:text-cyan-400',       badge: 'bg-cyan-500/10 text-cyan-700 border-cyan-500/25 dark:text-cyan-300',         gradient: 'from-cyan-500/8 to-cyan-500/3',     dot: 'bg-cyan-500' },
   provider_support:      { border: 'border-violet-500/20',  ring: 'ring-violet-500/15',  bg: 'bg-violet-500/8',   text: 'text-violet-600 dark:text-violet-400',   badge: 'bg-violet-500/10 text-violet-700 border-violet-500/25 dark:text-violet-300', gradient: 'from-violet-500/8 to-violet-500/3', dot: 'bg-violet-500' },
   provider_incidents:    { border: 'border-red-500/20',     ring: 'ring-red-500/15',     bg: 'bg-red-500/8',      text: 'text-red-600 dark:text-red-400',         badge: 'bg-red-500/10 text-red-700 border-red-500/25 dark:text-red-300',             gradient: 'from-red-500/8 to-red-500/3',       dot: 'bg-red-500' },
   provider_releases:     { border: 'border-fuchsia-500/20', ring: 'ring-fuchsia-500/15', bg: 'bg-fuchsia-500/8',  text: 'text-fuchsia-600 dark:text-fuchsia-400', badge: 'bg-fuchsia-500/10 text-fuchsia-700 border-fuchsia-500/25 dark:text-fuchsia-300', gradient: 'from-fuchsia-500/8 to-fuchsia-500/3', dot: 'bg-fuchsia-500' },
-  provider_templates:    { border: 'border-amber-500/20',   ring: 'ring-amber-500/15',   bg: 'bg-amber-500/8',    text: 'text-amber-600 dark:text-amber-400',     badge: 'bg-amber-500/10 text-amber-700 border-amber-500/25 dark:text-amber-300',     gradient: 'from-amber-500/8 to-amber-500/3',   dot: 'bg-amber-500' },
   provider_integrations: { border: 'border-lime-500/20',    ring: 'ring-lime-500/15',    bg: 'bg-lime-500/8',     text: 'text-lime-600 dark:text-lime-400',       badge: 'bg-lime-500/10 text-lime-700 border-lime-500/25 dark:text-lime-300',         gradient: 'from-lime-500/8 to-lime-500/3',     dot: 'bg-lime-500' },
   provider_security:     { border: 'border-rose-500/20',    ring: 'ring-rose-500/15',    bg: 'bg-rose-500/8',     text: 'text-rose-600 dark:text-rose-400',       badge: 'bg-rose-500/10 text-rose-700 border-rose-500/25 dark:text-rose-300',         gradient: 'from-rose-500/8 to-rose-500/3',     dot: 'bg-rose-500' },
   provider_data_ops:     { border: 'border-orange-500/20',  ring: 'ring-orange-500/15',  bg: 'bg-orange-500/8',   text: 'text-orange-600 dark:text-orange-400',   badge: 'bg-orange-500/10 text-orange-700 border-orange-500/25 dark:text-orange-300', gradient: 'from-orange-500/8 to-orange-500/3', dot: 'bg-orange-500' },
@@ -126,7 +124,7 @@ export function Panel({
   bodyClassName?: string;
 }) {
   return (
-    <section className={cn('rounded-xl border bg-card shadow-[var(--shadow-xs)]', accentBorder ?? 'border-border', className)}>
+    <section className={cn('rounded-xl border bg-card shadow-(--shadow-xs)', accentBorder ?? 'border-border', className)}>
       <div className={cn('flex items-center justify-between border-b px-4 py-3', accentBorder ?? 'border-border', headerClassName)}>
         <div>
           <h3 className={cn('text-sm font-semibold text-foreground', titleClassName)}>{title}</h3>
@@ -206,7 +204,7 @@ export function StatCard({
   borderAccent?: string;
 }) {
   return (
-    <div className={`rounded-xl border ${borderAccent ?? 'border-border'} bg-linear-to-br ${gradient} p-3 shadow-[var(--shadow-xs)] transition-all duration-200 hover:shadow-[var(--shadow-sm)]`}>
+    <div className={`rounded-xl border ${borderAccent ?? 'border-border'} bg-linear-to-br ${gradient} p-3 shadow-(--shadow-xs) transition-all duration-200 hover:shadow-(--shadow-sm)`}>
       <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">{label}</p>
       <p className="text-lg font-extrabold leading-tight text-foreground">{value}</p>
       {sub ? <span className="text-[10px] text-muted-foreground">{sub}</span> : null}
@@ -474,12 +472,12 @@ export function TenantSwitcher({
         className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-1.5 text-xs text-foreground hover:bg-muted transition-colors"
       >
         <Building2 className="size-3.5 text-muted-foreground" />
-        <span className="max-w-[160px] truncate">{selected ? selected.name : 'All Tenants'}</span>
+        <span className="max-w-40 truncate">{selected ? selected.name : 'All Tenants'}</span>
         <ChevronsUpDown className="size-3 text-muted-foreground" />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-border bg-card shadow-[var(--shadow-md)]">
+        <div className="absolute left-0 top-full z-50 mt-1 w-72 rounded-xl border border-border bg-card shadow-(--shadow-md)">
           <div className="p-2">
             <div className="relative">
               <Search className="absolute left-2 top-2 size-3.5 text-muted-foreground" />

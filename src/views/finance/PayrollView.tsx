@@ -79,7 +79,7 @@ export default function PayrollView() {
         <StatCard label="Total Payroll" value={totalNet} prefix="$" icon={<DollarSign className="size-5" />} trend="up" trendLabel="+2.1%" />
         <StatCard label="Employees" value={payroll.length} icon={<Users className="size-5" />} trend="up" trendLabel="+1%" />
         <StatCard label="Total Bonuses" value={totalBonus} prefix="$" icon={<DollarSign className="size-5" />} trend="up" trendLabel="+15%" />
-        <StatCard label="Pay Date" value={15} suffix=" Mar" icon={<Calendar className="size-5" />} />
+        <StatCard label="Pay Date" value={payroll.length > 0 ? new Date(payroll[0].payDate).getDate() || 0 : 0} suffix={payroll.length > 0 ? ` ${new Date(payroll[0].payDate).toLocaleString('en', { month: 'short' })}` : ''} icon={<Calendar className="size-5" />} />
       </div>
 
       {/* Table */}

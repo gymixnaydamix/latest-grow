@@ -71,7 +71,7 @@ export default function MindMapperPage() {
         <StatCard label="Total Maps" value={sampleMaps.length} icon={<Network className="h-5 w-5" />} />
         <StatCard label="Total Nodes" value={sampleMaps.reduce((s: number, m: any) => s + (m.nodes ?? 0), 0)} icon={<GitBranch className="h-5 w-5" />} />
         <StatCard label="Starred" value={sampleMaps.filter((m: any) => m.starred).length} icon={<Star className="h-5 w-5" />} />
-        <StatCard label="AI Suggestions" value={12} icon={<Sparkles className="h-5 w-5" />} trend="up" trendLabel="+3 today" />
+        <StatCard label="AI Suggestions" value={(apiMindMaps as any)?.aiSuggestions ?? 0} icon={<Sparkles className="h-5 w-5" />} trend="up" trendLabel="+3 today" />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-4">

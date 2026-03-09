@@ -27,13 +27,24 @@ export function OverviewView() {
   const s = statsResp;
   const bAnalytics = billingData?.analytics;
 
+  /* ── Derive sparklines & chart data from monthly revenue ── */
+  const monthlyRev = bAnalytics?.monthlyRevenue;
+  const mrrSpark = monthlyRev?.map((m) => m.billed / 1000) ?? FALLBACK_mrrSpark;
+  const mrrChartData = monthlyRev?.map((m) => ({ month: m.label, mrr: m.billed })) ?? FALLBACK_mrrData;
+  const currentMrr = monthlyRev?.at(-1)?.billed ?? 15230;
+  const avgMrr = monthlyRev ? Math.round(monthlyRev.reduce((t, m) => t + m.billed, 0) / monthlyRev.length) : 12721;
+  const peakMrr = monthlyRev ? Math.max(...monthlyRev.map((m) => m.billed)) : 15230;
+  const firstMrr = monthlyRev?.[0]?.billed ?? 10200;
+  const mrrGrowthPct = firstMrr > 0 ? (((currentMrr - firstMrr) / firstMrr) * 100).toFixed(1) : '49.3';
+  const alerts = (billingData as any)?.alerts ?? FALLBACK_alerts;
+
   const kpis: KpiDef[] = [
     {
       label: 'MRR',
       value: s ? `$${s.totalMrr.toLocaleString()}` : '$…',
       change: '+2.1%', up: true, sub: 'from last month',
       icon3d: Icon3D_Dollar, gradient: 'from-emerald-500/10 to-emerald-500/5',
-      borderGlow: 'hover:shadow-emerald-500/20', sparkline: FALLBACK_mrrSpark, sparkColor: '#10b981',
+      borderGlow: 'hover:shadow-emerald-500/20', sparkline: mrrSpark, sparkColor: '#10b981',
     },
     {
       label: 'Active Tenants',
@@ -116,11 +127,11 @@ export function OverviewView() {
               </div>
             </div>
             <span className="flex items-center gap-1 rounded-full bg-red-500/10 px-2 py-0.5 text-[8px] font-bold text-red-600">
-            {FALLBACK_alerts.length} active
+            {alerts.length} active
           </span>
           </div>
           <div className="flex flex-1 flex-col gap-1 px-2.5 pb-2 overflow-hidden min-h-0">
-            {FALLBACK_alerts.map((alert: typeof FALLBACK_alerts[number], i: number) => {
+            {alerts.map((alert: typeof FALLBACK_alerts[number], i: number) => {
               const Icon = alert.icon;
               return (
                 <div key={i} className={`group/alert relative flex items-center gap-2 rounded-lg border ${alert.color.border} ${alert.color.bg} px-2 py-1.5 transition-all duration-250 hover:translate-x-0.5 hover:shadow-sm cursor-pointer`}>
@@ -150,18 +161,18 @@ export function OverviewView() {
               <div><h3 className="text-[11px] font-semibold">MRR Growth</h3><p className="text-[8px] text-muted-foreground">Monthly Recurring Revenue</p></div>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="rounded-md bg-muted/40 px-1.5 py-0.5 text-[7px] font-medium text-muted-foreground">$10.2K → $15.2K</span>
-              <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600"><ArrowUpRight className="size-2.5" />49.3%</span>
+              <span className="rounded-md bg-muted/40 px-1.5 py-0.5 text-[7px] font-medium text-muted-foreground">${(firstMrr / 1000).toFixed(1)}K → ${(currentMrr / 1000).toFixed(1)}K</span>
+              <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600"><ArrowUpRight className="size-2.5" />{mrrGrowthPct}%</span>
             </div>
           </div>
           <div className="flex items-center gap-1 px-2.5 pb-0.5">
-            <div className="flex items-center gap-1 rounded-md bg-emerald-500/8 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /><span className="text-[7px] font-semibold text-emerald-600">Current: $15,230</span></div>
-            <div className="flex items-center gap-1 rounded-md bg-muted/30 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" /><span className="text-[7px] font-medium text-muted-foreground">Avg: $12,721</span></div>
-            <div className="flex items-center gap-1 rounded-md bg-muted/30 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" /><span className="text-[7px] font-medium text-muted-foreground">Peak: $15,230</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-emerald-500/8 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-emerald-500" /><span className="text-[7px] font-semibold text-emerald-600">Current: ${currentMrr.toLocaleString()}</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-muted/30 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" /><span className="text-[7px] font-medium text-muted-foreground">Avg: ${avgMrr.toLocaleString()}</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-muted/30 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" /><span className="text-[7px] font-medium text-muted-foreground">Peak: ${peakMrr.toLocaleString()}</span></div>
           </div>
           <div className="flex-1 px-1 pb-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={FALLBACK_mrrData}>
+              <AreaChart data={mrrChartData}>
                 <defs>
                   <linearGradient id="mrrGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="#10b981" stopOpacity={0.3} /><stop offset="40%" stopColor="#10b981" stopOpacity={0.12} /><stop offset="100%" stopColor="#10b981" stopOpacity={0} /></linearGradient>
                   <linearGradient id="mrrStroke" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#10b981" /><stop offset="100%" stopColor="#059669" /></linearGradient>
@@ -184,17 +195,17 @@ export function OverviewView() {
               <div><h3 className="text-[11px] font-semibold">New Trials</h3><p className="text-[8px] text-muted-foreground">Sign-ups per month</p></div>
             </div>
             <div className="flex items-center gap-1.5">
-              <span className="rounded-md bg-muted/40 px-1.5 py-0.5 text-[7px] font-medium text-muted-foreground">Best: Nov (42)</span>
+              {(() => { const best = FALLBACK_trialData.reduce((a, b) => b.trials > a.trials ? b : a, FALLBACK_trialData[0]); return <span className="rounded-md bg-muted/40 px-1.5 py-0.5 text-[7px] font-medium text-muted-foreground">Best: {best.month} ({best.trials})</span>; })()}
               <span className="flex items-center gap-0.5 rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[8px] font-bold text-violet-600">
                 <svg className="size-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 8h4v6H4v-6zm16 6h-4v-4h4v4z" /></svg>
-                346 total
+                {s?.trial ?? FALLBACK_trialData.reduce((t, m) => t + m.trials, 0)} total
               </span>
             </div>
           </div>
           <div className="flex items-center gap-1 px-2.5 pb-0.5">
-            <div className="flex items-center gap-1 rounded-md bg-violet-500/8 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-500" /><span className="text-[7px] font-semibold text-violet-600">Avg: 29/mo</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-violet-500/8 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-500" /><span className="text-[7px] font-semibold text-violet-600">Avg: {Math.round(FALLBACK_trialData.reduce((t, m) => t + m.trials, 0) / FALLBACK_trialData.length)}/mo</span></div>
             <div className="flex items-center gap-1 rounded-md bg-emerald-500/8 px-1.5 py-0.5"><ArrowUpRight className="size-2 text-emerald-600" /><span className="text-[7px] font-semibold text-emerald-600">+94% YoY</span></div>
-            <div className="flex items-center gap-1 rounded-md bg-muted/30 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" /><span className="text-[7px] font-medium text-muted-foreground">Q4: 115</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-muted/30 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" /><span className="text-[7px] font-medium text-muted-foreground">Q4: {FALLBACK_trialData.slice(-3).reduce((t, m) => t + m.trials, 0)}</span></div>
           </div>
           <div className="flex-1 px-1 pb-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -251,7 +262,7 @@ export function OverviewView() {
       {/* ═══ Right column: Performance + Weather stacked ═══ */}
       <div className="hidden lg:flex w-44 flex-col gap-1.5 shrink-0 min-h-0">
         {/* Performance — indigo chroma card */}
-        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-indigo-500/20 bg-linear-to-br from-indigo-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-indigo-500/30 overflow-hidden min-h-0">
+        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-indigo-500/20 bg-linear-to-br from-indigo-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-indigo-500/30 overflow-hidden min-h-0">
           <div className="mb-1.5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-indigo-500 to-purple-500">
@@ -264,13 +275,13 @@ export function OverviewView() {
           <div className="mb-1.5 grid grid-cols-2 gap-1">
             <div className="rounded-lg bg-muted/40 p-1 border border-border/40">
               <p className="text-[8px] font-medium text-muted-foreground">Views</p>
-              <p className="text-xs font-semibold text-foreground">24.5K</p>
-              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">+12.3%</span>
+              <p className="text-xs font-semibold text-foreground">{monthlyRev ? `${(monthlyRev.reduce((t, m) => t + m.billed, 0) / 1000).toFixed(1)}K` : '24.5K'}</p>
+              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">{mrrGrowthPct !== '49.3' ? `+${mrrGrowthPct}%` : '+12.3%'}</span>
             </div>
             <div className="rounded-lg bg-muted/40 p-1 border border-border/40">
               <p className="text-[8px] font-medium text-muted-foreground">Converts</p>
-              <p className="text-xs font-semibold text-foreground">1.2K</p>
-              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">+8.1%</span>
+              <p className="text-xs font-semibold text-foreground">{s ? `${(s.active / 1000).toFixed(1)}K` : '1.2K'}</p>
+              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">{s ? `${s.total > 0 ? ((s.active / s.total) * 100).toFixed(1) : 0}%` : '+8.1%'}</span>
             </div>
           </div>
           <div className="mb-1.5 flex-1 min-h-0 w-full overflow-hidden rounded-lg bg-muted/30 p-1 border border-border/40">

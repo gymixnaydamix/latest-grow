@@ -39,21 +39,7 @@ const FALLBACK_SLASH_CMDS = ['/announce', '/doc', '/approve', '/meeting', '/requ
 const starterMessages: ConciergeMessage[] = [
   {
     id: 's1', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Draft fee reminder to Grade 6 parents is ready for review.',
-    actionCard: {
-      id: 'ac1', type: 'FeeFollowUpCard', title: 'Fee Reminder – Grade 6 Parents',
-      status: 'draft', linkedEntities: [{ type: 'Grade', label: 'Grade 6', id: 'g6' }],
-      fields: [{ key: 'audience', label: 'Audience', value: '42 parents' }, { key: 'amount', label: 'Total outstanding', value: '$12,400' }],
-      permissionChip: 'Finance Admin',
-    },
-  },
-  {
-    id: 's2', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Enrollment certificate generated for student Ahmed Hassan.',
-  },
-  {
-    id: 's3', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Attendance correction request from Ms. Nora is awaiting your decision.',
+    content: 'Welcome! I\'m your Admin AI Assistant. Ask me about approvals, announcements, certificates, meetings, fee followups, or any school administration task.',
   },
 ];
 
@@ -112,6 +98,11 @@ export function AdminConciergeAssistant() {
   const { messages, addMessage, history } = useConciergeStore();
   const aiChat = useAIChat();
 
+  const systemPrompt = {
+    role: 'system' as const,
+    content: 'You are an AI assistant for a school administrator in a school management platform (GrowYourNeed). Help with approvals, announcements, certificates, scheduling, fee management, student records, and operational tasks. Be professional and efficient. If you don\'t know something specific, say so.',
+  };
+
   const todayChips = FALLBACK_TODAY_CHIPS;
   const slashCommands = FALLBACK_SLASH_CMDS;
 
@@ -140,13 +131,20 @@ export function AdminConciergeAssistant() {
             todayChips={todayChips}
             starterMessages={starterMessages}
             slashCommands={slashCommands}
-            onSend={(t) => {
-              const userMsg = { id: `u-${Date.now()}`, role: 'user' as const, content: t, timestamp: new Date().toISOString() };
+            isLoading={aiChat.isPending}
+            onSend={(t: string) => {
+              const userMsg: ConciergeMessage = { id: `u-${Date.now()}`, role: 'user', content: t, timestamp: new Date().toISOString() };
               addMessage(userMsg);
-              const history = [...messages, userMsg].map((m) => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content }));
-              aiChat.mutate({ messages: history }, {
+              const chatHistory = [
+                systemPrompt,
+                ...[...messages, userMsg].map((m) => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content })),
+              ];
+              aiChat.mutate({ messages: chatHistory }, {
                 onSuccess: (res) => {
-                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text, timestamp: new Date().toISOString() });
+                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text || 'No response from AI.', timestamp: new Date().toISOString() });
+                },
+                onError: (err) => {
+                  addMessage({ id: `e-${Date.now()}`, role: 'assistant', content: `Error: ${err.message ?? 'Failed to get AI response.'}`, timestamp: new Date().toISOString() });
                 },
               });
             }}

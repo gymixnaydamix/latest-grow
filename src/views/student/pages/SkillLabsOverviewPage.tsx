@@ -83,10 +83,10 @@ export default function SkillLabsOverviewPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Labs Completed" value={12} icon={<FlaskConical className="h-5 w-5" />} />
-        <StatCard label="Skill Points" value={1160} icon={<Zap className="h-5 w-5" />} trend="up" trendLabel="+120 this week" />
-        <StatCard label="Best Score" value={95} suffix="%" icon={<Star className="h-5 w-5" />} />
-        <StatCard label="Total Sessions" value={43} icon={<Clock className="h-5 w-5" />} />
+        <StatCard label="Labs Completed" value={LABS.filter((l) => l.progress >= 100).length || 12} icon={<FlaskConical className="h-5 w-5" />} />
+        <StatCard label="Skill Points" value={SKILL_POINTS.reduce((s, p) => s + p.points, 0)} icon={<Zap className="h-5 w-5" />} trend="up" trendLabel="+120 this week" />
+        <StatCard label="Best Score" value={Math.max(...LABS.map(l => l.bestScore), 0) || 95} suffix="%" icon={<Star className="h-5 w-5" />} />
+        <StatCard label="Total Sessions" value={LABS.reduce((s, l) => s + l.sessions, 0) || 43} icon={<Clock className="h-5 w-5" />} />
       </div>
 
       {/* Lab cards */}

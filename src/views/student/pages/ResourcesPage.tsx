@@ -14,6 +14,7 @@ import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess } from '@/lib/notify';
+import { useWellnessResources } from '@/hooks/api/use-wellness';
 
 type ResourceCategory = 'mental_health' | 'physical' | 'nutrition' | 'mindfulness' | 'crisis' | 'social';
 type ResourceType = 'article' | 'video' | 'app' | 'hotline' | 'guide';
@@ -63,14 +64,29 @@ export default function ResourcesPage() {
   const [search, setSearch] = useState('');
   const [savedOnly, setSavedOnly] = useState(false);
 
-  const filtered = RESOURCES
+  /* ── API data ── */
+  const { data: apiResources } = useWellnessResources();
+  const resources = (apiResources as any[])?.length > 0
+    ? (apiResources as any[]).map((r: any, i: number) => ({
+        id: r.id ?? String(i),
+        title: r.title ?? '',
+        description: r.description ?? r.category ?? '',
+        category: (r.category?.toLowerCase().replace(/\s+/g, '_') ?? 'mental_health') as ResourceCategory,
+        type: (r.type ?? 'article') as ResourceType,
+        saved: r.saved ?? false,
+        rating: r.rating ?? 0,
+        readTime: r.readTime,
+      }))
+    : RESOURCES;
+
+  const filtered = resources
     .filter((r) => catFilter === 'all' || r.category === catFilter)
     .filter((r) => typeFilter === 'all' || r.type === typeFilter)
     .filter((r) => !savedOnly || r.saved)
     .filter((r) => !search || r.title.toLowerCase().includes(search.toLowerCase()) || r.description.toLowerCase().includes(search.toLowerCase()));
 
-  const saved = RESOURCES.filter((r) => r.saved).length;
-  const crisis = RESOURCES.filter((r) => r.category === 'crisis').length;
+  const saved = resources.filter((r) => r.saved).length;
+  const crisis = resources.filter((r) => r.category === 'crisis').length;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -78,7 +94,7 @@ export default function ResourcesPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Total Resources" value={RESOURCES.length} icon={<BookOpen className="h-5 w-5" />} />
+        <StatCard label="Total Resources" value={resources.length} icon={<BookOpen className="h-5 w-5" />} />
         <StatCard label="Saved" value={saved} icon={<Star className="h-5 w-5" />} trend="up" />
         <StatCard label="Categories" value={Object.keys(CAT_CFG).length} icon={<Heart className="h-5 w-5" />} />
         <StatCard label="Crisis Resources" value={crisis} icon={<Shield className="h-5 w-5" />} />

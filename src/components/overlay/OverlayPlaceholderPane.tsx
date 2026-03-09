@@ -5,14 +5,18 @@ import type { OverlayAppId } from '@/overlay/overlay-registry';
 export interface OverlayPlaceholderPaneProps {
   appId: OverlayAppId;
   appLabel: string;
+  primaryId: string;
   primaryLabel: string;
+  secondaryId: string;
   secondaryLabel: string;
 }
 
 export default function OverlayPlaceholderPane({
   appId,
   appLabel,
+  primaryId,
   primaryLabel,
+  secondaryId,
   secondaryLabel,
 }: OverlayPlaceholderPaneProps) {
   return (
@@ -24,10 +28,10 @@ export default function OverlayPlaceholderPane({
               {appId}
             </Badge>
             <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-              {primaryLabel}
+              {primaryLabel} ({primaryId})
             </Badge>
             <Badge variant="outline" className="text-xs border-border text-muted-foreground">
-              {secondaryLabel}
+              {secondaryLabel} ({secondaryId})
             </Badge>
           </div>
           <CardTitle className="text-lg text-foreground">{appLabel} Workspace</CardTitle>

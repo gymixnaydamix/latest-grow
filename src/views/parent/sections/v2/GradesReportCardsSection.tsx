@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useParentV2Grades } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateLabel, parentGradesDemo as FALLBACK_GRADES } from './parent-v2-demo-data';
+import { childDisplayName, formatDateLabel } from './parent-v2-demo-data';
 import type { ParentGradeDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -26,7 +26,7 @@ function gradeBarColor(pct: number): string {
 
 export function GradesReportCardsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawGrades } = useParentV2Grades({ scope, childId });
-  const allRows: ParentGradeDemo[] = (rawGrades as ParentGradeDemo[] | undefined) ?? filterByChild(FALLBACK_GRADES, childId, scope);
+  const allRows: ParentGradeDemo[] = (rawGrades as ParentGradeDemo[] | undefined) ?? [];
 
   const [query, setQuery] = useState('');
   const [subjectFilter, setSubjectFilter] = useState('ALL');

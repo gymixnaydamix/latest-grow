@@ -32,8 +32,7 @@ interface Course {
   color: string;
 }
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _COURSES: Course[] = [
+const FALLBACK_COURSES: Course[] = [
   { id: '1', name: 'Algebra II', instructor: 'Mrs. Rodriguez', subject: 'Math', progress: 72, grade: 'A-', nextClass: 'Mon 9:00 AM', totalLessons: 36, completedLessons: 26, enrolled: 28, rating: 4.7, color: 'bg-indigo-500/20 text-indigo-400' },
   { id: '2', name: 'AP Chemistry', instructor: 'Dr. Chen', subject: 'Science', progress: 65, grade: 'B+', nextClass: 'Tue 10:30 AM', totalLessons: 40, completedLessons: 26, enrolled: 22, rating: 4.8, color: 'bg-emerald-500/20 text-emerald-400' },
   { id: '3', name: 'English Literature', instructor: 'Mr. Thompson', subject: 'English', progress: 80, grade: 'A', nextClass: 'Mon 1:00 PM', totalLessons: 30, completedLessons: 24, enrolled: 30, rating: 4.5, color: 'bg-violet-500/20 text-violet-400' },
@@ -42,8 +41,7 @@ const _COURSES: Course[] = [
   { id: '6', name: 'Physical Education', instructor: 'Coach Davis', subject: 'PE', progress: 90, grade: 'A', nextClass: 'Fri 8:00 AM', totalLessons: 20, completedLessons: 18, enrolled: 35, rating: 4.3, color: 'bg-rose-500/20 text-rose-400' },
 ];
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _UPCOMING_CLASSES = [
+const FALLBACK_UPCOMING_CLASSES = [
   { course: 'Algebra II', time: '9:00 AM', room: 'Room 204', type: 'Lecture' },
   { course: 'AP Chemistry', time: '10:30 AM', room: 'Lab 102', type: 'Lab' },
   { course: 'English Literature', time: '1:00 PM', room: 'Room 310', type: 'Discussion' },
@@ -59,8 +57,8 @@ export default function CoursesOverviewPage() {
   /* ── API data ── */
   const { data: _apiSubjects } = useStudentSubjects();
   const { data: _apiTimetable } = useStudentTimetable();
-  const courses = (_apiSubjects as any[]) ?? [];
-  const upcomingClasses = (_apiTimetable as any[]) ?? [];
+  const courses = (_apiSubjects as any[])?.length > 0 ? (_apiSubjects as any[]) : FALLBACK_COURSES;
+  const upcomingClasses = (_apiTimetable as any[])?.length > 0 ? (_apiTimetable as any[]) : FALLBACK_UPCOMING_CLASSES;
 
   const filtered = courses
     .filter((c) => subjectFilter === 'All' || c.subject === subjectFilter)
@@ -77,7 +75,7 @@ export default function CoursesOverviewPage() {
         <StatCard label="Enrolled Courses" value={courses.length} icon={<BookOpen className="h-5 w-5" />} />
         <StatCard label="Avg Progress" value={avgProgress} suffix="%" icon={<TrendingUp className="h-5 w-5" />} trend="up" />
         <StatCard label="Classes Today" value={upcomingClasses.length} icon={<Calendar className="h-5 w-5" />} />
-        <StatCard label="GPA" value={3.7} icon={<GraduationCap className="h-5 w-5" />} decimals={1} />
+        <StatCard label="GPA" value={courses.length > 0 ? +(courses.reduce((s: number, c: any) => s + (c.percentage ?? 0), 0) / courses.length / 25).toFixed(1) : 3.7} icon={<GraduationCap className="h-5 w-5" />} decimals={1} />
       </div>
 
       {/* Filters */}

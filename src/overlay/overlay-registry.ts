@@ -12,6 +12,7 @@ import {
   Wrench,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { gamificationOverlayContent } from '@/config/gamification-overlay-content';
 
 export type OverlayAppId =
   | 'studio'
@@ -165,43 +166,19 @@ export const overlayAppList: OverlayAppDefinition[] = [
   },
   {
     id: 'gamification',
-    label: 'Gamification',
+    label: gamificationOverlayContent.app.label,
     icon: Gamepad2,
-    color: 'from-emerald-500 to-green-600',
-    category: 'Engagement',
-    description: 'Quizzes, challenges, rewards, and analytics',
-    primaryNav: [
-      {
-        id: 'quizzes_challenges',
-        label: 'Quizzes & Challenges',
-        secondaryNav: [
-          { id: 'quiz_builder', label: 'Quiz Builder' },
-          { id: 'challenge_creator', label: 'Challenge Creator' },
-          { id: 'question_bank', label: 'Question Bank' },
-          { id: 'templates', label: 'Templates' },
-        ],
-      },
-      {
-        id: 'rewards_leaderboards',
-        label: 'Rewards & Leaderboards',
-        secondaryNav: [
-          { id: 'reward_system', label: 'Reward System' },
-          { id: 'leaderboard_setup', label: 'Leaderboard Setup' },
-          { id: 'badge_designer', label: 'Badge Designer' },
-          { id: 'point_system', label: 'Point System' },
-        ],
-      },
-      {
-        id: 'analytics',
-        label: 'Analytics',
-        secondaryNav: [
-          { id: 'engagement_metrics', label: 'Engagement Metrics' },
-          { id: 'performance_analytics', label: 'Performance Analytics' },
-          { id: 'progress_tracking', label: 'Progress Tracking' },
-          { id: 'reports', label: 'Reports' },
-        ],
-      },
-    ],
+    color: gamificationOverlayContent.app.theme,
+    category: gamificationOverlayContent.app.category,
+    description: gamificationOverlayContent.app.description,
+    primaryNav: gamificationOverlayContent.contentCards.map((section) => ({
+      id: section.primaryNav.id,
+      label: section.primaryNav.label,
+      secondaryNav: section.pages.map((page) => ({
+        id: page.id,
+        label: page.label,
+      })),
+    })),
   },
   {
     id: 'leisure',

@@ -30,7 +30,7 @@ export function AdminConciergeSettings() {
   const { data: apiRoles } = useRoles(schoolId);
   const { data: apiTemplates } = useTemplates(schoolId);
   const { data: apiProfile } = useSchoolProfile(schoolId);
-  useSaveSchoolProfile(schoolId);
+  const saveProfile = useSaveSchoolProfile(schoolId);
 
   const permissionItems = (apiRoles as any[])?.map((r: any) => r.name ?? r.label ?? r) ?? FALLBACK_PERMISSIONS;
   const snippetItems = (apiTemplates as any[])?.map((t: any) => ({ id: t.id, name: t.name, preview: t.body ?? t.preview ?? '' })) ?? FALLBACK_SNIPPETS;
@@ -131,9 +131,12 @@ export function AdminConciergeSettings() {
             <span className="inline-flex items-center gap-2 text-xs font-medium text-foreground">
               <Shield className="h-3.5 w-3.5 text-primary" />{p}
             </span>
-            <div className="h-5 w-9 rounded-full bg-primary/80 relative">
+            <button
+              onClick={() => saveProfile.mutate({ permissions: { [String(p)]: false } } as any)}
+              className="h-5 w-9 rounded-full bg-primary/80 relative cursor-pointer transition-colors"
+            >
               <div className="absolute right-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow" />
-            </div>
+            </button>
           </div>
         ))}
       </div>

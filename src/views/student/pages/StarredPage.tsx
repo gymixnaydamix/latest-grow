@@ -18,6 +18,7 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { notifySuccess, notifyError } from '@/lib/notify';
 import { useStudentMessages, useSendStudentMessage } from '@/hooks/api/use-student';
+import { useToggleThreadStar, useArchiveThread, useDeleteThread } from '@/hooks/api/use-messages';
 
 interface StarredMsg {
   id: string;
@@ -30,8 +31,7 @@ interface StarredMsg {
   color: string;
 }
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _STARRED: StarredMsg[] = [
+const FALLBACK_STARRED: StarredMsg[] = [
   { id: '1', from: 'Mrs. Rodriguez', initials: 'MR', subject: 'Algebra II — Test Review Session', preview: 'Don\'t forget: review session Thursday at 3 PM in Room 204. Bring your formula sheet.', date: 'May 14', category: 'Teacher', color: 'bg-indigo-500/20 text-indigo-400' },
   { id: '2', from: 'School Office', initials: 'SO', subject: 'Updated Schedule for Next Week', preview: 'Due to the assembly on Tuesday, the class schedule will shift by one period.', date: 'May 13', category: 'Admin', color: 'bg-amber-500/20 text-amber-400' },
   { id: '3', from: 'Dr. Chen', initials: 'DC', subject: 'AP Chemistry Lab Report Feedback', preview: 'Great work on the titration lab! A few corrections needed on the error analysis section.', date: 'May 12', category: 'Teacher', color: 'bg-emerald-500/20 text-emerald-400' },
@@ -46,15 +46,26 @@ export default function StarredPage() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [replyText, setReplyText] = useState('');
   const sendReplyMut = useSendStudentMessage();
+  const starMut = useToggleThreadStar();
+  const archiveMut = useArchiveThread();
+  const deleteMut = useDeleteThread();
 
   /* ── API data ── */
   const { data: _apiMessages } = useStudentMessages();
-  const starred = ((_apiMessages as any[]) ?? []).filter((m: any) => m.starred);
+  const starredRaw = ((_apiMessages as any[]) ?? []).filter((m: any) => m.starred);
+  const starred = starredRaw.length > 0 ? starredRaw : FALLBACK_STARRED;
 
   const selected = starred.find((s: any) => s.id === selectedId);
   const filtered = starred.filter(
     (s: any) => !search || s.from?.toLowerCase().includes(search.toLowerCase()) || s.subject?.toLowerCase().includes(search.toLowerCase()),
   );
+  const thisWeekCount = starred.filter((s: any) => {
+    if (!s.date && !s.createdAt) return false;
+    const d = new Date(s.createdAt ?? s.date);
+    const now = new Date();
+    const weekAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 7);
+    return d >= weekAgo;
+  }).length;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -65,7 +76,7 @@ export default function StarredPage() {
         <StatCard label="Starred Messages" value={starred.length} icon={<Star className="h-5 w-5" />} accentColor="text-yellow-400" />
         <StatCard label="From Teachers" value={starred.filter((s: any) => s.category === 'Teacher').length} icon={<BookOpen className="h-5 w-5" />} />
         <StatCard label="From Admin" value={starred.filter((s: any) => s.category === 'Admin').length} icon={<Users className="h-5 w-5" />} />
-        <StatCard label="This Week" value={3} icon={<Clock className="h-5 w-5" />} />
+        <StatCard label="This Week" value={thisWeekCount} icon={<Clock className="h-5 w-5" />} />
       </div>
 
       {/* Search */}
@@ -82,12 +93,12 @@ export default function StarredPage() {
       </div>
 
       {/* List + Detail */}
-      <div className="flex gap-4 min-h-[500px]">
+      <div className="flex gap-4 min-h-125">
         {/* Starred list */}
         <div className="w-full max-w-sm shrink-0 space-y-1 overflow-y-auto" data-animate>
           {filtered.length === 0 ? (
             <Card className="border-white/6 bg-white/3 backdrop-blur-xl">
-              <CardContent className="flex min-h-[300px] items-center justify-center">
+              <CardContent className="flex min-h-75 items-center justify-center">
                 <div className="text-center text-white/30">
                   <Star className="mx-auto mb-2 size-8" />
                   <p className="text-sm">No starred messages</p>
@@ -138,9 +149,9 @@ export default function StarredPage() {
                   </div>
                 </div>
                 <div className="flex gap-1">
-                  <Button variant="ghost" size="sm" className="text-yellow-400 hover:text-yellow-300" onClick={() => notifySuccess('Unstarred', 'Message removed from starred')}><Star className="size-3 fill-current" /></Button>
-                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => notifySuccess('Archive', 'Message archived')}><Archive className="size-3" /></Button>
-                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => notifySuccess('Delete', 'Message moved to trash')}><Trash2 className="size-3" /></Button>
+                  <Button variant="ghost" size="sm" className="text-yellow-400 hover:text-yellow-300" onClick={() => starMut.mutate(selected.id, { onSuccess: () => notifySuccess('Unstarred', 'Message removed from starred'), onError: () => notifyError('Error', 'Failed to toggle star') })}><Star className="size-3 fill-current" /></Button>
+                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => archiveMut.mutate(selected.id, { onSuccess: () => { notifySuccess('Archive', 'Message archived'); setSelectedId(null); }, onError: () => notifyError('Error', 'Failed to archive message') })}><Archive className="size-3" /></Button>
+                  <Button variant="ghost" size="sm" className="text-white/30 hover:text-white/70" onClick={() => deleteMut.mutate(selected.id, { onSuccess: () => { notifySuccess('Delete', 'Message moved to trash'); setSelectedId(null); }, onError: () => notifyError('Error', 'Failed to delete message') })}><Trash2 className="size-3" /></Button>
                 </div>
               </div>
               <Separator className="bg-white/6" />
@@ -152,13 +163,13 @@ export default function StarredPage() {
               <div className="space-y-2">
                 <Textarea placeholder="Reply…" rows={3} value={replyText} onChange={(e) => setReplyText(e.target.value)} className="border-white/10 bg-white/5 text-white/80 placeholder:text-white/25" />
                 <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" className="border-white/10 text-white/60 hover:bg-white/5" onClick={() => notifySuccess('Attach', 'File picker opened')}><Paperclip className="mr-1 size-3" /> Attach</Button>
+                  <Button variant="outline" size="sm" className="border-white/10 text-white/60 hover:bg-white/5" onClick={() => { const input = document.createElement('input'); input.type = 'file'; input.onchange = () => notifySuccess('Attach', `${input.files?.[0]?.name ?? 'File'} selected`); input.click(); }}><Paperclip className="mr-1 size-3" /> Attach</Button>
                   <Button size="sm" className="bg-indigo-600 hover:bg-indigo-500" disabled={sendReplyMut.isPending} onClick={() => sendReplyMut.mutate({ threadId: selected?.id, content: replyText } as any, { onSuccess: () => { notifySuccess('Reply', 'Reply sent successfully'); setReplyText(''); }, onError: () => notifyError('Error', 'Reply failed to send') })}><Send className="mr-1 size-3" /> {sendReplyMut.isPending ? 'Sending…' : 'Reply'}</Button>
                 </div>
               </div>
             </CardContent>
           ) : (
-            <CardContent className="flex min-h-[500px] items-center justify-center">
+            <CardContent className="flex min-h-125 items-center justify-center">
               <div className="text-center text-white/25">
                 <Star className="mx-auto mb-2 size-10" />
                 <p className="text-sm">Select a starred message</p>

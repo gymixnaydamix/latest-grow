@@ -318,7 +318,7 @@ function LoginPagesView() {
 
                 {previewLoginId === lp.id && (
                   <div className="mt-2 rounded-lg border border-fuchsia-500/20 bg-slate-900 p-4">
-                    <div className="mx-auto max-w-[200px] space-y-3 text-center">
+                    <div className="mx-auto max-w-50 space-y-3 text-center">
                       <div className="flex items-center justify-center">
                         {lp.logo ? (
                           <div className="size-10 rounded-lg bg-fuchsia-500/20 flex items-center justify-center"><Lock className="size-5 text-fuchsia-300" /></div>

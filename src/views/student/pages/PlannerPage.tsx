@@ -1,5 +1,5 @@
 /* ─── PlannerPage ─── AI-optimized study schedule ──────────────────── */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Plus, Sparkles, CalendarDays, GripVertical, Check, Trash2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -42,11 +42,26 @@ export default function PlannerPage() {
   const [blocks, setBlocks] = useState<StudyBlock[]>(INITIAL_BLOCKS);
 
   /* ── API data ── */
-  const { data: _apiPlanner } = useStudentPlanner();
+  const { data: apiPlanner } = useStudentPlanner();
   const addBlockMut = useAddPlannerBlock();
   const optimizeMut = useOptimizePlanner();
-  // @ts-expect-error TS6133 — API data available for future use
-  const _plannerBlocks = (_apiPlanner as any[]) ?? [];
+
+  /* Hydrate blocks from API when data arrives */
+  useEffect(() => {
+    if (apiPlanner && Array.isArray(apiPlanner) && apiPlanner.length > 0) {
+      setBlocks(
+        (apiPlanner as any[]).map((b: any, i: number) => ({
+          id: b.id ?? String(i + 1),
+          time: b.time ?? '',
+          task: b.task ?? b.title ?? '',
+          subject: b.subject ?? '',
+          duration: b.duration ?? '30 min',
+          priority: b.priority ?? 'medium',
+          completed: !!b.completed,
+        })),
+      );
+    }
+  }, [apiPlanner]);
 
   const toggle = (id: string) =>
     setBlocks((b) => b.map((x) => (x.id === id ? { ...x, completed: !x.completed } : x)));

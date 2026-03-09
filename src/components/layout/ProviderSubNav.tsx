@@ -11,8 +11,6 @@ import { useProviderHome, useProviderTenants } from '@/hooks/api/use-provider-co
 import type { SubNavItem } from '@/constants/navigation';
 
 const PROVIDER_BASE = '/provider/home';
-const PANEL_HEIGHT = { height: 'calc(100vh - 5.5rem)' };
-
 type MetricTone = 'neutral' | 'danger' | 'success' | 'warning';
 
 type ReadyMetric = { status: 'ready'; label: string; shortLabel?: string; tone: MetricTone };
@@ -220,7 +218,7 @@ function ProviderSubNavList({ items, parentLabel, collapsed, onItemClick }: Prov
   }, [items, activeSubNav, setSubNav]);
 
   return (
-    <ScrollArea className="flex-1">
+    <ScrollArea className="min-h-0 flex-1">
       <div ref={listRef} className={cn('space-y-1', collapsed ? 'px-1.5 py-2' : 'p-2')}>
         {items.map((item) => {
           const isActive = activeSubNav === item.id;
@@ -356,10 +354,9 @@ export function ProviderSubNav({ items, parentLabel }: ProviderSubNavProps) {
       {/* Desktop panel */}
       <aside
         className={cn(
-          'relative hidden shrink-0 overflow-hidden rounded-xl border border-border/60 bg-card/80 text-foreground shadow-[var(--shadow-sm)] transition-[width] duration-300 ease-out lg:flex lg:flex-col',
+          'relative hidden h-full min-h-0 shrink-0 self-stretch overflow-hidden rounded-xl border border-border/60 bg-card/80 text-foreground shadow-[var(--shadow-sm)] transition-[width] duration-300 ease-out lg:flex lg:flex-col',
           collapsed ? 'w-20' : 'w-64',
         )}
-        style={PANEL_HEIGHT}
         aria-label="Provider sub navigation"
       >
         {/* Header */}
@@ -379,7 +376,7 @@ export function ProviderSubNav({ items, parentLabel }: ProviderSubNavProps) {
               size="icon-sm"
               className="rounded-lg border border-border/60 bg-muted/50 text-muted-foreground hover:bg-muted hover:text-foreground"
               onClick={() => setCollapsed((value) => !value)}
-              aria-label={collapsed ? 'Expand sub navigation' : 'Collapse sub navigation'}
+              aria-label={collapsed ? 'Expand provider sub navigation' : 'Collapse provider sub navigation'}
             >
               {collapsed ? <PanelLeftOpen className="size-3.5" /> : <PanelLeftClose className="size-3.5" />}
             </Button>

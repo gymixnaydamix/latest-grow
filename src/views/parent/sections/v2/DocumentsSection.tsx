@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useParentV2Documents, useUploadParentV2Document } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateLabel, parentDocumentsDemo as FALLBACK_DOCUMENTS } from './parent-v2-demo-data';
+import { childDisplayName, formatDateLabel } from './parent-v2-demo-data';
 import type { ParentDocumentDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -13,7 +13,7 @@ import type { ParentSectionProps } from './shared';
 export function DocumentsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawRows } = useParentV2Documents({ scope, childId });
   const uploadMut = useUploadParentV2Document();
-  const allRows: ParentDocumentDemo[] = (rawRows as ParentDocumentDemo[] | undefined) ?? filterByChild(FALLBACK_DOCUMENTS, childId, scope);
+  const allRows: ParentDocumentDemo[] = (rawRows as ParentDocumentDemo[] | undefined) ?? [];
 
   const [query, setQuery] = useState('');
   const [catFilter, setCatFilter] = useState('ALL');

@@ -73,10 +73,10 @@ export default function GeneralCommunityPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Members" value={450} icon={<Users className="h-5 w-5" />} />
-        <StatCard label="Posts Today" value={24} icon={<MessageSquare className="h-5 w-5" />} trend="up" trendLabel="+12%" />
-        <StatCard label="Active Now" value={38} icon={<TrendingUp className="h-5 w-5" />} />
-        <StatCard label="Pinned" value={3} icon={<Pin className="h-5 w-5" />} />
+        <StatCard label="Members" value={(communityData?.totalMembers as number) ?? activeMembers.length} icon={<Users className="h-5 w-5" />} />
+        <StatCard label="Posts Today" value={communityPosts.length} icon={<MessageSquare className="h-5 w-5" />} trend="up" />
+        <StatCard label="Active Now" value={(communityData?.activeNow as number) ?? 0} icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard label="Pinned" value={communityPosts.filter((p: any) => p.pinned).length} icon={<Pin className="h-5 w-5" />} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-[1fr_260px]">

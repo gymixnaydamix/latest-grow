@@ -11,6 +11,7 @@ import { FooterDock } from './FooterDock';
 import { SearchCommand } from '@/components/features/SearchCommand';
 import { WidgetPanel } from './WidgetPanel';
 import { OverlayShell } from '@/components/overlay/OverlayShell';
+import { useOverlayDeepLinkSync } from '@/components/overlay/useOverlayDeepLinkSync';
 
 import { useAuthStore } from '@/store/auth.store';
 import { useNavigationStore } from '@/store/navigation.store';
@@ -58,7 +59,8 @@ export function AppLayout() {
   }, [isParentPortalV2, pathname, navigateNav]);
 
   const topOffset = '5rem';
-  const bottomReserve = '3.5rem';
+
+  useOverlayDeepLinkSync(user?.role);
 
   return (
     <TooltipProvider delayDuration={200} disableHoverableContent>
@@ -72,12 +74,12 @@ export function AppLayout() {
         {/* --- MAIN LAYOUT ROW --- */}
         <div
           className="relative z-10 flex w-full overflow-hidden"
-          style={{ height: `calc(100vh - ${topOffset} - ${bottomReserve})` }}
+          style={{ height: `calc(100vh - ${topOffset})` }}
         >
           <div
-            className={`flex flex-1 flex-col transition-all duration-300 ease-out ${isParentPortalV2 || isProviderConsole ? 'mr-2 lg:mr-38' : 'mr-18 lg:mr-38'}`}
+            className={`flex min-w-0 flex-1 flex-col transition-all duration-300 ease-out ${isParentPortalV2 || isProviderConsole ? 'mr-2 lg:mr-38' : 'mr-18 lg:mr-38'}`}
           >
-            <div className="flex flex-1 min-h-0 px-3 pt-2 gap-3">
+            <div className="flex min-h-0 min-w-0 flex-1 gap-3 px-3 pt-2 pb-3">
 
               {/* --- LEFT SUB-NAVIGATION --- */}
               {subNavItems.length > 0 && (
@@ -88,7 +90,7 @@ export function AppLayout() {
               )}
 
               {/* --- MAIN CONTENT CONTAINER --- */}
-              <div className="relative flex-1 min-h-0 w-full rounded-xl overflow-hidden border border-border/60 bg-card/80 shadow-[var(--shadow-sm)]">
+              <div className="relative min-h-0 min-w-0 flex-1 rounded-xl overflow-hidden border border-border/60 bg-card/80 shadow-(--shadow-sm)">
                 <AnimatePresence mode="wait">
                   <motion.main
                     key={contentKey}
@@ -96,7 +98,7 @@ export function AppLayout() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
                     transition={{ duration: 0.25, ease: [0.16, 1, 0.3, 1] }}
-                    className="relative z-10 h-full w-full overflow-y-auto overflow-x-hidden p-4 scroll-smooth"
+                    className="relative z-10 h-full w-full overflow-y-auto overflow-x-hidden p-4 pb-8 lg:pb-10 scroll-smooth"
                     style={{ scrollbarWidth: 'thin' }}
                   >
                     <Outlet />

@@ -28,7 +28,8 @@ export function ToolPlatformSection() {
   const { activeHeader, activeSubNav } = useNavigationStore();
   const containerRef = useStaggerAnimate<HTMLDivElement>([activeHeader, activeSubNav]);
   const { data: platformConfigsData } = usePlatformConfigs();
-  void platformConfigsData;
+  const platformReady = !!platformConfigsData;
+  void platformReady;
 
   const view = (() => {
     switch (activeHeader) {

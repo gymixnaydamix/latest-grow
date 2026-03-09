@@ -41,11 +41,11 @@ const accentColors = [
 export function StudentConciergeSettings() {
   const { activeSubNav } = useNavigationStore();
 
-  const { data: _apiNotifications } = useStudentNotifications();
-  const { data: _apiTimetable } = useStudentTimetable();
+  const { data: apiNotifications } = useStudentNotifications();
+  const { data: apiTimetable } = useStudentTimetable();
 
   const studyGoals = FALLBACK_STUDY_GOALS;
-  const timetableOptions = FALLBACK_TIMETABLE_OPTIONS;
+  const timetableOptions = (apiTimetable as any)?.displayOptions ?? FALLBACK_TIMETABLE_OPTIONS;
   const themeOptions = FALLBACK_THEME_OPTIONS;
 
   /* ── Preferences (default) ── */
@@ -121,11 +121,13 @@ export function StudentConciergeSettings() {
 
   /* ── Notification Rules ── */
   if (activeSubNav === 'c_notification_rules') {
+    const notifCount = (apiNotifications as any[])?.length ?? 0;
     return (
       <div className="space-y-3">
         <div className="flex items-center gap-2">
           <Bell className="h-4 w-4 text-primary" />
           <h3 className="text-sm font-semibold text-foreground">Notification Rules</h3>
+          {notifCount > 0 && <span className="text-[10px] text-muted-foreground">({notifCount} active)</span>}
         </div>
         <div className="space-y-2">
           {[
@@ -167,15 +169,15 @@ export function StudentConciergeSettings() {
         </div>
         <p className="text-xs text-muted-foreground">Choose how your class timetable appears</p>
         <div className="space-y-2">
-          {timetableOptions.map((o) => (
+          {timetableOptions.map((o: { id: string; label?: string; name?: string; desc?: string; description?: string; active: boolean }) => (
             <div key={o.id} className={cn(
               'rounded-xl border p-3 shadow-lg backdrop-blur-xl dark:border-white/5 cursor-pointer transition',
               o.active ? 'border-primary/30 bg-primary/5' : 'border-white/20 bg-white/60 dark:bg-white/5 hover:bg-white/80',
             )}>
               <div className="flex items-center justify-between">
                 <div>
-                  <h5 className="text-xs font-semibold text-foreground">{o.name}</h5>
-                  <p className="text-[10px] text-muted-foreground">{o.description}</p>
+                  <h5 className="text-xs font-semibold text-foreground">{o.name ?? o.label}</h5>
+                  <p className="text-[10px] text-muted-foreground">{o.description ?? o.desc}</p>
                 </div>
                 {o.active ? (
                   <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600">Active</span>

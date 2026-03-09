@@ -1,6 +1,6 @@
 /* ─── WhiteLabelingSection ─── White-label / branding customization ──── */
-import { useState } from 'react';
-import { Palette, Upload, Globe, Type, Eye, RotateCcw, Save, Sun, Moon, Image } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Palette, Upload, Globe, Type, Eye, RotateCcw, Save, Sun, Moon, Image, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +11,9 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
+import { useAuthStore } from '@/store/auth.store';
+import { useSchool, useUpdateBranding } from '@/hooks/api';
+import { notifySuccess, notifyError } from '@/lib/notify';
 
 const DEFAULT_BRAND = {
   primaryColor: '#818cf8',
@@ -40,20 +43,51 @@ const FONT_OPTIONS = ['Inter', 'Poppins', 'Roboto', 'Nunito', 'Open Sans', 'Lato
 
 export default function WhiteLabelingSection() {
   const { activeSubNav } = useNavigationStore();
+  const { schoolId } = useAuthStore();
   const containerRef = useStaggerAnimate([activeSubNav]);
+
+  /* ── API hooks ── */
+  const { data: schoolData } = useSchool(schoolId);
+  const brandingMutation = useUpdateBranding(schoolId ?? '');
+
   const [brand, setBrand] = useState({ ...DEFAULT_BRAND });
   const [dirty, setDirty] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const [initialized, setInitialized] = useState(false);
+
+  // Hydrate from API when school data loads
+  useEffect(() => {
+    if (schoolData && !initialized) {
+      const s = schoolData as unknown as Record<string, unknown>;
+      const branding = (s.branding ?? s) as Record<string, unknown>;
+      setBrand(prev => ({
+        ...prev,
+        ...(branding.primaryColor ? { primaryColor: String(branding.primaryColor) } : {}),
+        ...(branding.secondaryColor ? { secondaryColor: String(branding.secondaryColor) } : {}),
+        ...(branding.logo ? { logoUrl: String(branding.logo) } : {}),
+        ...(branding.name ? { appName: String(branding.name) } : {}),
+      }));
+      setInitialized(true);
+    }
+  }, [schoolData, initialized]);
 
   // Map nav subnav ids to tab values
   const tabValue = activeSubNav === 'login_page' ? 'domain' : 'branding';
 
   const update = (field: string, value: unknown) => { setBrand(p => ({ ...p, [field]: value })); setDirty(true); };
 
-  const handleSave = () => {
-    setSaving(true);
-    setTimeout(() => { setSaving(false); setDirty(false); }, 1200);
-  };
+  const handleSave = useCallback(async () => {
+    try {
+      await brandingMutation.mutateAsync({
+        logo: brand.logoUrl || undefined,
+        primaryColor: brand.primaryColor,
+        secondaryColor: brand.secondaryColor,
+      });
+      setDirty(false);
+      notifySuccess('Branding saved successfully');
+    } catch {
+      notifyError('Failed to save branding');
+    }
+  }, [brand, brandingMutation]);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -67,8 +101,8 @@ export default function WhiteLabelingSection() {
           <Button variant="ghost" size="sm" className="text-white/40 hover:text-white/70 gap-1.5" onClick={() => { setBrand({ ...DEFAULT_BRAND }); setDirty(false); }}>
             <RotateCcw className="size-3" /> Reset
           </Button>
-          <Button size="sm" className="bg-indigo-500/80 hover:bg-indigo-500 text-white text-xs gap-1.5" disabled={!dirty || saving} onClick={handleSave}>
-            <Save className="size-3" /> {saving ? 'Saving...' : 'Save Changes'}
+          <Button size="sm" className="bg-indigo-500/80 hover:bg-indigo-500 text-white text-xs gap-1.5" disabled={!dirty || brandingMutation.isPending} onClick={handleSave}>
+            {brandingMutation.isPending ? <Loader2 className="size-3 animate-spin" /> : <Save className="size-3" />} {brandingMutation.isPending ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
       </div>

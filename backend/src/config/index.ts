@@ -16,6 +16,8 @@ export interface AppConfig {
   corsOrigins: string[];
   aiProvider: string;
   aiApiKey: string;
+  ollamaUrl: string;
+  ollamaModel: string;
   stripeSecretKey: string;
   stripeWebhookSecret: string;
   stripePublishableKey: string;
@@ -53,6 +55,8 @@ export const config: AppConfig = {
     .filter(Boolean),
   aiProvider: optionalEnv('AI_PROVIDER', 'mock'),
   aiApiKey: optionalEnv('AI_API_KEY', ''),
+  ollamaUrl: optionalEnv('OLLAMA_URL', 'http://localhost:11434'),
+  ollamaModel: optionalEnv('OLLAMA_MODEL', 'qwen2.5-coder:1.5b'),
   stripeSecretKey: optionalEnv('STRIPE_SECRET_KEY', ''),
   stripeWebhookSecret: optionalEnv('STRIPE_WEBHOOK_SECRET', ''),
   stripePublishableKey: optionalEnv('STRIPE_PUBLISHABLE_KEY', ''),

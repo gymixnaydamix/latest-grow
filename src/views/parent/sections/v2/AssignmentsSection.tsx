@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useParentV2Assignments } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateLabel, parentAssignmentsDemo as FALLBACK_ASSIGNMENTS } from './parent-v2-demo-data';
+import { childDisplayName, formatDateLabel } from './parent-v2-demo-data';
 import type { ParentAssignmentDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge, UrgentInline } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -19,7 +19,7 @@ function statusTone(status: string): 'good' | 'warn' | 'bad' | 'info' | 'neutral
 
 export function AssignmentsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawAssignments } = useParentV2Assignments({ scope, childId });
-  const allRows: ParentAssignmentDemo[] = (rawAssignments as ParentAssignmentDemo[] | undefined) ?? filterByChild(FALLBACK_ASSIGNMENTS, childId, scope);
+  const allRows: ParentAssignmentDemo[] = (rawAssignments as ParentAssignmentDemo[] | undefined) ?? [];
 
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_FILTERS)[number]>('ALL');
   const [query, setQuery] = useState('');

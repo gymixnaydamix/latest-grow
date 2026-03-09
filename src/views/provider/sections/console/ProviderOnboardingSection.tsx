@@ -210,7 +210,7 @@ function WizardView() {
         <button
           key={s.label}
           onClick={() => { setValidationError(null); setStep(i); }}
-          className={`min-w-[148px] shrink-0 rounded-lg border px-2 py-1.5 text-left transition-all xl:min-w-[156px] ${
+          className={`min-w-37 shrink-0 rounded-lg border px-2 py-1.5 text-left transition-all xl:min-w-39 ${
             i === step
               ? 'border-teal-300 bg-teal-50 ring-1 ring-teal-100'
               : i < step

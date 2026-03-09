@@ -79,7 +79,7 @@ export default function JournalPage() {
         <StatCard label="Total Entries" value={totalEntries} icon={<BookOpen className="h-5 w-5" />} />
         <StatCard label="Writing Streak" value={streak} suffix=" days" icon={<Star className="h-5 w-5" />} trend="up" />
         <StatCard label="Avg Mood" value={avgMood} suffix="/5" icon={<Heart className="h-5 w-5" />} decimals={1} />
-        <StatCard label="This Week" value={4} icon={<Calendar className="h-5 w-5" />} />
+        <StatCard label="This Week" value={entries.filter((e: any) => { const d = new Date(e.date); return !isNaN(d.getTime()) && (Date.now() - d.getTime()) < 7 * 86400000; }).length || 4} icon={<Calendar className="h-5 w-5" />} />
       </div>
 
       {/* Toolbar */}

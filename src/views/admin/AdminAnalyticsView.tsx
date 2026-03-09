@@ -51,9 +51,13 @@ export default function AdminAnalyticsView() {
   const { data: apiAnalytics } = useAnalyticsOverview();
 
   const ENROLLMENT_TREND = apiAnalytics?.mrrData?.map(d => ({ name: d.month, students: d.mrr })) ?? FALLBACK_ENROLLMENT;
-  const GRADE_DISTRIBUTION = FALLBACK_GRADES;
-  const DEPT_PERFORMANCE = FALLBACK_DEPTS;
-  const ATTENDANCE_TREND = FALLBACK_ATTENDANCE;
+  const analyticData = apiAnalytics as any;
+  const GRADE_DISTRIBUTION = analyticData?.gradeDistribution ?? FALLBACK_GRADES;
+  const DEPT_PERFORMANCE = analyticData?.deptPerformance ?? FALLBACK_DEPTS;
+  const ATTENDANCE_TREND = analyticData?.attendanceTrend ?? FALLBACK_ATTENDANCE;
+
+  const latestEnrollment = ENROLLMENT_TREND.length > 0 ? ENROLLMENT_TREND[ENROLLMENT_TREND.length - 1].students : 0;
+  const latestAttendance = ATTENDANCE_TREND.length > 0 ? ATTENDANCE_TREND[ATTENDANCE_TREND.length - 1].rate : 0;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -64,15 +68,15 @@ export default function AdminAnalyticsView() {
       </div>
 
       <div data-animate className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Total Students" value={578} trend="up" trendLabel="+22 this month" icon={<GraduationCap className="size-5" />} accentColor="#818cf8" sparklineData={ENROLLMENT_TREND.map(e => e.students)} />
-        <StatCard label="Avg GPA" value={3.42} decimals={2} trend="up" trendLabel="+0.08" icon={<Award className="size-5" />} accentColor="#34d399" />
-        <StatCard label="Attendance" value={96} suffix="%" trend="up" trendLabel="+1.5%" icon={<Clock className="size-5" />} accentColor="#fbbf24" sparklineData={ATTENDANCE_TREND.map(a => a.rate)} />
-        <StatCard label="Course Completion" value={89} suffix="%" trend="up" trendLabel="+3% this semester" icon={<BookOpen className="size-5" />} accentColor="#f472b6" />
+        <StatCard label="Total Students" value={latestEnrollment} trend="up" trendLabel="" icon={<GraduationCap className="size-5" />} accentColor="#818cf8" sparklineData={ENROLLMENT_TREND.map((e: any) => e.students)} />
+        <StatCard label="Avg GPA" value={analyticData?.avgGpa ?? 0} decimals={2} trend="up" trendLabel="" icon={<Award className="size-5" />} accentColor="#34d399" />
+        <StatCard label="Attendance" value={latestAttendance} suffix="%" trend="up" trendLabel="" icon={<Clock className="size-5" />} accentColor="#fbbf24" sparklineData={ATTENDANCE_TREND.map((a: any) => a.rate)} />
+        <StatCard label="Course Completion" value={analyticData?.courseCompletion ?? 0} suffix="%" trend="up" trendLabel="" icon={<BookOpen className="size-5" />} accentColor="#f472b6" />
       </div>
 
       <div data-animate className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <NeonBarChart title="Department Performance" subtitle="Average grades & attendance by department" data={DEPT_PERFORMANCE.map(d => ({ name: d.name, primary: d.avgGrade, secondary: d.attendance }))} dataKey="primary" secondaryDataKey="secondary" xAxisKey="name" colors={['#818cf8']} secondaryColor="#34d399" height={280} />
+          <NeonBarChart title="Department Performance" subtitle="Average grades & attendance by department" data={DEPT_PERFORMANCE.map((d: typeof DEPT_PERFORMANCE[number]) => ({ name: d.name, primary: d.avgGrade, secondary: d.attendance }))} dataKey="primary" secondaryDataKey="secondary" xAxisKey="name" colors={['#818cf8']} secondaryColor="#34d399" height={280} />
         </div>
         <div className="lg:col-span-2">
           <GlowPieChart title="Grade Distribution" subtitle="School-wide letter grade breakdown" data={GRADE_DISTRIBUTION} height={280} />

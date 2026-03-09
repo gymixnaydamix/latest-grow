@@ -1,7 +1,5 @@
 /* ─── Provider Console sections · Barrel export ─── */
 export { ProviderBillingSection } from './ProviderBillingSection';
-export { ProviderUsageSection } from './ProviderUsageSection';
-export { ProviderTemplatesSection } from './ProviderTemplatesSection';
 export { ProviderIntegrationsSection } from './ProviderIntegrationsSection';
 export { ProviderSecuritySection } from './ProviderSecuritySection';
 export { ProviderTeamSection } from './ProviderTeamSection';

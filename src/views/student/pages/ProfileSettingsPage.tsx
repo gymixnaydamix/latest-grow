@@ -1,5 +1,5 @@
 /* ─── ProfileSettingsPage ─── Full-page student profile settings ──── */
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   User, Mail, Phone, Camera, Key, Shield,
   Smartphone, Globe, Palette, Eye, ChevronRight,
@@ -15,7 +15,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
-import { notifySuccess } from '@/lib/notify';
+import { notifySuccess, notifyError } from '@/lib/notify';
 import { useMe, useUpdateProfile } from '@/hooks/api';
 import { useStudentProfile } from '@/hooks/api/use-student';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -58,11 +58,13 @@ export default function ProfileSettingsPage() {
   const gradeLevel = studentProfile?.gradeLevel ?? '';
   const section = studentProfile?.section ?? '';
   const SECURITY_ITEMS = FALLBACK_SECURITY_ITEMS;
-  const PREFERENCES = FALLBACK_PREFERENCES;
-  const LINKED_ACCOUNTS = FALLBACK_LINKED_ACCOUNTS;
+  const [preferences, setPreferences] = useState(FALLBACK_PREFERENCES);
+  const [linkedAccounts, setLinkedAccounts] = useState(FALLBACK_LINKED_ACCOUNTS);
   const PROFILE_COMPLETION = FALLBACK_PROFILE_COMPLETION;
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
+  const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [_avatarFile, setAvatarFile] = useState<File | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -77,6 +79,8 @@ export default function ProfileSettingsPage() {
   const role = user?.role ?? '';
   const completedFields = PROFILE_COMPLETION.filter((f) => f.done).length;
   const completionPct = Math.round((completedFields / PROFILE_COMPLETION.length) * 100);
+  const securityScore = SECURITY_ITEMS.reduce((acc, item) => acc + (item.status === 'ok' ? 25 : item.status === 'warning' ? 10 : 15), 0);
+  const connectedAccounts = linkedAccounts.filter((a) => a.connected).length;
 
   if (isLoading) {
     return (
@@ -97,9 +101,9 @@ export default function ProfileSettingsPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Profile Completion" value={completionPct} suffix="%" icon={<User className="h-5 w-5" />} accentColor="#6366f1" />
-        <StatCard label="Security Score" value={85} suffix="/100" icon={<Shield className="h-5 w-5" />} accentColor="#10b981" />
-        <StatCard label="Active Sessions" value={2} icon={<Smartphone className="h-5 w-5" />} />
-        <StatCard label="Linked Accounts" value={1} suffix="/3" icon={<Link2 className="h-5 w-5" />} />
+        <StatCard label="Security Score" value={securityScore} suffix="/100" icon={<Shield className="h-5 w-5" />} accentColor="#10b981" />
+        <StatCard label="Active Sessions" value={Number(SECURITY_ITEMS.find(s => s.title === 'Active Sessions')?.desc.match(/\d+/)?.[0] ?? '1')} icon={<Smartphone className="h-5 w-5" />} />
+        <StatCard label="Linked Accounts" value={connectedAccounts} suffix={`/${linkedAccounts.length}`} icon={<Link2 className="h-5 w-5" />} />
       </div>
 
       {/* Profile card */}
@@ -110,9 +114,10 @@ export default function ProfileSettingsPage() {
               <Avatar className="size-24 border-2 border-indigo-500/20">
                 <AvatarFallback className="text-2xl bg-indigo-500/10 text-indigo-400">{initials}</AvatarFallback>
               </Avatar>
-              <Button size="icon" className="absolute -bottom-1 -right-1 size-8 rounded-full border border-white/10 bg-white/5 text-white/60 hover:bg-white/10" onClick={() => notifySuccess('Avatar', 'Photo upload dialog opened')}>
+              <Button size="icon" className="absolute -bottom-1 -right-1 size-8 rounded-full border border-white/10 bg-white/5 text-white/60 hover:bg-white/10" onClick={() => avatarInputRef.current?.click()}>
                 <Camera className="size-3.5" />
               </Button>
+              <input ref={avatarInputRef} type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) { setAvatarFile(file); notifySuccess('Avatar', `${file.name} selected — save profile to apply`); } }} />
             </div>
             <div className="flex-1">
               <p className="text-xl font-semibold text-white/90">{fullName}</p>
@@ -197,7 +202,7 @@ export default function ProfileSettingsPage() {
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
               {SECURITY_ITEMS.map((item) => (
-                <div key={item.title} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-3 cursor-pointer hover:bg-white/4 hover:border-white/12 transition-colors" onClick={() => notifySuccess('Security', 'Security setting updated')}>
+                <div key={item.title} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-3 cursor-pointer hover:bg-white/4 hover:border-white/12 transition-colors" onClick={() => notifyError(item.title, `${item.title} management is not available yet`)}>
                   <div className="flex items-center gap-3">
                     <div className={cn('flex size-8 items-center justify-center rounded-lg', item.color)}>
                       <item.icon className="size-4" />
@@ -263,8 +268,21 @@ export default function ProfileSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {PREFERENCES.map((pref) => (
-                <div key={pref.title} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-2.5 cursor-pointer hover:bg-white/4 transition-colors" onClick={() => notifySuccess('Preference', 'Preference updated')}>
+              {preferences.map((pref) => {
+                const valueOptions: Record<string, string[]> = {
+                  Language: ['English (US)', 'Spanish', 'French', 'German'],
+                  Theme: ['System Default', 'Light', 'Dark'],
+                  Accessibility: ['Standard', 'High Contrast', 'Large Text'],
+                };
+                const options = valueOptions[pref.title] ?? [pref.value];
+                return (
+                <div key={pref.title} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-2.5 cursor-pointer hover:bg-white/4 transition-colors" onClick={() => {
+                  const currentIdx = options.indexOf(pref.value);
+                  const nextIdx = (currentIdx + 1) % options.length;
+                  const nextValue = options[nextIdx];
+                  setPreferences(prev => prev.map(p => p.title === pref.title ? { ...p, value: nextValue } : p));
+                  notifySuccess('Preference', `${pref.title} set to ${nextValue}`);
+                }}>
                   <div className="flex items-center gap-2.5">
                     <div className={cn('flex size-6 items-center justify-center rounded-md', pref.color)}>
                       <pref.icon className="size-3" />
@@ -273,7 +291,7 @@ export default function ProfileSettingsPage() {
                   </div>
                   <Badge variant="outline" className="text-[8px] border-white/8 text-white/30">{pref.value}</Badge>
                 </div>
-              ))}
+              ); })}
             </CardContent>
           </Card>
 
@@ -285,7 +303,7 @@ export default function ProfileSettingsPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {LINKED_ACCOUNTS.map((acct) => (
+              {linkedAccounts.map((acct) => (
                 <div key={acct.name} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 p-2.5">
                   <div>
                     <p className="text-[10px] font-medium text-white/60">{acct.name}</p>
@@ -294,7 +312,10 @@ export default function ProfileSettingsPage() {
                   <Button size="sm" variant="outline" className={cn(
                     'h-6 text-[9px] px-2',
                     acct.connected ? 'border-emerald-500/20 text-emerald-400' : 'border-white/10 text-white/35',
-                  )} onClick={() => notifySuccess('Accounts', 'Account connection toggled')}>
+                  )} onClick={() => {
+                    setLinkedAccounts(prev => prev.map(a => a.name === acct.name ? { ...a, connected: !a.connected } : a));
+                    notifySuccess('Accounts', acct.connected ? `${acct.name} disconnected` : `${acct.name} connected`);
+                  }}>
                     {acct.connected ? 'Connected' : 'Connect'}
                   </Button>
                 </div>

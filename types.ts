@@ -1409,6 +1409,254 @@ export interface PaginationParams {
 }
 
 // ---------------------------------------------------------------------------
+// Gamification
+// ---------------------------------------------------------------------------
+
+export interface GamificationMetric {
+  id: string;
+  label: string;
+  value: string;
+  trend?: string;
+  tone?: 'emerald' | 'blue' | 'amber' | 'violet' | 'rose' | 'slate';
+  detail?: string;
+}
+
+export interface GamificationSeriesPoint {
+  label: string;
+  value: number;
+  secondaryValue?: number;
+}
+
+export interface GamificationTableColumn {
+  id: string;
+  label: string;
+}
+
+export interface GamificationTableRow {
+  id: string;
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+export interface GamificationTableData {
+  columns: GamificationTableColumn[];
+  rows: GamificationTableRow[];
+}
+
+export interface GamificationQueueItem {
+  id: string;
+  title: string;
+  subtitle: string;
+  status: string;
+  meta: string;
+}
+
+export interface GamificationAuditEntry {
+  id: string;
+  actor: string;
+  action: string;
+  detail: string;
+  timestamp: string;
+}
+
+export interface GamificationVersion {
+  id: string;
+  label: string;
+  summary: string;
+  author: string;
+  createdAt: string;
+}
+
+export interface GamificationBuilderDraft {
+  title: string;
+  summary: string;
+  segment: string;
+  status: string;
+  scheduleStart: string;
+  scheduleEnd: string;
+  owner: string;
+  notes: string;
+  automationEnabled: boolean;
+}
+
+export interface GamificationPageCapabilities {
+  canEdit: boolean;
+  canPublish: boolean;
+  canRollback: boolean;
+  canExport: boolean;
+  canBulkManage: boolean;
+}
+
+export interface GamificationCardPayload {
+  cardId: string;
+  stat?: string;
+  statDetail?: string;
+  table?: GamificationTableData;
+  series?: GamificationSeriesPoint[];
+  queue?: GamificationQueueItem[];
+  tags?: string[];
+  notes?: string[];
+}
+
+export interface GamificationPagePayload {
+  pageId: string;
+  route: string;
+  title: string;
+  pagePurpose: string;
+  lastUpdatedAt: string;
+  heroMetrics: GamificationMetric[];
+  draft: GamificationBuilderDraft;
+  capabilities: GamificationPageCapabilities;
+  cards: GamificationCardPayload[];
+  versions: GamificationVersion[];
+  auditTrail: GamificationAuditEntry[];
+}
+
+export interface GamificationActionResult {
+  pageId: string;
+  action: string;
+  message: string;
+  audit: GamificationAuditEntry;
+}
+
+export interface GamificationBootstrapDTO {
+  defaultPrimary: string;
+  defaultSecondary: string;
+  allowedRoles: UserRole[];
+  capabilities: GamificationPageCapabilities;
+}
+
+export interface Quiz {
+  id: string;
+  title: string;
+  status: string;
+  difficulty: string;
+  completionRate: number;
+}
+
+export interface QuizSection {
+  id: string;
+  quizId: string;
+  title: string;
+  order: number;
+}
+
+export interface Question {
+  id: string;
+  quizId: string;
+  prompt: string;
+  type: string;
+  difficulty: string;
+}
+
+export interface QuestionOption {
+  id: string;
+  questionId: string;
+  label: string;
+  isCorrect: boolean;
+}
+
+export interface Challenge {
+  id: string;
+  title: string;
+  status: string;
+  participationMode: string;
+}
+
+export interface ChallengeMilestone {
+  id: string;
+  challengeId: string;
+  title: string;
+  completionRate: number;
+}
+
+export interface Reward {
+  id: string;
+  title: string;
+  type: string;
+  pointsCost: number;
+  status: string;
+}
+
+export interface RewardRedemption {
+  id: string;
+  rewardId: string;
+  userId: string;
+  status: string;
+  redeemedAt: string;
+}
+
+export interface Badge {
+  id: string;
+  title: string;
+  rarity: string;
+  status: string;
+}
+
+export interface PointRule {
+  id: string;
+  title: string;
+  trigger: string;
+  delta: number;
+}
+
+export interface PointTransaction {
+  id: string;
+  userId: string;
+  source: string;
+  delta: number;
+  createdAt: string;
+}
+
+export interface Leaderboard {
+  id: string;
+  title: string;
+  status: string;
+  visibility: string;
+}
+
+export interface LeaderboardSeason {
+  id: string;
+  leaderboardId: string;
+  label: string;
+  status: string;
+}
+
+export interface EngagementMetric {
+  id: string;
+  label: string;
+  value: number;
+  recordedAt: string;
+}
+
+export interface PerformanceMetric {
+  id: string;
+  label: string;
+  value: number;
+  recordedAt: string;
+}
+
+export interface ProgressRecord {
+  id: string;
+  subjectId: string;
+  stage: string;
+  completionRate: number;
+}
+
+export interface SavedReport {
+  id: string;
+  title: string;
+  owner: string;
+  lastRunAt: string;
+}
+
+export interface ScheduledExportJob {
+  id: string;
+  label: string;
+  frequency: string;
+  status: string;
+}
+
+// ---------------------------------------------------------------------------
 // Platform Tenant Management
 // ---------------------------------------------------------------------------
 
@@ -1955,6 +2203,142 @@ export interface TeacherClassStudent {
   streak: number;
   missingAssignments: number;
   status: 'on-track' | 'at-risk' | 'excelling';
+}
+
+// ---------------------------------------------------------------------------
+// Teacher Messaging Settings Types
+// ---------------------------------------------------------------------------
+
+export interface TeacherMsgDefaults {
+  autoReplyEnabled: boolean;
+  autoReplyMessage: string;
+  defaultSignature: string;
+  threadRetentionDays: number;
+  maxAttachmentSizeMb: number;
+  allowStudentMessages: boolean;
+  allowParentMessages: boolean;
+  requireApproval: boolean;
+}
+
+export interface TeacherMsgReplySettings {
+  defaultReplyMode: 'reply' | 'reply_all';
+  includeOriginal: boolean;
+  quickReplies: string[];
+}
+
+export interface TeacherMsgScheduling {
+  sendWindowStart: string;
+  sendWindowEnd: string;
+  timezone: string;
+  delayedSendEnabled: boolean;
+  schedulingEnabled: boolean;
+}
+
+export interface TeacherMsgNotifChannels {
+  email: boolean;
+  push: boolean;
+  inApp: boolean;
+  sms: boolean;
+}
+
+export interface TeacherMsgNotifRule {
+  id: string;
+  name: string;
+  condition: 'all_messages' | 'urgent_only' | 'from_parents' | 'from_admin' | 'from_students' | 'mentions';
+  action: 'notify_immediately' | 'digest_hourly' | 'digest_daily' | 'silent';
+  enabled: boolean;
+}
+
+export interface TeacherMsgQuietHours {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+  weekendsOnly: boolean;
+  allowUrgent: boolean;
+}
+
+export interface TeacherSLAPolicy {
+  id: string;
+  name: string;
+  description: string;
+  category: 'parent' | 'student' | 'admin' | 'staff' | 'urgent';
+  responseTimeMinutes: number;
+  resolutionTimeMinutes: number;
+  enabled: boolean;
+  priority: 'low' | 'medium' | 'high' | 'critical';
+  createdAt: string;
+}
+
+export interface TeacherSLAEscalationRule {
+  id: string;
+  name: string;
+  triggerAfterMinutes: number;
+  escalateTo: string;
+  notifyVia: 'email' | 'push' | 'sms' | 'all';
+  policyId: string | null;
+  enabled: boolean;
+}
+
+export interface TeacherLegalTemplate {
+  id: string;
+  name: string;
+  category: 'consent' | 'privacy' | 'liability' | 'agreement' | 'notice' | 'other';
+  subject: string;
+  body: string;
+  requiredFields: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeacherLegalCategory {
+  id: string;
+  name: string;
+  slug: string;
+  count: number;
+  description: string;
+}
+
+export interface TeacherEmailTemplate {
+  id: string;
+  name: string;
+  category: 'welcome' | 'reminder' | 'alert' | 'report' | 'announcement' | 'custom';
+  subject: string;
+  body: string;
+  variables: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TeacherEmailVariable {
+  name: string;
+  description: string;
+  example: string;
+}
+
+export interface TeacherMsgAppearanceTheme {
+  primaryColor: string;
+  sentBubbleColor: string;
+  receivedBubbleColor: string;
+  fontSize: 'small' | 'medium' | 'large';
+  darkMode: boolean;
+}
+
+export interface TeacherMsgAppearanceLayout {
+  chatListPosition: 'left' | 'right';
+  showAvatars: boolean;
+  compactMode: boolean;
+  showTimestamps: boolean;
+  previewLines: number;
+}
+
+export interface TeacherMsgSignature {
+  enabled: boolean;
+  text: string;
+  includeTitle: boolean;
+  includePhone: boolean;
+  includeSchool: boolean;
 }
 
 // ---------------------------------------------------------------------------

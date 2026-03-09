@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { useParentV2Timetable } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, parentTimetableDemo as FALLBACK_TIMETABLE } from './parent-v2-demo-data';
+import { childDisplayName } from './parent-v2-demo-data';
 import type { ParentTimetableItemDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -13,7 +13,7 @@ const WEEKDAY_FILTERS = ['All', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'F
 
 export function TimetableSection({ scope, childId }: ParentSectionProps) {
   const { data: rawData } = useParentV2Timetable({ scope, childId });
-  const allRows: ParentTimetableItemDemo[] = (rawData as ParentTimetableItemDemo[] | undefined) ?? filterByChild(FALLBACK_TIMETABLE, childId, scope);
+  const allRows: ParentTimetableItemDemo[] = (rawData as ParentTimetableItemDemo[] | undefined) ?? [];
 
   const [weekday, setWeekday] = useState<(typeof WEEKDAY_FILTERS)[number]>('All');
   const [query, setQuery] = useState('');

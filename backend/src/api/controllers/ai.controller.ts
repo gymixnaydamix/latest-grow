@@ -17,7 +17,7 @@ export const aiController = {
         temperature: req.body.temperature,
         systemPrompt: req.body.systemPrompt,
       });
-      res.json({ success: true, data: { content: result } });
+      res.json({ success: true, data: { text: result } });
     } catch (error) {
       next(error);
     }
@@ -33,7 +33,7 @@ export const aiController = {
         maxTokens: req.body.maxTokens,
         temperature: req.body.temperature,
       });
-      res.json({ success: true, data: { content: result } });
+      res.json({ success: true, data: { text: result } });
     } catch (error) {
       next(error);
     }
@@ -65,8 +65,8 @@ The policy should include:
 Write in a professional, clear tone appropriate for an educational institution.
       `.trim();
 
-      const content = await ai.generateText(prompt, { maxTokens: 4096, temperature: 0.5 });
-      res.json({ success: true, data: { content } });
+      const text = await ai.generateText(prompt, { maxTokens: 4096, temperature: 0.5 });
+      res.json({ success: true, data: { text } });
     } catch (error) {
       next(error);
     }
@@ -164,8 +164,8 @@ If the content type is "quiz", include questions with answer keys.
 If it's a "lesson plan", include objectives, activities, and assessment criteria.
       `.trim();
 
-      const content = await ai.generateText(prompt, { maxTokens: 4096, temperature: 0.7 });
-      res.json({ success: true, data: { content } });
+      const text = await ai.generateText(prompt, { maxTokens: 4096, temperature: 0.7 });
+      res.json({ success: true, data: { text } });
     } catch (error) {
       next(error);
     }
@@ -226,8 +226,8 @@ The message should:
 Keep the tone professional yet empathetic.
       `.trim();
 
-      const content = await ai.generateText(prompt, { maxTokens: 2048, temperature: 0.3 });
-      res.json({ success: true, data: { content } });
+      const text = await ai.generateText(prompt, { maxTokens: 2048, temperature: 0.3 });
+      res.json({ success: true, data: { text } });
     } catch (error) {
       next(error);
     }

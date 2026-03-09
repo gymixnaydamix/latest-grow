@@ -47,29 +47,7 @@ const FALLBACK_SLASH_CMDS = [
 const starterMessages: ConciergeMessage[] = [
   {
     id: 's1', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Fee payment of ₹18,500 for Aarav\'s Term 3 tuition has been processed successfully. Receipt #GIS-2026-4421 is ready for download.',
-    actionCard: {
-      id: 'ac1', type: 'FeePaymentReceipt', title: 'Fee Payment — Aarav Sharma',
-      status: 'confirmed', linkedEntities: [{ type: 'Student', label: 'Aarav Sharma', id: 'stu-201' }],
-      fields: [
-        { key: 'amount', label: 'Amount', value: '₹18,500' },
-        { key: 'receipt', label: 'Receipt', value: '#GIS-2026-4421' },
-        { key: 'method', label: 'Payment Method', value: 'UPI — SBI' },
-      ],
-      permissionChip: 'Fee Payer',
-    },
-  },
-  {
-    id: 's2', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Leave application for Meera Sharma has been drafted for March 10–12 (family function). It requires your confirmation before submission to the class teacher.',
-  },
-  {
-    id: 's3', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Parent-teacher meeting with Mrs. Priya Gupta has been confirmed for March 8, 2:30 PM at Meeting Room A. Topic: Aarav\'s mid-term progress review.',
-  },
-  {
-    id: 's4', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Aarav\'s Term 2 report card is now available. Class rank: 5th out of 32. Overall percentage: 87.4%. Click to view the detailed breakdown.',
+    content: 'Welcome! I\'m your Parent AI Assistant. Ask me about fees, report cards, leave applications, teacher meetings, bus schedules, or anything about your child\'s school.',
   },
 ];
 
@@ -133,6 +111,11 @@ export function ParentConciergeAssistant() {
   const { messages, addMessage, history } = useConciergeStore();
   const aiChat = useAIChat();
 
+  const systemPrompt = {
+    role: 'system' as const,
+    content: 'You are an AI assistant for a parent in a school management platform (GrowYourNeed). Help with fee payments, report cards, leave applications, parent-teacher meetings, bus tracking, and child progress. Be warm, helpful, and reassuring. If you don\'t know something specific, say so.',
+  };
+
   const todayChips = FALLBACK_TODAY_CHIPS;
   const slashCommands = FALLBACK_SLASH_CMDS;
 
@@ -161,13 +144,20 @@ export function ParentConciergeAssistant() {
             todayChips={todayChips}
             starterMessages={starterMessages}
             slashCommands={slashCommands}
+            isLoading={aiChat.isPending}
             onSend={(t: string) => {
-              const userMsg = { id: `u-${Date.now()}`, role: 'user' as const, content: t, timestamp: new Date().toISOString() };
+              const userMsg: ConciergeMessage = { id: `u-${Date.now()}`, role: 'user', content: t, timestamp: new Date().toISOString() };
               addMessage(userMsg);
-              const history = [...messages, userMsg].map((m) => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content }));
-              aiChat.mutate({ messages: history }, {
+              const chatHistory = [
+                systemPrompt,
+                ...[...messages, userMsg].map((m) => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content })),
+              ];
+              aiChat.mutate({ messages: chatHistory }, {
                 onSuccess: (res) => {
-                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text, timestamp: new Date().toISOString() });
+                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text || 'No response from AI.', timestamp: new Date().toISOString() });
+                },
+                onError: (err) => {
+                  addMessage({ id: `e-${Date.now()}`, role: 'assistant', content: `Error: ${err.message ?? 'Failed to get AI response.'}`, timestamp: new Date().toISOString() });
                 },
               });
             }}

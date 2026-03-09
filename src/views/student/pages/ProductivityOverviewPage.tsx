@@ -63,6 +63,10 @@ export default function ProductivityOverviewPage() {
   const totalFocusHours = focusSessions?.length
     ? Math.round(focusSessions.reduce((sum: number, s: any) => sum + (s.duration ?? 0), 0) / 60)
     : 18;
+  const mapsCreated = (apiFocusSessions as any)?.mapsCreated ?? 8;
+  const productivityScore = focusSessions?.length
+    ? Math.min(100, Math.round((totalFocusSessions / 30) * 100))
+    : 87;
   const TOOLS = FALLBACK_TOOLS;
   const WEEKLY_ACTIVITY = FALLBACK_WEEKLY_ACTIVITY;
   const ACHIEVEMENTS = FALLBACK_ACHIEVEMENTS;
@@ -75,8 +79,8 @@ export default function ProductivityOverviewPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Focus Sessions" value={totalFocusSessions} icon={<Timer className="h-5 w-5" />} trend="up" trendLabel="+8 this week" />
         <StatCard label="Total Focus Time" value={totalFocusHours} suffix="h" icon={<Clock className="h-5 w-5" />} />
-        <StatCard label="Maps Created" value={8} icon={<GitBranch className="h-5 w-5" />} />
-        <StatCard label="Productivity Score" value={87} suffix="%" icon={<Target className="h-5 w-5" />} trend="up" />
+        <StatCard label="Maps Created" value={mapsCreated} icon={<GitBranch className="h-5 w-5" />} />
+        <StatCard label="Productivity Score" value={productivityScore} suffix="%" icon={<Target className="h-5 w-5" />} trend="up" />
       </div>
 
       {/* Tool cards */}

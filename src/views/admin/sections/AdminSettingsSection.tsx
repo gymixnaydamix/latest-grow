@@ -1,5 +1,5 @@
 /* ---- AdminSettingsSection ---- School configuration and management settings ---- */
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useStaggerAnimate } from '@/hooks/use-animate';
 import { useNavigationStore } from '@/store/navigation.store';
 import { useAuthStore } from '@/store/auth.store';
@@ -8,6 +8,7 @@ import {
   useFeeConfig,
   useRoles,
   useSaveSchoolProfile,
+  useSchoolProfile,
   useSaveFeeConfig,
   useGradingScales,
   useDeleteFeeType,
@@ -56,27 +57,50 @@ interface Template {
   status: string;
 }
 
-/* ---- School Profile (local state -- no store entity) ---- */
+/* ---- School Profile defaults (used until API hydrates) ---- */
 const defaultGeneral = {
-  schoolName: 'Sunrise International Academy',
-  regNumber: 'SIA-2018-08432',
-  email: 'admin@sunriseacademy.edu',
-  phone: '+1 (555) 123-4567',
-  website: 'www.sunriseacademy.edu',
+  schoolName: '',
+  regNumber: '',
+  email: '',
+  phone: '',
+  website: '',
 };
 const defaultAddress = {
-  address: '123 Education Boulevard, Springfield, IL 62701',
-  timezone: 'America/Chicago (CST)',
-  schoolHours: '7:45 AM -- 3:15 PM',
-  officeHours: '7:00 AM -- 5:00 PM',
-  foundedYear: '2018',
+  address: '',
+  timezone: '',
+  schoolHours: '',
+  officeHours: '',
+  foundedYear: '',
 };
 
 function SchoolProfileView() {
   const { schoolId } = useAuthStore();
   const saveProfile = useSaveSchoolProfile(schoolId);
+  const { data: profileData } = useSchoolProfile(schoolId);
   const [general, setGeneral] = useState(defaultGeneral);
   const [address, setAddress] = useState(defaultAddress);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    if (profileData && !hydrated) {
+      const p = profileData as Record<string, unknown>;
+      setGeneral({
+        schoolName: (p.schoolName as string) ?? (p.name as string) ?? '',
+        regNumber: (p.regNumber as string) ?? (p.registrationNumber as string) ?? '',
+        email: (p.email as string) ?? '',
+        phone: (p.phone as string) ?? '',
+        website: (p.website as string) ?? '',
+      });
+      setAddress({
+        address: (p.address as string) ?? '',
+        timezone: (p.timezone as string) ?? '',
+        schoolHours: (p.schoolHours as string) ?? '',
+        officeHours: (p.officeHours as string) ?? '',
+        foundedYear: (p.foundedYear as string) ?? '',
+      });
+      setHydrated(true);
+    }
+  }, [profileData, hydrated]);
 
   const updateGeneral = useCallback((key: keyof typeof defaultGeneral, val: string) => setGeneral((p) => ({ ...p, [key]: val })), []);
   const updateAddress = useCallback((key: keyof typeof defaultAddress, val: string) => setAddress((p) => ({ ...p, [key]: val })), []);

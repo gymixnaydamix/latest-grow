@@ -69,12 +69,17 @@ export default function NotificationSettingsPage() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const [channels, setChannels] = useState(CHANNELS);
   const [categories, setCategories] = useState(CATEGORIES);
+  const [quietHoursEnabled, setQuietHoursEnabled] = useState(QUIET_HOURS.enabled);
+  const [mutedUntil, setMutedUntil] = useState<Date | null>(null);
+  const [clearedHistory, setClearedHistory] = useState(false);
+
+  const isMuted = mutedUntil !== null && mutedUntil > new Date();
 
   /* ── API data ── */
   const { data: apiNotifs } = useStudentNotifications();
   const markAllReadMut = useMarkAllNotificationsRead();
   const recentNotifs = (apiNotifs as any[])?.length > 0 ? (apiNotifs as any[]) : FALLBACK_RECENT_NOTIFS;
-  const notifsData = recentNotifs;
+  const notifsData = clearedHistory ? [] : recentNotifs;
 
   const enabledChannels = channels.filter((c) => c.status === 'enabled').length;
   const enabledCategories = categories.filter((c) => c.enabled).length;
@@ -101,7 +106,7 @@ export default function NotificationSettingsPage() {
         <StatCard label="Active Channels" value={enabledChannels} suffix={`/${channels.length}`} icon={<BellRing className="h-5 w-5" />} accentColor="#6366f1" />
         <StatCard label="Categories On" value={enabledCategories} suffix={`/${categories.length}`} icon={<Bell className="h-5 w-5" />} accentColor="#10b981" />
         <StatCard label="Unread" value={unreadCount} icon={<AlertTriangle className="h-5 w-5" />} accentColor="#f59e0b" />
-        <StatCard label="Quiet Hours" value={QUIET_HOURS.enabled ? 1 : 0} suffix={QUIET_HOURS.enabled ? ' Active' : ' Off'} icon={<VolumeX className="h-5 w-5" />} />
+        <StatCard label="Quiet Hours" value={quietHoursEnabled ? 1 : 0} suffix={quietHoursEnabled ? ' Active' : ' Off'} icon={<VolumeX className="h-5 w-5" />} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">
@@ -209,8 +214,8 @@ export default function NotificationSettingsPage() {
                   <p className="text-xs font-semibold text-violet-400">{QUIET_HOURS.end}</p>
                 </div>
               </div>
-              <Button size="sm" variant="outline" className="w-full mt-3 text-[10px] h-7 border-violet-500/20 text-violet-400" onClick={() => notifySuccess('Quiet Hours', 'Quiet hours toggled')}>
-                {QUIET_HOURS.enabled ? 'Disable' : 'Enable'} Quiet Hours
+              <Button size="sm" variant="outline" className="w-full mt-3 text-[10px] h-7 border-violet-500/20 text-violet-400" onClick={() => { setQuietHoursEnabled(prev => !prev); notifySuccess('Quiet Hours', quietHoursEnabled ? 'Quiet hours disabled' : 'Quiet hours enabled'); }}>
+                {quietHoursEnabled ? 'Disable' : 'Enable'} Quiet Hours
               </Button>
             </CardContent>
           </Card>
@@ -250,11 +255,11 @@ export default function NotificationSettingsPage() {
               <Button size="sm" variant="outline" className="w-full text-[10px] h-7 border-white/10 text-white/40 gap-1 justify-start" onClick={() => markAllReadMut.mutate(undefined as any, { onSuccess: () => notifySuccess('Notifications', 'All notifications marked as read') })}>
                 <CheckCircle2 className="size-3" />Mark all as read
               </Button>
-              <Button size="sm" variant="outline" className="w-full text-[10px] h-7 border-white/10 text-white/40 gap-1 justify-start" onClick={() => notifySuccess('Muted', 'All notifications muted for 1 hour')}>
-                <BellOff className="size-3" />Mute all for 1 hour
+              <Button size="sm" variant="outline" className="w-full text-[10px] h-7 border-white/10 text-white/40 gap-1 justify-start" onClick={() => { if (isMuted) { setMutedUntil(null); notifySuccess('Unmuted', 'Notifications resumed'); } else { setMutedUntil(new Date(Date.now() + 60 * 60 * 1000)); notifySuccess('Muted', 'All notifications muted for 1 hour'); } }}>
+                <BellOff className="size-3" />{isMuted ? 'Unmute notifications' : 'Mute all for 1 hour'}
               </Button>
-              <Button size="sm" variant="outline" className="w-full text-[10px] h-7 border-red-500/15 text-red-400/60 gap-1 justify-start" onClick={() => notifySuccess('Cleared', 'Notification history cleared')}>
-                <AlertTriangle className="size-3" />Clear notification history
+              <Button size="sm" variant="outline" className="w-full text-[10px] h-7 border-red-500/15 text-red-400/60 gap-1 justify-start" disabled={clearedHistory} onClick={() => { setClearedHistory(true); notifySuccess('Cleared', 'Notification history cleared'); }}>
+                <AlertTriangle className="size-3" />{clearedHistory ? 'History cleared' : 'Clear notification history'}
               </Button>
             </CardContent>
           </Card>

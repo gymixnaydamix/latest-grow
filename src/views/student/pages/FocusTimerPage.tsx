@@ -89,7 +89,7 @@ export default function FocusTimerPage() {
         <StatCard label="Today's Sessions" value={sessionsToday} icon={<Timer className="h-5 w-5" />} />
         <StatCard label="Week Total" value={totalSessions} icon={<BarChart3 className="h-5 w-5" />} trend="up" />
         <StatCard label="Hours Focused" value={totalHours} icon={<Clock className="h-5 w-5" />} decimals={1} />
-        <StatCard label="Best Day" value={7} suffix=" sessions" icon={<TrendingUp className="h-5 w-5" />} />
+        <StatCard label="Best Day" value={focusHistory.length > 0 ? Math.max(...focusHistory.map((h: any) => h.sessions ?? 0)) : 0} suffix=" sessions" icon={<TrendingUp className="h-5 w-5" />} />
       </div>
 
       <div className="grid gap-4 lg:grid-cols-3">

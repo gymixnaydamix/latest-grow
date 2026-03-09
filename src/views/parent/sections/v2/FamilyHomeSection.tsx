@@ -25,23 +25,9 @@ import { useNavigationStore } from '@/store/navigation.store';
 import { notifySuccess, notifyError } from '@/lib/notify';
 import {
   childDisplayName,
-  filterByChild,
-  filterChildren,
   formatCurrency,
   formatDateLabel,
   formatDateTimeLabel,
-  parentActionItemsDemo as FALLBACK_ACTION_ITEMS,
-  parentAnnouncementsDemo as FALLBACK_ANNOUNCEMENTS,
-  parentApprovalsDemo as FALLBACK_APPROVALS,
-  parentAssignmentsDemo as FALLBACK_ASSIGNMENTS,
-  parentAttendanceDemo as FALLBACK_ATTENDANCE,
-  parentCalendarDemo as FALLBACK_CALENDAR,
-  parentChildrenDemo as FALLBACK_CHILDREN,
-  parentEventsDemo as FALLBACK_EVENTS,
-  parentExamsDemo as FALLBACK_EXAMS,
-  parentInvoicesDemo as FALLBACK_INVOICES,
-  parentMessageThreadsDemo as FALLBACK_MESSAGES,
-  parentTimetableDemo as FALLBACK_TIMETABLE,
 } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, PriorityBadge, StatusBadge, UrgentInline } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -67,18 +53,18 @@ export function FamilyHomeSection({ scope, childId }: ParentSectionProps) {
   const approvalMut = useDecideParentV2Approval();
   const rsvpMut = useRsvpParentV2Event();
 
-  const children: ParentChildDemo[] = (homeData?.children as ParentChildDemo[] | undefined) ?? filterChildren(FALLBACK_CHILDREN, childId, scope);
-  const actionRequired: ParentActionItemDemo[] = (homeData?.actionRequired as ParentActionItemDemo[] | undefined) ?? filterByChild(FALLBACK_ACTION_ITEMS, childId, scope);
-  const timetable: ParentTimetableItemDemo[] = (homeData?.todayTimetable as ParentTimetableItemDemo[] | undefined) ?? filterByChild(FALLBACK_TIMETABLE, childId, scope);
-  const announcements: ParentAnnouncementDemo[] = (homeData?.announcements as ParentAnnouncementDemo[] | undefined) ?? filterByChild(FALLBACK_ANNOUNCEMENTS, childId, scope);
-  const invoices: ParentInvoiceDemo[] = (homeData?.invoices as ParentInvoiceDemo[] | undefined) ?? filterByChild(FALLBACK_INVOICES, childId, scope);
-  const approvals: ParentApprovalDemo[] = (homeData?.approvals as ParentApprovalDemo[] | undefined) ?? filterByChild(FALLBACK_APPROVALS, childId, scope);
-  const messages: ParentMessageThreadDemo[] = (homeData?.messages as ParentMessageThreadDemo[] | undefined) ?? filterByChild(FALLBACK_MESSAGES, childId, scope);
-  const events: ParentEventDemo[] = (homeData?.events as ParentEventDemo[] | undefined) ?? filterByChild(FALLBACK_EVENTS, childId, scope);
-  const assignments: ParentAssignmentDemo[] = (homeData?.assignments as ParentAssignmentDemo[] | undefined) ?? filterByChild(FALLBACK_ASSIGNMENTS, childId, scope);
-  const attendance: ParentAttendanceDemo[] = (homeData?.attendanceAlerts as ParentAttendanceDemo[] | undefined) ?? filterByChild(FALLBACK_ATTENDANCE, childId, scope);
-  const exams: ParentExamDemo[] = (homeData?.exams as ParentExamDemo[] | undefined) ?? filterByChild(FALLBACK_EXAMS, childId, scope);
-  const calendarItems: ParentCalendarItemDemo[] = (homeData?.calendarItems as ParentCalendarItemDemo[] | undefined) ?? filterByChild(FALLBACK_CALENDAR, childId, scope);
+  const children: ParentChildDemo[] = (homeData?.children as ParentChildDemo[] | undefined) ?? [];
+  const actionRequired: ParentActionItemDemo[] = (homeData?.actionRequired as ParentActionItemDemo[] | undefined) ?? [];
+  const timetable: ParentTimetableItemDemo[] = (homeData?.todayTimetable as ParentTimetableItemDemo[] | undefined) ?? [];
+  const announcements: ParentAnnouncementDemo[] = (homeData?.announcements as ParentAnnouncementDemo[] | undefined) ?? [];
+  const invoices: ParentInvoiceDemo[] = (homeData?.invoices as ParentInvoiceDemo[] | undefined) ?? [];
+  const approvals: ParentApprovalDemo[] = (homeData?.approvals as ParentApprovalDemo[] | undefined) ?? [];
+  const messages: ParentMessageThreadDemo[] = (homeData?.messages as ParentMessageThreadDemo[] | undefined) ?? [];
+  const events: ParentEventDemo[] = (homeData?.events as ParentEventDemo[] | undefined) ?? [];
+  const assignments: ParentAssignmentDemo[] = (homeData?.assignments as ParentAssignmentDemo[] | undefined) ?? [];
+  const attendance: ParentAttendanceDemo[] = (homeData?.attendanceAlerts as ParentAttendanceDemo[] | undefined) ?? [];
+  const exams: ParentExamDemo[] = (homeData?.exams as ParentExamDemo[] | undefined) ?? [];
+  const calendarItems: ParentCalendarItemDemo[] = (homeData?.calendarItems as ParentCalendarItemDemo[] | undefined) ?? [];
 
   // Derived operational signals
   const unreadAnnouncementCount = announcements.filter((a) => !a.read).length;

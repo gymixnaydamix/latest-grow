@@ -126,7 +126,7 @@ export function MarketingDashboard() {
       <div data-animate className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Active Campaigns"
-          value={campaignStats?.active || 8}
+          value={campaignStats?.active ?? 8}
           trend="up"
           trendLabel="+2 this month"
           icon={<Megaphone className="size-5" />}
@@ -135,7 +135,7 @@ export function MarketingDashboard() {
         />
         <StatCard
           label="New Leads"
-          value={142}
+          value={campaigns.reduce((s, c) => s + (c.metrics?.leads ?? 0), 0) || 142}
           trend="up"
           trendLabel="+18% MoM"
           icon={<Users className="size-5" />}
@@ -144,7 +144,7 @@ export function MarketingDashboard() {
         />
         <StatCard
           label="Website Visits"
-          value={12.4}
+          value={campaigns.reduce((s, c) => s + (c.metrics?.reach ?? 0), 0) > 0 ? Number((campaigns.reduce((s, c) => s + (c.metrics?.reach ?? 0), 0) / 1000).toFixed(1)) : 12.4}
           suffix="K"
           decimals={1}
           trend="up"
@@ -155,7 +155,7 @@ export function MarketingDashboard() {
         />
         <StatCard
           label="Conversion Rate"
-          value={4.2}
+          value={campaigns.length > 0 ? Number((campaigns.reduce((s, c) => s + (c.metrics?.conversions ?? 0), 0) / Math.max(1, campaigns.reduce((s, c) => s + (c.metrics?.reach ?? 0), 0)) * 100).toFixed(1)) : 4.2}
           suffix="%"
           decimals={1}
           trend="up"
@@ -172,7 +172,7 @@ export function MarketingDashboard() {
           <NeonBarChart
             title="Leads by Channel"
             subtitle="This month vs. last month"
-            data={fallbackLeadsByChannel}
+            data={(campaignsResponse as any)?.leadsByChannel ?? fallbackLeadsByChannel}
             dataKey="primary"
             secondaryDataKey="secondary"
             xAxisKey="name"
@@ -185,7 +185,7 @@ export function MarketingDashboard() {
           <GlowLineChart
             title="Enrollment Trend"
             subtitle="New enrolments by month"
-            data={fallbackEnrollmentTrend}
+            data={(campaignsResponse as any)?.enrollmentTrend ?? fallbackEnrollmentTrend}
             dataKey="value"
             xAxisKey="name"
             color="#f472b6"
@@ -260,7 +260,7 @@ export function MarketingDashboard() {
         </CardHeader>
         <CardContent>
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            {fallbackSocialStats.map((s) => (
+            {((campaignsResponse as any)?.socialStats ?? fallbackSocialStats).map((s: typeof fallbackSocialStats[number]) => (
               <div key={s.platform} className="group rounded-xl border border-white/6 bg-white/2 p-4 transition-all hover:border-white/12 hover:bg-white/4">
                 <p className="text-sm font-semibold text-white/80">{s.platform}</p>
                 <div className="mt-2 space-y-1">

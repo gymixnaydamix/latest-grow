@@ -1,6 +1,6 @@
 /* ─── ProviderSecuritySection ─── Access · Posture · Compliance · API Keys · IP Allowlist · Sessions ─── */
-import { useState } from 'react';
-import { Activity, FileClock, Globe, Key, Loader2, Monitor, PlusCircle, Shield } from 'lucide-react';
+import { useMemo, useCallback, useState } from 'react';
+import { Activity, FileClock, Globe, Key, Loader2, Monitor, PlusCircle, Search, Shield } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useNavigationStore } from '@/store/navigation.store';
@@ -36,14 +36,14 @@ export function ProviderSecuritySection() {
 function useSecurityData() {
   const { data: moduleData } = useProviderModuleData();
   const { data: permCtx } = useProviderPermissionContext();
-  const users = (moduleData?.providerUsers ?? []) as Array<Record<string, unknown>>;
-  const roles = (moduleData?.providerRoles ?? []) as Array<Record<string, unknown>>;
-  const permissions = permCtx?.permissions ?? [];
+  const users = useMemo(() => (moduleData?.providerUsers ?? []) as Array<Record<string, unknown>>, [moduleData]);
+  const roles = useMemo(() => (moduleData?.providerRoles ?? []) as Array<Record<string, unknown>>, [moduleData]);
+  const permissions = useMemo(() => permCtx?.permissions ?? [], [permCtx]);
   const currentUser = permCtx?.user as Record<string, unknown> | null;
   const currentRole = permCtx?.role as Record<string, unknown> | null;
   const currentRoleName = currentRole ? String(currentRole.name ?? currentRole.key ?? '—') : '—';
-  const mfaEnabled = users.filter((u) => u.mfaEnforced === true).length;
-  const activeUsers = users.filter((u) => u.status === 'ACTIVE').length;
+  const mfaEnabled = useMemo(() => users.filter((u) => u.mfaEnforced === true).length, [users]);
+  const activeUsers = useMemo(() => users.filter((u) => u.status === 'ACTIVE').length, [users]);
   return { users, roles, permissions, currentUser, currentRoleName, mfaEnabled, activeUsers };
 }
 
@@ -99,43 +99,75 @@ function SecurityPostureView() {
   const { data: extras } = useProviderSecurityExtras();
   const { data: apiBundle } = useProviderApiManagement();
   const accent = getAccent('provider_security');
-  const mfaCoverage = users.length > 0 ? Math.round((mfaEnabled / users.length) * 100) : 0;
 
-  const ipRuleCount = extras?.ipAllowlist?.length ?? 0;
-  const sessions = extras?.sessions ?? [];
-  const apiKeys = apiBundle?.apiKeys ?? [];
-  const activeKeys = apiKeys.filter((k) => k.status === 'ACTIVE');
-  const oldestActiveKey = activeKeys.length > 0
-    ? activeKeys.reduce((oldest, k) => (k.lastUsed < oldest.lastUsed ? k : oldest))
-    : null;
-  const daysSinceLastRotation = oldestActiveKey
-    ? Math.round((Date.now() - new Date(oldestActiveKey.lastUsed).getTime()) / 86_400_000)
-    : 0;
-  const keyRotationStatus = daysSinceLastRotation > 90 ? 'FAIL' : daysSinceLastRotation > 30 ? 'WARN' : 'PASS';
+  const mfaCoverage = useMemo(
+    () => (users.length > 0 ? Math.round((mfaEnabled / users.length) * 100) : 0),
+    [users.length, mfaEnabled],
+  );
 
-  /* Derive password-policy and audit-logging checks from compliance data */
-  const complianceItems = extras?.complianceItems ?? [];
-  const pwPolicyItem = complianceItems.find((c) => (c as any).category === 'PASSWORD' || (c as any).name?.toLowerCase().includes('password'));
-  const pwPolicyStatus = pwPolicyItem ? ((pwPolicyItem as any).status === 'COMPLIANT' ? 'PASS' : 'WARN') : (complianceItems.length > 0 ? 'PASS' : 'PASS');
-  const pwPolicyDetail = pwPolicyItem ? String((pwPolicyItem as any).detail ?? 'Min 12 chars, complexity enforced') : 'Min 12 chars, complexity enforced';
-  const auditItem = complianceItems.find((c) => (c as any).category === 'AUDIT' || (c as any).name?.toLowerCase().includes('audit'));
-  const auditStatus = auditItem ? ((auditItem as any).status === 'COMPLIANT' ? 'PASS' : 'WARN') : (complianceItems.length > 0 ? 'PASS' : 'PASS');
-  const auditDetail = auditItem ? String((auditItem as any).detail ?? 'All actions recorded') : 'All actions recorded';
+  const ipRuleCount = useMemo(() => extras?.ipAllowlist?.length ?? 0, [extras]);
+  const sessions = useMemo(() => extras?.sessions ?? [], [extras]);
+  const complianceItems = useMemo(() => extras?.complianceItems ?? [], [extras]);
+  const apiKeys = useMemo(() => apiBundle?.apiKeys ?? [], [apiBundle]);
 
-  const checks = [
-    { name: 'MFA Enforcement', status: mfaCoverage === 100 ? 'PASS' : mfaCoverage >= 80 ? 'WARN' : 'FAIL', detail: `${mfaCoverage}% coverage` },
-    { name: 'Password Policy', status: pwPolicyStatus, detail: pwPolicyDetail },
-    { name: 'Session Timeout', status: sessions.length > 20 ? 'WARN' : 'PASS', detail: `${sessions.length} active sessions` },
-    { name: 'API Key Rotation', status: keyRotationStatus, detail: activeKeys.length > 0 ? `Last used ${daysSinceLastRotation}d ago` : 'No active keys' },
-    { name: 'IP Allowlist', status: ipRuleCount > 0 ? 'PASS' : 'WARN', detail: `${ipRuleCount} range${ipRuleCount !== 1 ? 's' : ''} configured` },
-    { name: 'Audit Logging', status: auditStatus, detail: auditDetail },
-  ];
+  const activeKeys = useMemo(() => apiKeys.filter((k) => k.status === 'ACTIVE'), [apiKeys]);
+
+  const daysSinceLastRotation = useMemo(() => {
+    if (activeKeys.length === 0) return 0;
+    const oldest = activeKeys.reduce((o, k) => (k.lastUsed < o.lastUsed ? k : o));
+    return Math.round((Date.now() - new Date(oldest.lastUsed).getTime()) / 86_400_000);
+  }, [activeKeys]);
+
+  const keyRotationStatus = useMemo(
+    () => (daysSinceLastRotation > 90 ? 'FAIL' : daysSinceLastRotation > 30 ? 'WARN' : 'PASS'),
+    [daysSinceLastRotation],
+  );
+
+  /* Derive password-policy status from compliance coverage — if all tracked
+     frameworks maintain ≥80% coverage, we consider the policy enforced. */
+  const pwPolicyStatus = useMemo(() => {
+    if (complianceItems.length === 0) return 'PASS';
+    const avgCoverage = complianceItems.reduce((s, c) => s + c.coverage, 0) / complianceItems.length;
+    return avgCoverage >= 90 ? 'PASS' : avgCoverage >= 70 ? 'WARN' : 'FAIL';
+  }, [complianceItems]);
+
+  const pwPolicyDetail = useMemo(() => {
+    if (complianceItems.length === 0) return 'Min 12 chars, complexity enforced';
+    const avgCoverage = Math.round(complianceItems.reduce((s, c) => s + c.coverage, 0) / complianceItems.length);
+    return `Min 12 chars · ${avgCoverage}% compliance coverage`;
+  }, [complianceItems]);
+
+  /* Derive audit-logging from compliance: if ≥1 framework is COMPLIANT → PASS */
+  const auditStatus = useMemo(() => {
+    if (complianceItems.length === 0) return 'PASS';
+    return complianceItems.some((c) => c.status === 'COMPLIANT') ? 'PASS' : 'WARN';
+  }, [complianceItems]);
+
+  const auditDetail = useMemo(() => {
+    const compliant = complianceItems.filter((c) => c.status === 'COMPLIANT').length;
+    if (complianceItems.length === 0) return 'All actions recorded';
+    return `${compliant}/${complianceItems.length} frameworks compliant`;
+  }, [complianceItems]);
+
+  const checks = useMemo(
+    () => [
+      { name: 'MFA Enforcement', status: mfaCoverage === 100 ? 'PASS' : mfaCoverage >= 80 ? 'WARN' : 'FAIL', detail: `${mfaCoverage}% coverage` },
+      { name: 'Password Policy', status: pwPolicyStatus, detail: pwPolicyDetail },
+      { name: 'Session Timeout', status: sessions.length > 20 ? 'WARN' : 'PASS', detail: `${sessions.length} active sessions` },
+      { name: 'API Key Rotation', status: keyRotationStatus, detail: activeKeys.length > 0 ? `Last used ${daysSinceLastRotation}d ago` : 'No active keys' },
+      { name: 'IP Allowlist', status: ipRuleCount > 0 ? 'PASS' : 'WARN', detail: `${ipRuleCount} range${ipRuleCount !== 1 ? 's' : ''} configured` },
+      { name: 'Audit Logging', status: auditStatus, detail: auditDetail },
+    ],
+    [mfaCoverage, pwPolicyStatus, pwPolicyDetail, sessions.length, keyRotationStatus, activeKeys.length, daysSinceLastRotation, ipRuleCount, auditStatus, auditDetail],
+  );
+
+  const passCount = useMemo(() => checks.filter((c) => c.status === 'PASS').length, [checks]);
 
   return (
     <SectionShell>
       <SectionPageHeader icon={Activity} title="Security Posture" description="Platform security health assessment" accent={accent} />
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
-        <StatCard label="Score" value={`${checks.filter((c) => c.status === 'PASS').length}/${checks.length}`} sub="Checks passing" gradient="from-emerald-500/10 to-emerald-500/5" />
+        <StatCard label="Score" value={`${passCount}/${checks.length}`} sub="Checks passing" gradient="from-emerald-500/10 to-emerald-500/5" />
         <StatCard label="MFA" value={`${mfaCoverage}%`} sub="Coverage" gradient={mfaCoverage === 100 ? 'from-emerald-500/10 to-emerald-500/5' : 'from-amber-500/10 to-amber-500/5'} />
         <StatCard label="Active Users" value={String(activeUsers)} sub="With access" gradient="from-blue-500/10 to-blue-500/5" />
       </div>
@@ -174,16 +206,28 @@ function SecurityPostureView() {
 function ComplianceView() {
   const accent = getAccent('provider_security');
   const { data: extras, isLoading } = useProviderSecurityExtras();
-  const complianceItems = extras?.complianceItems ?? [];
   const requestReport = useRequestProviderComplianceReport();
+
+  const complianceItems = useMemo(() => extras?.complianceItems ?? [], [extras]);
+  const compliantCount = useMemo(() => complianceItems.filter((c) => c.status === 'COMPLIANT').length, [complianceItems]);
+  const avgCoverage = useMemo(
+    () => (complianceItems.length > 0 ? Math.round(complianceItems.reduce((s, c) => s + c.coverage, 0) / complianceItems.length) : 0),
+    [complianceItems],
+  );
+
+  const handleRequestReport = useCallback(() => {
+    const reason = reasonPrompt('Request compliance report');
+    if (!reason) return;
+    requestReport.mutate({ frameworks: complianceItems.map((c) => c.framework), reason });
+  }, [complianceItems, requestReport]);
 
   return (
     <SectionShell>
-      <SectionPageHeader icon={FileClock} title="Compliance Requests" description="Regulatory compliance status and documentation" accent={accent} />
+      <SectionPageHeader icon={FileClock} title="Compliance" description="Regulatory compliance status and documentation" accent={accent} />
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
         <StatCard label="Frameworks" value={String(complianceItems.length)} sub="Tracked" gradient="from-violet-500/10 to-violet-500/5" />
-        <StatCard label="Compliant" value={String(complianceItems.filter((c) => c.status === 'COMPLIANT').length)} sub="Passing" gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="Avg Coverage" value={complianceItems.length > 0 ? `${Math.round(complianceItems.reduce((s, c) => s + c.coverage, 0) / complianceItems.length)}%` : '—'} sub="Coverage" gradient="from-blue-500/10 to-blue-500/5" />
+        <StatCard label="Compliant" value={String(compliantCount)} sub="Passing" gradient="from-emerald-500/10 to-emerald-500/5" />
+        <StatCard label="Avg Coverage" value={complianceItems.length > 0 ? `${avgCoverage}%` : '—'} sub="Coverage" gradient="from-blue-500/10 to-blue-500/5" />
       </div>
       <Panel title="Compliance Matrix" accentBorder="border-violet-500/20">
         {isLoading ? (
@@ -198,19 +242,20 @@ function ComplianceView() {
                   <p className="font-semibold text-slate-100">{item.framework}</p>
                   <p className="text-slate-400">Last audit: {item.lastAudit} · Next: {item.nextAudit} · Coverage: {item.coverage}%</p>
                 </div>
-                <StatusBadge status={item.status === 'COMPLIANT' ? 'ACTIVE' : item.status === 'IN_PROGRESS' ? 'TRIAL' : 'PENDING'} />
+                <div className="flex items-center gap-2">
+                  <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-700">
+                    <div className={`h-full rounded-full ${item.coverage >= 90 ? 'bg-emerald-500' : item.coverage >= 70 ? 'bg-amber-500' : 'bg-red-500'}`} style={{ width: `${item.coverage}%` }} />
+                  </div>
+                  <StatusBadge status={item.status === 'COMPLIANT' ? 'ACTIVE' : item.status === 'IN_PROGRESS' ? 'TRIAL' : 'PENDING'} />
+                </div>
               </div>
             ))}
           </div>
         )}
       </Panel>
       <div className="flex justify-end">
-        <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" disabled={requestReport.isPending} onClick={() => {
-          const reason = reasonPrompt('Request compliance report');
-          if (!reason) return;
-          requestReport.mutate({ frameworks: complianceItems.map((c) => c.framework), reason });
-        }}>
-          {requestReport.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : null}Request Compliance Report
+        <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" disabled={requestReport.isPending || complianceItems.length === 0} onClick={handleRequestReport}>
+          {requestReport.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : <FileClock className="mr-1 size-3" />}Request Compliance Report
         </Button>
       </div>
     </SectionShell>
@@ -226,17 +271,59 @@ function ApiKeysView() {
   const generateKey = useGenerateProviderApiKey();
   const rotateKey = useRotateProviderApiKey();
   const revokeKey = useRevokeProviderApiKey();
-  const keys = bundle?.apiKeys ?? [];
+
+  const keys = useMemo(() => bundle?.apiKeys ?? [], [bundle]);
+  const activeKeyCount = useMemo(() => keys.filter((k) => k.status === 'ACTIVE').length, [keys]);
+  const revokedKeyCount = useMemo(() => keys.filter((k) => k.status === 'REVOKED').length, [keys]);
 
   const [showNew, setShowNew] = useState(false);
   const [keyName, setKeyName] = useState('');
   const [keyScopes, setKeyScopes] = useState('');
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return keys.filter((k) => {
+      if (q && !k.name.toLowerCase().includes(q) && !k.prefix.toLowerCase().includes(q)) return false;
+      if (statusFilter !== 'ALL' && k.status !== statusFilter) return false;
+      return true;
+    });
+  }, [keys, search, statusFilter]);
+
+  const handleGenerate = useCallback(() => {
+    if (!keyName.trim()) return;
+    const reason = reasonPrompt('Generate API key');
+    if (!reason) return;
+    generateKey.mutate({ name: keyName, scopes: keyScopes.split(',').map((s) => s.trim()).filter(Boolean), reason });
+    setShowNew(false);
+    setKeyName('');
+    setKeyScopes('');
+  }, [keyName, keyScopes, generateKey]);
+
+  const handleRotate = useCallback(
+    (keyId: string) => {
+      const reason = reasonPrompt('Rotate API key');
+      if (!reason) return;
+      rotateKey.mutate({ keyId, reason });
+    },
+    [rotateKey],
+  );
+
+  const handleRevoke = useCallback(
+    (keyId: string) => {
+      const reason = reasonPrompt('Revoke API key');
+      if (!reason) return;
+      revokeKey.mutate({ keyId, reason });
+    },
+    [revokeKey],
+  );
 
   return (
     <SectionShell>
       <SectionPageHeader icon={Key} title="API Keys" description="Manage platform API keys and access tokens" accent={accent} actions={
         <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" onClick={() => setShowNew((p) => !p)}>
-          <PlusCircle className="mr-1 size-3" />Generate Key
+          <PlusCircle className="mr-1 size-3" />{showNew ? 'Cancel' : 'Generate Key'}
         </Button>
       } />
 
@@ -245,29 +332,40 @@ function ApiKeysView() {
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
             <Input className="h-8 border-slate-700 bg-slate-800 text-xs text-slate-100" placeholder="Key name" value={keyName} onChange={(e) => setKeyName(e.target.value)} />
             <Input className="h-8 border-slate-700 bg-slate-800 text-xs text-slate-100" placeholder="Scopes (comma-sep)" value={keyScopes} onChange={(e) => setKeyScopes(e.target.value)} />
-            <Button size="sm" className="h-8 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" disabled={generateKey.isPending} onClick={() => {
-              if (!keyName.trim()) return;
-              const reason = reasonPrompt('Generate API key');
-              if (!reason) return;
-              generateKey.mutate({ name: keyName, scopes: keyScopes.split(',').map((s) => s.trim()).filter(Boolean), reason });
-              setShowNew(false); setKeyName(''); setKeyScopes('');
-            }}>{generateKey.isPending ? 'Generating…' : 'Generate'}</Button>
+            <Button size="sm" className="h-8 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" disabled={generateKey.isPending || !keyName.trim()} onClick={handleGenerate}>
+              {generateKey.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Key className="mr-1 size-3" />}Generate
+            </Button>
           </div>
         </Panel>
       )}
+
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
         <StatCard label="API Keys" value={String(keys.length)} sub="Total" gradient="from-violet-500/10 to-violet-500/5" />
-        <StatCard label="Active" value={String(keys.filter((k) => k.status === 'ACTIVE').length)} sub="In use" gradient="from-emerald-500/10 to-emerald-500/5" />
-        <StatCard label="Revoked" value={String(keys.filter((k) => k.status === 'REVOKED').length)} sub="Disabled" gradient="from-red-500/10 to-red-500/5" />
+        <StatCard label="Active" value={String(activeKeyCount)} sub="In use" gradient="from-emerald-500/10 to-emerald-500/5" />
+        <StatCard label="Revoked" value={String(revokedKeyCount)} sub="Disabled" gradient="from-red-500/10 to-red-500/5" />
       </div>
-      <Panel title="API Key Registry" subtitle={`${keys.length} keys`} accentBorder="border-violet-500/20">
+
+      {/* Search + filter */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-slate-400" />
+          <Input className="h-8 pl-7 border-slate-700 bg-slate-800 text-xs text-slate-100" placeholder="Search keys…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <select className="h-8 rounded-md border border-slate-700 bg-slate-800 px-2 text-xs text-slate-100" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="ALL">All Statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="REVOKED">Revoked</option>
+        </select>
+      </div>
+
+      <Panel title="API Key Registry" subtitle={`${filtered.length} keys`} accentBorder="border-violet-500/20">
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="size-6 animate-spin text-red-400" /></div>
-        ) : keys.length === 0 ? (
-          <EmptyState icon={Key} title="No API Keys" description="No API keys have been generated yet." />
+        ) : filtered.length === 0 ? (
+          <EmptyState icon={Key} title="No API Keys" description={keys.length === 0 ? 'No API keys have been generated yet.' : 'No keys match the current filters.'} />
         ) : (
           <div className="space-y-2">
-            {keys.map((key) => (
+            {filtered.map((key) => (
               <div key={key.id} className={`rounded-lg border px-3 py-2 text-xs ${key.status === 'ACTIVE' ? 'border-slate-500/20 bg-slate-800/60' : 'border-red-500/15 bg-red-500/5 opacity-60'}`}>
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                   <div>
@@ -277,18 +375,10 @@ function ApiKeysView() {
                   <div className="flex items-center gap-2">
                     <StatusBadge status={key.status} />
                     {key.status === 'ACTIVE' && (
-                      <Button size="sm" className="h-6 bg-amber-500/20 text-amber-100 hover:bg-amber-500/30 text-[10px]" disabled={rotateKey.isPending} onClick={() => {
-                        const reason = reasonPrompt('Rotate API key');
-                        if (!reason) return;
-                        rotateKey.mutate({ keyId: key.id, reason });
-                      }}>Rotate</Button>
+                      <Button size="sm" className="h-6 bg-amber-500/20 text-amber-100 hover:bg-amber-500/30 text-[10px]" disabled={rotateKey.isPending} onClick={() => handleRotate(key.id)}>Rotate</Button>
                     )}
                     {key.status === 'ACTIVE' && (
-                      <Button size="sm" className="h-6 bg-red-500/20 text-red-100 hover:bg-red-500/30 text-[10px]" disabled={revokeKey.isPending} onClick={() => {
-                        const reason = reasonPrompt('Revoke API key');
-                        if (!reason) return;
-                        revokeKey.mutate({ keyId: key.id, reason });
-                      }}>Revoke</Button>
+                      <Button size="sm" className="h-6 bg-red-500/20 text-red-100 hover:bg-red-500/30 text-[10px]" disabled={revokeKey.isPending} onClick={() => handleRevoke(key.id)}>Revoke</Button>
                     )}
                   </div>
                 </div>
@@ -315,17 +405,47 @@ function IpAllowlistView() {
   const { data: extras, isLoading } = useProviderSecurityExtras();
   const addRule = useAddProviderIpRule();
   const removeRule = useRemoveProviderIpRule();
-  const rules = extras?.ipAllowlist ?? [];
+
+  const rules = useMemo(() => extras?.ipAllowlist ?? [], [extras]);
+  const totalHits = useMemo(() => rules.reduce((s, r) => s + r.hits, 0), [rules]);
 
   const [showNew, setShowNew] = useState(false);
   const [ruleCidr, setRuleCidr] = useState('');
   const [ruleLabel, setRuleLabel] = useState('');
+  const [search, setSearch] = useState('');
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return rules.filter((r) => {
+      if (q && !r.label.toLowerCase().includes(q) && !r.cidr.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [rules, search]);
+
+  const handleAdd = useCallback(() => {
+    if (!ruleCidr.trim() || !ruleLabel.trim()) return;
+    const reason = reasonPrompt('Add IP rule');
+    if (!reason) return;
+    addRule.mutate({ cidr: ruleCidr, label: ruleLabel, reason });
+    setShowNew(false);
+    setRuleCidr('');
+    setRuleLabel('');
+  }, [ruleCidr, ruleLabel, addRule]);
+
+  const handleRemove = useCallback(
+    (ruleId: string) => {
+      const reason = reasonPrompt('Remove IP rule');
+      if (!reason) return;
+      removeRule.mutate({ ruleId, reason });
+    },
+    [removeRule],
+  );
 
   return (
     <SectionShell>
       <SectionPageHeader icon={Globe} title="IP Allowlist" description="Restrict API and admin access by IP range" accent={accent} actions={
         <Button size="sm" className="h-7 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" onClick={() => setShowNew((p) => !p)}>
-          <PlusCircle className="mr-1 size-3" />Add Rule
+          <PlusCircle className="mr-1 size-3" />{showNew ? 'Cancel' : 'Add Rule'}
         </Button>
       } />
 
@@ -334,29 +454,33 @@ function IpAllowlistView() {
           <div className="grid gap-2 grid-cols-1 sm:grid-cols-3">
             <Input className="h-8 border-slate-700 bg-slate-800 text-xs text-slate-100" placeholder="CIDR (e.g. 10.0.0.0/24)" value={ruleCidr} onChange={(e) => setRuleCidr(e.target.value)} />
             <Input className="h-8 border-slate-700 bg-slate-800 text-xs text-slate-100" placeholder="Label" value={ruleLabel} onChange={(e) => setRuleLabel(e.target.value)} />
-            <Button size="sm" className="h-8 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" disabled={addRule.isPending} onClick={() => {
-              if (!ruleCidr.trim() || !ruleLabel.trim()) return;
-              const reason = reasonPrompt('Add IP rule');
-              if (!reason) return;
-              addRule.mutate({ cidr: ruleCidr, label: ruleLabel, reason });
-              setShowNew(false); setRuleCidr(''); setRuleLabel('');
-            }}>{addRule.isPending ? 'Adding…' : 'Add Rule'}</Button>
+            <Button size="sm" className="h-8 bg-violet-500/20 text-violet-100 hover:bg-violet-500/30" disabled={addRule.isPending || !ruleCidr.trim() || !ruleLabel.trim()} onClick={handleAdd}>
+              {addRule.isPending ? <Loader2 className="mr-1 size-3 animate-spin" /> : <Globe className="mr-1 size-3" />}Add Rule
+            </Button>
           </div>
         </Panel>
       )}
+
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
         <StatCard label="Rules" value={String(rules.length)} sub="Active" gradient="from-violet-500/10 to-violet-500/5" />
-        <StatCard label="Total Hits" value={rules.reduce((s, r) => s + r.hits, 0).toLocaleString()} sub="Matched requests" gradient="from-blue-500/10 to-blue-500/5" />
+        <StatCard label="Total Hits" value={totalHits.toLocaleString()} sub="Matched requests" gradient="from-blue-500/10 to-blue-500/5" />
         <StatCard label="Mode" value="Enforce" sub="Blocking non-listed IPs" gradient="from-emerald-500/10 to-emerald-500/5" />
       </div>
-      <Panel title="Allowed IP Ranges" subtitle={`${rules.length} rules`} accentBorder="border-violet-500/20">
+
+      {/* Search */}
+      <div className="relative">
+        <Search className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-slate-400" />
+        <Input className="h-8 pl-7 border-slate-700 bg-slate-800 text-xs text-slate-100" placeholder="Search rules…" value={search} onChange={(e) => setSearch(e.target.value)} />
+      </div>
+
+      <Panel title="Allowed IP Ranges" subtitle={`${filtered.length} rules`} accentBorder="border-violet-500/20">
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="size-6 animate-spin text-red-400" /></div>
-        ) : rules.length === 0 ? (
-          <EmptyState icon={Globe} title="No IP Rules" description="No IP allowlist rules have been configured yet." />
+        ) : filtered.length === 0 ? (
+          <EmptyState icon={Globe} title="No IP Rules" description={rules.length === 0 ? 'No IP allowlist rules have been configured yet.' : 'No rules match the current search.'} />
         ) : (
           <div className="space-y-2">
-            {rules.map((rule) => (
+            {filtered.map((rule) => (
               <div key={rule.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border border-slate-500/20 bg-slate-800/60 px-3 py-2 text-xs">
                 <div>
                   <div className="flex items-center gap-2">
@@ -367,11 +491,7 @@ function IpAllowlistView() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="text-slate-300">{rule.hits.toLocaleString()} hits</span>
-                  <Button size="sm" className="h-6 bg-red-500/20 text-red-100 hover:bg-red-500/30 text-[10px]" disabled={removeRule.isPending} onClick={() => {
-                    const reason = reasonPrompt('Remove IP rule');
-                    if (!reason) return;
-                    removeRule.mutate({ ruleId: rule.id, reason });
-                  }}>Remove</Button>
+                  <Button size="sm" className="h-6 bg-red-500/20 text-red-100 hover:bg-red-500/30 text-[10px]" disabled={removeRule.isPending} onClick={() => handleRemove(rule.id)}>Remove</Button>
                 </div>
               </div>
             ))}
@@ -389,46 +509,83 @@ function SessionsView() {
   const accent = getAccent('provider_security');
   const { data: extras, isLoading } = useProviderSecurityExtras();
   const revokeSession = useRevokeProviderSession();
-  const sessions = extras?.sessions ?? [];
+
+  const sessions = useMemo(() => extras?.sessions ?? [], [extras]);
+  const uniqueUsers = useMemo(() => new Set(sessions.map((s) => s.user)).size, [sessions]);
+  const uniqueIps = useMemo(() => new Set(sessions.map((s) => s.ip)).size, [sessions]);
+
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('ALL');
+
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return sessions.filter((s) => {
+      if (q && !s.user.toLowerCase().includes(q) && !s.ip.toLowerCase().includes(q) && !s.device.toLowerCase().includes(q)) return false;
+      if (statusFilter !== 'ALL' && s.status !== statusFilter) return false;
+      return true;
+    });
+  }, [sessions, search, statusFilter]);
+
+  const handleRevokeAll = useCallback(() => {
+    const reason = reasonPrompt('Revoke all other sessions');
+    if (!reason) return;
+    revokeSession.mutate({ all: true, reason });
+  }, [revokeSession]);
+
+  const handleRevokeOne = useCallback(
+    (sessionId: string) => {
+      const reason = reasonPrompt('Revoke session');
+      if (!reason) return;
+      revokeSession.mutate({ sessionId, reason });
+    },
+    [revokeSession],
+  );
 
   return (
     <SectionShell>
       <SectionPageHeader icon={Monitor} title="Active Sessions" description="Monitor and manage active user sessions" accent={accent} actions={
-        <Button size="sm" className="h-7 bg-red-500/20 text-red-100 hover:bg-red-500/30" disabled={revokeSession.isPending} onClick={() => {
-          const reason = reasonPrompt('Revoke all other sessions');
-          if (!reason) return;
-          revokeSession.mutate({ all: true, reason });
-        }}>Revoke All Others</Button>
+        <Button size="sm" className="h-7 bg-red-500/20 text-red-100 hover:bg-red-500/30" disabled={revokeSession.isPending} onClick={handleRevokeAll}>Revoke All Others</Button>
       } />
       <div className="grid gap-2 grid-cols-2 md:grid-cols-3">
         <StatCard label="Active Sessions" value={String(sessions.length)} sub="Currently open" gradient="from-violet-500/10 to-violet-500/5" />
-        <StatCard label="Unique Users" value={String(new Set(sessions.map((s) => s.user)).size)} sub="Logged in" gradient="from-blue-500/10 to-blue-500/5" />
-        <StatCard label="Unique IPs" value={String(new Set(sessions.map((s) => s.ip)).size)} sub="Source addresses" gradient="from-cyan-500/10 to-cyan-500/5" />
+        <StatCard label="Unique Users" value={String(uniqueUsers)} sub="Logged in" gradient="from-blue-500/10 to-blue-500/5" />
+        <StatCard label="Unique IPs" value={String(uniqueIps)} sub="Source addresses" gradient="from-cyan-500/10 to-cyan-500/5" />
       </div>
-      <Panel title="Session List" subtitle={`${sessions.length} sessions`} accentBorder="border-violet-500/20">
+
+      {/* Search + filter */}
+      <div className="flex flex-col sm:flex-row gap-2">
+        <div className="relative flex-1">
+          <Search className="absolute left-2 top-1/2 size-3 -translate-y-1/2 text-slate-400" />
+          <Input className="h-8 pl-7 border-slate-700 bg-slate-800 text-xs text-slate-100" placeholder="Search sessions…" value={search} onChange={(e) => setSearch(e.target.value)} />
+        </div>
+        <select className="h-8 rounded-md border border-slate-700 bg-slate-800 px-2 text-xs text-slate-100" value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
+          <option value="ALL">All Statuses</option>
+          <option value="ACTIVE">Active</option>
+          <option value="IDLE">Idle</option>
+        </select>
+      </div>
+
+      <Panel title="Session List" subtitle={`${filtered.length} sessions`} accentBorder="border-violet-500/20">
         {isLoading ? (
           <div className="flex items-center justify-center py-12"><Loader2 className="size-6 animate-spin text-red-400" /></div>
-        ) : sessions.length === 0 ? (
-          <EmptyState icon={Monitor} title="No Active Sessions" description="No active sessions found." />
+        ) : filtered.length === 0 ? (
+          <EmptyState icon={Monitor} title="No Sessions" description={sessions.length === 0 ? 'No active sessions found.' : 'No sessions match the current filters.'} />
         ) : (
           <div className="space-y-2">
-            {sessions.map((session) => (
+            {filtered.map((session) => (
               <div key={session.id} className={`flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-lg border px-3 py-2 text-xs ${session.status === 'ACTIVE' ? 'border-emerald-500/20 bg-emerald-500/5' : 'border-slate-500/20 bg-slate-800/60'}`}>
                 <div>
                   <div className="flex items-center gap-2">
                     <p className="font-semibold text-slate-100">{session.user}</p>
                     <span className="rounded-full bg-slate-700 px-2 py-0.5 text-[10px] text-slate-300">{session.role}</span>
                     {session.status === 'ACTIVE' && <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] text-emerald-300">Active</span>}
+                    {session.status === 'IDLE' && <span className="rounded-full bg-amber-500/20 px-2 py-0.5 text-[10px] text-amber-300">Idle</span>}
                   </div>
                   <p className="text-slate-400 mt-0.5">{session.device} · IP: {session.ip}</p>
                   <p className="text-[10px] text-slate-400">Started: {new Date(session.startedAt).toLocaleString()} · Last active: {new Date(session.lastActive).toLocaleString()}</p>
                 </div>
                 {session.status === 'ACTIVE' && (
-                  <Button size="sm" className="h-6 bg-red-500/20 text-red-100 hover:bg-red-500/30 text-[10px] shrink-0" disabled={revokeSession.isPending} onClick={() => {
-                    const reason = reasonPrompt('Revoke session');
-                    if (!reason) return;
-                    revokeSession.mutate({ sessionId: session.id, reason });
-                  }}>Revoke</Button>
+                  <Button size="sm" className="h-6 bg-red-500/20 text-red-100 hover:bg-red-500/30 text-[10px] shrink-0" disabled={revokeSession.isPending} onClick={() => handleRevokeOne(session.id)}>Revoke</Button>
                 )}
               </div>
             ))}

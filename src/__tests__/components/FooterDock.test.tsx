@@ -8,6 +8,7 @@ import {
   type OverlayAppId,
 } from '@/overlay/overlay-registry';
 import { FooterDock } from '@/components/layout/FooterDock';
+import { useAuthStore } from '@/store/auth.store';
 import { useOverlayStore } from '@/store/overlay.store';
 
 function buildDefaultPrimaryByApp(): Record<OverlayAppId, string> {
@@ -39,6 +40,19 @@ function resetOverlayStore() {
 
 beforeEach(() => {
   localStorage.clear();
+  useAuthStore.setState({
+    user: {
+      id: 'u-admin-1',
+      email: 'admin@test.dev',
+      firstName: 'Admin',
+      lastName: 'User',
+      role: 'ADMIN',
+    } as any,
+    schoolId: 'school-1',
+    schoolMemberships: [],
+    isLoading: false,
+    error: null,
+  });
   resetOverlayStore();
 });
 
@@ -75,5 +89,22 @@ describe('FooterDock', () => {
     expect(useOverlayStore.getState().launcherOpen).toBe(true);
     fireEvent.keyDown(window, { key: 'Escape' });
     expect(useOverlayStore.getState().launcherOpen).toBe(false);
+  });
+
+  it('hides gamification from non-operator roles', async () => {
+    const user = userEvent.setup();
+    useAuthStore.setState((state) => ({
+      ...state,
+      user: {
+        ...(state.user as any),
+        role: 'TEACHER',
+      },
+    }));
+
+    render(<FooterDock />);
+    await user.click(screen.getByLabelText('Open app launcher'));
+
+    expect(screen.queryByLabelText('Launch Gamification')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Launch Studio')).toBeInTheDocument();
   });
 });

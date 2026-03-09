@@ -187,6 +187,139 @@ export type ProviderSettingsBundle = {
   }>;
 };
 
+/* ═══  GRANULAR SETTINGS TYPES  ═══ */
+export type ProviderGeneralConfig = {
+  timezone: string;
+  locale: string;
+  currency: string;
+  dateFormat: string;
+  schoolYearStart: string;
+};
+
+export type ProviderProvisioningRules = {
+  autoApprove: boolean;
+  requireEmailVerification: boolean;
+  defaultPlan: string;
+  trialDays: number;
+  maxTenantsPerOwner: number;
+  requirePaymentMethod: boolean;
+};
+
+export type ProviderRetentionPolicy = {
+  dataRetentionDays: number;
+  backupRetentionDays: number;
+  auditLogRetentionDays: number;
+  deleteOnTenantClose: boolean;
+  anonymizeAfterDays: number;
+};
+
+export type ProviderAlertChannels = {
+  email: boolean;
+  slack: boolean;
+  webhook: boolean;
+  sms: boolean;
+  inApp: boolean;
+};
+
+export type ProviderSettingsEscalationRule = {
+  id: string;
+  triggerEvent: string;
+  escalateTo: string;
+  delayMinutes: number;
+  channel: string;
+  enabled: boolean;
+};
+
+export type ProviderNotifQuietHours = {
+  enabled: boolean;
+  startTime: string;
+  endTime: string;
+  weekendsOnly: boolean;
+  allowCritical: boolean;
+};
+
+export type ProviderSLAPolicy = {
+  id: string;
+  name: string;
+  priority: string;
+  firstResponseMinutes: number;
+  resolutionMinutes: number;
+  escalationMinutes: number;
+  category: string;
+  isActive: boolean;
+  createdAt: string;
+};
+
+export type ProviderSLAEscalationRule = {
+  id: string;
+  policyId: string;
+  triggerMinutes: number;
+  escalateTo: string;
+  notifyVia: string;
+  createdAt: string;
+};
+
+export type ProviderLegalTemplateV2 = {
+  id: string;
+  name: string;
+  category: string;
+  subject: string;
+  body: string;
+  requiredFields: string[];
+  isActive: boolean;
+  version: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProviderLegalCategory = {
+  id: string;
+  name: string;
+  count: number;
+};
+
+export type ProviderEmailTemplateV2 = {
+  id: string;
+  name: string;
+  category: string;
+  subject: string;
+  body: string;
+  variables: string[];
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type ProviderEmailVariable = {
+  name: string;
+  description: string;
+  example: string;
+};
+
+export type ProviderAppearanceTheme = {
+  primaryColor: string;
+  sidebarColor: string;
+  accentColor: string;
+  textColor: string;
+  fontFamily: string;
+  borderRadius: string;
+  darkMode: boolean;
+};
+
+export type ProviderAppearanceLayout = {
+  sidebarPosition: string;
+  sidebarCollapsed: boolean;
+  headerFixed: boolean;
+  contentMaxWidth: string;
+  showBreadcrumbs: boolean;
+  compactMode: boolean;
+};
+
+export type ProviderCustomCss = {
+  css: string;
+  savedAt: string;
+};
+
 export type ApiKeyDTO = {
   id: string;
   name: string;
@@ -377,6 +510,22 @@ export const providerKeys = {
   maintenance: ['provider-console', 'maintenance'] as const,
   releases: ['provider-console', 'releases'] as const,
   auditExports: ['provider-console', 'audit-exports'] as const,
+  // ── Granular settings keys ──
+  generalConfig: ['provider-console', 'settings', 'general-config'] as const,
+  provisioningRules: ['provider-console', 'settings', 'provisioning-rules'] as const,
+  retentionPolicy: ['provider-console', 'settings', 'retention-policy'] as const,
+  alertChannels: ['provider-console', 'settings', 'alert-channels'] as const,
+  settingsEscalationRules: ['provider-console', 'settings', 'escalation-rules'] as const,
+  notifQuietHours: ['provider-console', 'settings', 'quiet-hours'] as const,
+  slaPoliciesV2: ['provider-console', 'settings', 'sla-policies'] as const,
+  slaEscalationRules: ['provider-console', 'settings', 'sla-escalation-rules'] as const,
+  legalTemplatesV2: ['provider-console', 'settings', 'legal-templates-v2'] as const,
+  legalCategories: ['provider-console', 'settings', 'legal-categories'] as const,
+  emailTemplatesV2: ['provider-console', 'settings', 'email-templates-v2'] as const,
+  emailVariables: ['provider-console', 'settings', 'email-variables'] as const,
+  appearanceTheme: ['provider-console', 'settings', 'appearance-theme'] as const,
+  appearanceLayout: ['provider-console', 'settings', 'appearance-layout'] as const,
+  customCssV2: ['provider-console', 'settings', 'custom-css'] as const,
 };
 
 function toQueryString(filters: Record<string, string | undefined>): string {
@@ -838,6 +987,49 @@ export function useCreateProviderIncident() {
   });
 }
 
+export function useResolveProviderIncident() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: {
+      incidentId: string;
+      status: 'MONITORING' | 'RESOLVED';
+      note?: string;
+      reason: string;
+    }) =>
+      api.patch<ApiSuccessResponse<IncidentDTO>>(`/provider/incidents/${input.incidentId}`, {
+        status: input.status,
+        note: input.note,
+        reason: input.reason,
+      }).then((res) => res.data),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: providerKeys.root });
+    },
+  });
+}
+
+export type StatusComponentDTO = {
+  id: string;
+  key: string;
+  name: string;
+  publicStatus: string;
+};
+
+export type StatusPageBundle = {
+  components: StatusComponentDTO[];
+  maintenance: Array<Record<string, unknown>>;
+  incidents: IncidentDTO[];
+};
+
+export function useProviderStatus() {
+  return useQuery({
+    queryKey: [...providerKeys.root, 'status'],
+    queryFn: () =>
+      api
+        .get<ApiSuccessResponse<StatusPageBundle>>('/provider/status')
+        .then((res) => res.data),
+  });
+}
+
 export function useUpdateProviderFeatureFlag() {
   const qc = useQueryClient();
   return useMutation({
@@ -925,6 +1117,98 @@ export function useProviderSettings() {
       api
         .get<ApiSuccessResponse<ProviderSettingsBundle>>('/provider/settings')
         .then((res) => res.data),
+  });
+}
+
+/* ═══  GRANULAR SETTINGS QUERY HOOKS  ═══ */
+export function useProviderGeneralConfig() {
+  return useQuery({
+    queryKey: providerKeys.generalConfig,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderGeneralConfig>>('/provider/settings/general-config').then((r) => r.data),
+  });
+}
+export function useProviderProvisioningRules() {
+  return useQuery({
+    queryKey: providerKeys.provisioningRules,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderProvisioningRules>>('/provider/settings/provisioning-rules').then((r) => r.data),
+  });
+}
+export function useProviderRetentionPolicy() {
+  return useQuery({
+    queryKey: providerKeys.retentionPolicy,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderRetentionPolicy>>('/provider/settings/retention-policy').then((r) => r.data),
+  });
+}
+export function useProviderAlertChannels() {
+  return useQuery({
+    queryKey: providerKeys.alertChannels,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderAlertChannels>>('/provider/settings/alert-channels').then((r) => r.data),
+  });
+}
+export function useProviderSettingsEscalationRules() {
+  return useQuery({
+    queryKey: providerKeys.settingsEscalationRules,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderSettingsEscalationRule[]>>('/provider/settings/escalation-rules').then((r) => r.data),
+  });
+}
+export function useProviderNotifQuietHours() {
+  return useQuery({
+    queryKey: providerKeys.notifQuietHours,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderNotifQuietHours>>('/provider/settings/quiet-hours').then((r) => r.data),
+  });
+}
+export function useProviderSlaPoliciesV2() {
+  return useQuery({
+    queryKey: providerKeys.slaPoliciesV2,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderSLAPolicy[]>>('/provider/settings/sla-policies').then((r) => r.data),
+  });
+}
+export function useProviderSlaEscalationRules() {
+  return useQuery({
+    queryKey: providerKeys.slaEscalationRules,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderSLAEscalationRule[]>>('/provider/settings/sla-escalation-rules').then((r) => r.data),
+  });
+}
+export function useProviderLegalTemplatesV2() {
+  return useQuery({
+    queryKey: providerKeys.legalTemplatesV2,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderLegalTemplateV2[]>>('/provider/settings/legal-templates-v2').then((r) => r.data),
+  });
+}
+export function useProviderLegalCategories() {
+  return useQuery({
+    queryKey: providerKeys.legalCategories,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderLegalCategory[]>>('/provider/settings/legal-categories').then((r) => r.data),
+  });
+}
+export function useProviderEmailTemplatesV2() {
+  return useQuery({
+    queryKey: providerKeys.emailTemplatesV2,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderEmailTemplateV2[]>>('/provider/settings/email-templates-v2').then((r) => r.data),
+  });
+}
+export function useProviderEmailVariables() {
+  return useQuery({
+    queryKey: providerKeys.emailVariables,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderEmailVariable[]>>('/provider/settings/email-variables').then((r) => r.data),
+  });
+}
+export function useProviderAppearanceTheme() {
+  return useQuery({
+    queryKey: providerKeys.appearanceTheme,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderAppearanceTheme>>('/provider/settings/appearance-theme').then((r) => r.data),
+  });
+}
+export function useProviderAppearanceLayout() {
+  return useQuery({
+    queryKey: providerKeys.appearanceLayout,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderAppearanceLayout>>('/provider/settings/appearance-layout').then((r) => r.data),
+  });
+}
+export function useProviderCustomCssV2() {
+  return useQuery({
+    queryKey: providerKeys.customCssV2,
+    queryFn: () => api.get<ApiSuccessResponse<ProviderCustomCss>>('/provider/settings/custom-css-v2').then((r) => r.data),
   });
 }
 
@@ -1513,6 +1797,15 @@ export function useProviderReports() {
 }
 
 /* ── DataOps extras ── */
+export type ImportJobDTO = {
+  id: string;
+  source: string;
+  records: number;
+  status: string;
+  startedAt: string;
+  completedAt: string | null;
+};
+
 export type RepairJobDTO = {
   id: string;
   name: string;
@@ -1535,6 +1828,7 @@ export type CompatCheckDTO = {
 };
 
 export type ProviderDataOpsExtrasBundle = {
+  imports: ImportJobDTO[];
   repairJobs: RepairJobDTO[];
   compatibilityChecks: CompatCheckDTO[];
 };
@@ -2043,6 +2337,188 @@ export function useSaveProviderCustomCss() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: providerKeys.settings });
     },
+  });
+}
+
+/* ═══  GRANULAR SETTINGS MUTATION HOOKS  ═══ */
+
+export function useUpdateProviderGeneralConfig() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<ProviderGeneralConfig> & { reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderGeneralConfig>>('/provider/settings/general-config', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.generalConfig }); },
+  });
+}
+
+export function useUpdateProviderProvisioningRules() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<ProviderProvisioningRules> & { reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderProvisioningRules>>('/provider/settings/provisioning-rules', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.provisioningRules }); },
+  });
+}
+
+export function useUpdateProviderRetentionPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<ProviderRetentionPolicy> & { reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderRetentionPolicy>>('/provider/settings/retention-policy', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.retentionPolicy }); },
+  });
+}
+
+export function useUpdateProviderAlertChannels() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<ProviderAlertChannels> & { reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderAlertChannels>>('/provider/settings/alert-channels', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.alertChannels }); },
+  });
+}
+
+export function useUpdateProviderSettingsEscalationRules() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { rules: Omit<ProviderSettingsEscalationRule, 'id'>[]; reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderSettingsEscalationRule[]>>('/provider/settings/escalation-rules', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.settingsEscalationRules }); },
+  });
+}
+
+export function useUpdateProviderNotifQuietHours() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<ProviderNotifQuietHours> & { reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderNotifQuietHours>>('/provider/settings/quiet-hours', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.notifQuietHours }); },
+  });
+}
+
+export function useCreateProviderSlaPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Omit<ProviderSLAPolicy, 'id' | 'createdAt'> & { reason: string }) =>
+      api.post<ApiSuccessResponse<ProviderSLAPolicy>>('/provider/settings/sla-policies', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.slaPoliciesV2 }); },
+  });
+}
+
+export function useUpdateProviderSlaPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { policyId: string; reason: string } & Partial<ProviderSLAPolicy>) =>
+      api.patch<ApiSuccessResponse<ProviderSLAPolicy>>(`/provider/settings/sla-policies/${input.policyId}`, input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.slaPoliciesV2 }); },
+  });
+}
+
+export function useDeleteProviderSlaPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { policyId: string; reason: string }) =>
+      api.request<ApiSuccessResponse<{ deleted: string }>>(`/provider/settings/sla-policies/${input.policyId}`, { method: 'DELETE', body: { reason: input.reason } }).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.slaPoliciesV2 }); },
+  });
+}
+
+export function useCreateProviderSlaEscalationRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Omit<ProviderSLAEscalationRule, 'id' | 'createdAt'> & { reason: string }) =>
+      api.post<ApiSuccessResponse<ProviderSLAEscalationRule>>('/provider/settings/sla-escalation-rules', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.slaEscalationRules }); },
+  });
+}
+
+export function useDeleteProviderSlaEscalationRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { ruleId: string; reason: string }) =>
+      api.request<ApiSuccessResponse<{ deleted: string }>>(`/provider/settings/sla-escalation-rules/${input.ruleId}`, { method: 'DELETE', body: { reason: input.reason } }).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.slaEscalationRules }); },
+  });
+}
+
+export function useCreateProviderLegalTemplateV2() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Omit<ProviderLegalTemplateV2, 'id' | 'version' | 'createdAt' | 'updatedAt'> & { reason: string }) =>
+      api.post<ApiSuccessResponse<ProviderLegalTemplateV2>>('/provider/settings/legal-templates-v2', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.legalTemplatesV2 }); qc.invalidateQueries({ queryKey: providerKeys.legalCategories }); },
+  });
+}
+
+export function useUpdateProviderLegalTemplateV2() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { templateId: string; reason: string } & Partial<ProviderLegalTemplateV2>) =>
+      api.patch<ApiSuccessResponse<ProviderLegalTemplateV2>>(`/provider/settings/legal-templates-v2/${input.templateId}`, input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.legalTemplatesV2 }); },
+  });
+}
+
+export function useDeleteProviderLegalTemplateV2() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { templateId: string; reason: string }) =>
+      api.request<ApiSuccessResponse<{ deleted: string }>>(`/provider/settings/legal-templates-v2/${input.templateId}`, { method: 'DELETE', body: { reason: input.reason } }).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.legalTemplatesV2 }); qc.invalidateQueries({ queryKey: providerKeys.legalCategories }); },
+  });
+}
+
+export function useCreateProviderEmailTemplateV2() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Omit<ProviderEmailTemplateV2, 'id' | 'createdAt' | 'updatedAt'> & { reason: string }) =>
+      api.post<ApiSuccessResponse<ProviderEmailTemplateV2>>('/provider/settings/email-templates-v2', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.emailTemplatesV2 }); },
+  });
+}
+
+export function useUpdateProviderEmailTemplateV2() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { templateId: string; reason: string } & Partial<ProviderEmailTemplateV2>) =>
+      api.patch<ApiSuccessResponse<ProviderEmailTemplateV2>>(`/provider/settings/email-templates-v2/${input.templateId}`, input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.emailTemplatesV2 }); },
+  });
+}
+
+export function useDeleteProviderEmailTemplateV2() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { templateId: string; reason: string }) =>
+      api.request<ApiSuccessResponse<{ deleted: string }>>(`/provider/settings/email-templates-v2/${input.templateId}`, { method: 'DELETE', body: { reason: input.reason } }).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.emailTemplatesV2 }); },
+  });
+}
+
+export function useUpdateProviderAppearanceTheme() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<ProviderAppearanceTheme> & { reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderAppearanceTheme>>('/provider/settings/appearance-theme', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.appearanceTheme }); },
+  });
+}
+
+export function useUpdateProviderAppearanceLayout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: Partial<ProviderAppearanceLayout> & { reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderAppearanceLayout>>('/provider/settings/appearance-layout', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.appearanceLayout }); },
+  });
+}
+
+export function useSaveProviderCustomCssV2() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (input: { css: string; reason: string }) =>
+      api.patch<ApiSuccessResponse<ProviderCustomCss>>('/provider/settings/custom-css', input).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: providerKeys.customCssV2 }); },
   });
 }
 

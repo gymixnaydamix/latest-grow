@@ -41,7 +41,7 @@ export function TeacherConciergeSettings() {
   const { activeSubNav } = useNavigationStore();
   const { data: apiClasses } = useTeacherClasses();
   const { data: apiCommentBank } = useTeacherCommentBank();
-  useSaveTeacherPreferences();
+  const savePrefs = useSaveTeacherPreferences();
 
   const quickReplies = (apiCommentBank as any[]) ?? FALLBACK_QUICK_REPLIES;
   const gradeScales = FALLBACK_GRADE_SCALES;
@@ -65,9 +65,12 @@ export function TeacherConciergeSettings() {
           ].map((s) => (
             <div key={s.label} className="flex items-center justify-between rounded-xl border border-border/30 bg-background/70 p-3 dark:border-white/5">
               <span className="text-xs font-medium text-foreground">{s.label}</span>
-              <div className={cn('h-5 w-9 rounded-full relative transition', s.enabled ? 'bg-primary/80' : 'bg-muted')}>
+              <button
+                onClick={() => savePrefs.mutate({ [s.label]: !s.enabled })}
+                className={cn('h-5 w-9 rounded-full relative transition cursor-pointer', s.enabled ? 'bg-primary/80' : 'bg-muted')}
+              >
                 <div className={cn('absolute top-0.5 h-4 w-4 rounded-full bg-white shadow transition', s.enabled ? 'right-0.5' : 'left-0.5')} />
-              </div>
+              </button>
             </div>
           ))}
         </div>

@@ -60,10 +60,10 @@ export default function VirtualLabsPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Labs Completed" value={3} icon={<FlaskConical className="h-5 w-5" />} />
-        <StatCard label="Avg Accuracy" value={92} suffix="%" icon={<Gauge className="h-5 w-5" />} trend="up" />
-        <StatCard label="Badges Earned" value={5} icon={<Trophy className="h-5 w-5" />} />
-        <StatCard label="Time in Labs" value={4.5} suffix="h" icon={<Clock className="h-5 w-5" />} decimals={1} />
+        <StatCard label="Labs Completed" value={LABS.filter(l => l.progress === 100).length || 3} icon={<FlaskConical className="h-5 w-5" />} />
+        <StatCard label="Avg Accuracy" value={RECENT_RESULTS.length > 0 ? Math.round(RECENT_RESULTS.reduce((s, r) => s + r.accuracy, 0) / RECENT_RESULTS.length) : 92} suffix="%" icon={<Gauge className="h-5 w-5" />} trend="up" />
+        <StatCard label="Badges Earned" value={RECENT_RESULTS.filter(r => r.badge).length || 5} icon={<Trophy className="h-5 w-5" />} />
+        <StatCard label="Time in Labs" value={+(LABS.reduce((s, l) => s + parseInt(l.duration) * (l.progress / 100), 0) / 60).toFixed(1) || 4.5} suffix="h" icon={<Clock className="h-5 w-5" />} decimals={1} />
       </div>
 
       {!activeLab ? (

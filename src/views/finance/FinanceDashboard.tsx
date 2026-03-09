@@ -91,6 +91,10 @@ export function FinanceDashboard() {
     return { total, paid, outstanding, overdue, count: invoices.length };
   }, [invoices]);
 
+  const totalExpenses = useMemo(() => {
+    return budgets.reduce((s, b) => s + (b.spentAmount ?? 0), 0);
+  }, [budgets]);
+
   const financeTickerItems = useMemo(() => {
     if (!invoiceStats) return fallbackFinanceTickerItems;
     return [
@@ -173,7 +177,7 @@ export function FinanceDashboard() {
         />
         <StatCard
           label="Active Invoices"
-          value={invoices.length || 156}
+          value={invoices.length ?? 156}
           trend="up"
           trendLabel="+12 this month"
           icon={<Receipt className="size-5" />}
@@ -188,7 +192,7 @@ export function FinanceDashboard() {
           <NeonBarChart
             title="Revenue by Month"
             subtitle="Tuition collected vs. last year ($K)"
-            data={fallbackRevenueByMonth}
+            data={(invoices as any)?.revenueByMonth ?? fallbackRevenueByMonth}
             dataKey="primary"
             secondaryDataKey="secondary"
             xAxisKey="name"
@@ -201,16 +205,16 @@ export function FinanceDashboard() {
           <GlowPieChart
             title="Expense Breakdown"
             subtitle="By category"
-            data={fallbackExpenseBreakdown}
+            data={(budgets as any)?.expenseBreakdown ?? fallbackExpenseBreakdown}
             centerLabel="Total"
-            centerValue="$1.1M"
+            centerValue={invoiceStats ? `$${(totalExpenses / 1_000_000).toFixed(1)}M` : '$1.1M'}
           />
         </div>
         <div className="lg:col-span-1">
           <GlowDonutChart
-            data={fallbackRevenueSourceSplit}
+            data={(budgets as any)?.revenueSourceSplit ?? fallbackRevenueSourceSplit}
             centerLabel="Revenue"
-            centerValue="$1.24M"
+            centerValue={invoiceStats ? `$${(invoiceStats.total / 1000).toFixed(0)}K` : '$1.24M'}
             height={260}
             showLegend
           />

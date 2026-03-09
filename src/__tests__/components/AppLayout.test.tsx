@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import {
   overlayAppList,
@@ -115,5 +115,27 @@ describe('AppLayout overlay flag behavior', () => {
 
     expect(screen.getByLabelText('Open app launcher')).toBeInTheDocument();
     expect(screen.queryByLabelText('Toggle legacy app launcher')).not.toBeInTheDocument();
+  });
+
+  it('hydrates gamification overlay state from search params for operator roles', async () => {
+    useAuthStore.setState((state) => ({
+      ...state,
+      user: {
+        ...(state.user as any),
+        role: 'ADMIN',
+      },
+    }));
+
+    render(
+      <MemoryRouter initialEntries={['/admin?overlayApp=gamification&overlayPath=/gamification/quizzes/quiz-builder']}>
+        <AppLayout />
+      </MemoryRouter>,
+    );
+
+    await waitFor(() => {
+      expect(useOverlayStore.getState().activeAppId).toBe('gamification');
+      expect(useOverlayStore.getState().activePrimaryByApp.gamification).toBe('quizzes_challenges');
+      expect(useOverlayStore.getState().activeSecondaryByApp.gamification).toBe('quiz_builder');
+    });
   });
 });

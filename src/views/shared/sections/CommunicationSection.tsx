@@ -363,7 +363,14 @@ function ThreadDetailPane({ selectedThreadId, isDetailLoading, selectedThread, s
 function SocialMediaView() {
   const schoolId = useAuthStore((s) => s.schoolId);
   const { data: broadcastsData } = useBroadcasts(schoolId);
-  void broadcastsData;
+  const broadcasts = (broadcastsData as any);
+
+  const socialChannels = broadcasts?.channels ?? [
+    { platform: 'Facebook', followers: '2,340', color: 'text-blue-400', bg: 'bg-blue-500/10' },
+    { platform: 'Instagram', followers: '5,120', color: 'text-pink-400', bg: 'bg-pink-500/10' },
+    { platform: 'Twitter/X', followers: '1,890', color: 'text-sky-400', bg: 'bg-sky-500/10' },
+  ];
+  const socialPosts = broadcasts?.posts ?? FALLBACK_SOCIAL_POSTS;
 
   return (
     <>
@@ -376,11 +383,7 @@ function SocialMediaView() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-3" data-animate>
-        {[
-          { platform: 'Facebook', followers: '2,340', color: 'text-blue-400', bg: 'bg-blue-500/10' },
-          { platform: 'Instagram', followers: '5,120', color: 'text-pink-400', bg: 'bg-pink-500/10' },
-          { platform: 'Twitter/X', followers: '1,890', color: 'text-sky-400', bg: 'bg-sky-500/10' },
-        ].map((p) => (
+        {socialChannels.map((p: any) => (
           <Card key={p.platform} className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardContent className="pt-6">
               <div className="flex items-center gap-2">
@@ -401,7 +404,7 @@ function SocialMediaView() {
           <CardTitle className="text-base text-white/85">Recent Posts</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {FALLBACK_SOCIAL_POSTS.map((post, i) => (
+          {socialPosts.map((post: any, i: number) => (
             <div key={i} className="flex items-start gap-3 rounded-xl border border-white/6 bg-white/2 p-3 transition-all hover:bg-white/4 hover:border-white/12">
               <Badge variant="outline" className="shrink-0 text-[10px] border-white/10 text-white/50">{post.platform}</Badge>
               <div className="flex-1 min-w-0">

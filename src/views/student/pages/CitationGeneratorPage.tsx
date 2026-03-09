@@ -30,8 +30,7 @@ const SOURCE_ICONS: Record<SourceType, typeof BookOpen> = {
 
 const STYLES: CitationStyle[] = ['APA', 'MLA', 'Chicago', 'Harvard', 'IEEE'];
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _SAVED_CITATIONS = [
+const FALLBACK_CITATIONS = [
   {
     id: '1', type: 'book' as SourceType, title: 'Introduction to Algorithms',
     authors: 'Cormen, T. H., Leiserson, C. E., Rivest, R. L., & Stein, C.',
@@ -79,7 +78,7 @@ export default function CitationGeneratorPage() {
   const { data: _apiCitations } = useStudentCitations();
   const generateCitationMut = useGenerateCitation();
   const deleteCitationMut = useDeleteCitation();
-  const savedCitations = (_apiCitations as any[]) ?? [];
+  const savedCitations = (_apiCitations as any[])?.length > 0 ? (_apiCitations as any[]) : FALLBACK_CITATIONS;
 
   const filtered = savedCitations.filter((c: any) => {
     const matchSearch = c.title?.toLowerCase().includes(search.toLowerCase()) || c.authors?.toLowerCase().includes(search.toLowerCase());
@@ -101,7 +100,7 @@ export default function CitationGeneratorPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Saved Citations" value={savedCitations.length} icon={<BookOpen className="h-5 w-5" />} />
         <StatCard label="Projects" value={PROJECTS.length - 1} icon={<ClipboardList className="h-5 w-5" />} />
-        <StatCard label="Sources Used" value={3} icon={<Library className="h-5 w-5" />} />
+        <StatCard label="Sources Used" value={new Set(savedCitations.map((c: any) => c.type)).size || 3} icon={<Library className="h-5 w-5" />} />
         <StatCard label="Starred" value={savedCitations.filter((c: any) => c.starred).length} icon={<Star className="h-5 w-5" />} />
       </div>
 

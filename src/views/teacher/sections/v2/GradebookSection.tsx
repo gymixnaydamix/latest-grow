@@ -23,9 +23,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  gradebookStudentsDemo as FALLBACK_gradebookStudentsDemo, gradebookAssignmentsDemo as FALLBACK_gradebookAssignmentsDemo, teacherClassesDemo as FALLBACK_teacherClassesDemo,
-  commentBankDemo as FALLBACK_commentBankDemo, classPerformanceDemo as FALLBACK_classPerformanceDemo,
-  type GradebookStudentDemo,
+  type GradebookStudentDemo, type CommentBankItemDemo, type ClassPerformanceDemo,
 } from './teacher-demo-data';
 
 /* ── Mastery standards demo ── */
@@ -72,7 +70,7 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const courses: Course[] = coursesRes ?? [];
   const classes = courses.length > 0
     ? courses.filter(c => !teacherId || c.teacherId === teacherId)
-    : FALLBACK_teacherClassesDemo;
+    : [];
 
   /* ── Class selector ── */
   const [selectedClass, setSelectedClass] = useState(classes[0]?.id ?? 'c1');
@@ -85,17 +83,17 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const exportGradesMut = useExportGrades();
   const addCommentMut = useAddComment();
   const { data: apiCommentBank } = useTeacherCommentBank();
-  const commentBank = (apiCommentBank as unknown as typeof FALLBACK_commentBankDemo) ?? FALLBACK_commentBankDemo;
+  const commentBank: CommentBankItemDemo[] = (apiCommentBank as unknown as CommentBankItemDemo[]) ?? [];
 
   // Wire gradebook from API with demo fallback
   const { data: apiGradebookData } = useTeacherGradebook(selectedClass || firstCourseId || null);
-  const apiGb = (apiGradebookData as any)?.data as { students?: typeof FALLBACK_gradebookStudentsDemo; assignments?: typeof FALLBACK_gradebookAssignmentsDemo } | undefined;
-  const students = apiGb?.students?.length ? apiGb.students : FALLBACK_gradebookStudentsDemo;
-  const gbAssignments = apiGb?.assignments?.length ? apiGb.assignments : FALLBACK_gradebookAssignmentsDemo;
+  const apiGb = (apiGradebookData as any)?.data as { students?: GradebookStudentDemo[]; assignments?: { id: string; title: string; maxScore: number; weight: number }[] } | undefined;
+  const students = apiGb?.students?.length ? apiGb.students : [];
+  const gbAssignments = apiGb?.assignments?.length ? apiGb.assignments : [];
 
   // Wire class performance from API for grade reports
   const { data: apiClassPerf } = useTeacherClassPerformance();
-  const classPerformance = (apiClassPerf as unknown as typeof FALLBACK_classPerformanceDemo) ?? FALLBACK_classPerformanceDemo;
+  const classPerformance: ClassPerformanceDemo[] = (apiClassPerf as unknown as ClassPerformanceDemo[]) ?? [];
 
   /* ── Editable cells state ── */
   const [editedScores, setEditedScores] = useState<Record<string, Record<string, string>>>({});
@@ -164,7 +162,7 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
         </div>
 
         <GlassCard className="overflow-x-auto">
-          <table className="w-full text-left min-w-[700px]">
+          <table className="w-full text-left min-w-175">
             <thead>
               <tr className="border-b border-border/50">
                 <th className="pb-3 pr-4 text-[11px] font-semibold text-muted-foreground uppercase tracking-wider sticky left-0 bg-card/80 z-10">Student</th>
@@ -354,7 +352,7 @@ export function GradebookSection({ schoolId, teacherId }: TeacherSectionProps) {
   const renderCommentBank = () => (
     <div className="space-y-4" data-animate>
       <div className="flex flex-wrap items-center gap-3">
-        <div className="relative flex-1 min-w-[200px]">
+        <div className="relative flex-1 min-w-50">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
           <Input
             value={commentSearch}

@@ -14,9 +14,8 @@ import { notifySuccess } from '@/lib/notify';
 import { useNavigationStore } from '@/store/navigation.store';
 import { cn } from '@/lib/utils';
 import type { Course, TeacherClassStudent } from '@root/types';
-import { TeacherSectionShell, MetricCard, GlassCard, StatusBadge } from './shared';
+import { TeacherSectionShell, MetricCard, GlassCard, StatusBadge, EmptyState } from './shared';
 import type { TeacherSectionProps } from './shared';
-import { teacherClassesDemo as FALLBACK } from './teacher-demo-data';
 
 /* ═══════════════════════════════════════════════════════════════════
    SECTION ROUTER
@@ -74,19 +73,16 @@ function ClassListView({
   const hasApiClasses = (apiClasses?.length ?? 0) > 0;
   const hasCourses = teacherCourses.length > 0;
   const sourceClasses = hasCourses ? teacherCourses : hasApiClasses ? apiClasses! : [];
-  const useFallback = sourceClasses.length === 0;
-  const displayClasses = useFallback ? FALLBACK : sourceClasses;
+  const displayClasses = sourceClasses;
 
   const classColors = ['#818cf8', '#34d399', '#f472b6', '#fbbf24', '#a78bfa', '#fb923c'];
 
-  const totalStudents = useFallback
-    ? FALLBACK.reduce((s, c) => s + c.studentCount, 0)
-    : hasCourses
-      ? teacherCourses.reduce((s, c) => s + (c._count?.enrollments ?? 0), 0)
-      : apiClasses!.reduce((s: number, c: any) => s + (c.studentCount ?? 0), 0);
-  const avgGrade = useFallback
-    ? Math.round(FALLBACK.reduce((s, c) => s + c.avgGrade, 0) / FALLBACK.length * 10) / 10
-    : 0;
+  const totalStudents = hasCourses
+    ? teacherCourses.reduce((s, c) => s + (c._count?.enrollments ?? 0), 0)
+    : hasApiClasses
+      ? apiClasses!.reduce((s: number, c: any) => s + (c.studentCount ?? 0), 0)
+      : 0;
+  const avgGrade = 0;
 
   return (
     <TeacherSectionShell
@@ -115,27 +111,11 @@ function ClassListView({
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3" data-animate>
-          {useFallback
-            ? FALLBACK.map(cls => (
-                <ClassCard
-                  key={cls.id}
-                  id={cls.id}
-                  name={cls.name}
-                  subject={cls.subject}
-                  gradeLevel={cls.gradeLevel}
-                  period={cls.period}
-                  room={cls.room}
-                  studentCount={cls.studentCount}
-                  avgGrade={cls.avgGrade}
-                  nextSession={cls.nextSession}
-                  color={cls.color}
-                  onView={() => onSelectClass(cls.id)}
-                  onAttendance={() => { onNavigate('attendance', 'take_attendance'); notifySuccess(cls.name, 'Taking attendance'); }}
-                  onGradebook={() => { onNavigate('gradebook'); notifySuccess(cls.name, 'Opening gradebook'); }}
-                  onAssignments={() => { onNavigate('assignments'); notifySuccess(cls.name, 'Viewing assignments'); }}
-                />
-              ))
-            : hasCourses
+          {displayClasses.length === 0 ? (
+            <div className="col-span-full">
+              <EmptyState title="No classes assigned" message="Classes will appear here once you are assigned to courses." icon={<BookOpen className="size-8" />} />
+            </div>
+          ) : hasCourses
               ? teacherCourses.map((c, i) => (
                   <ClassCard
                     key={c.id}
@@ -199,7 +179,7 @@ function ClassCard({
       className="group relative overflow-hidden rounded-2xl border bg-card/90 backdrop-blur-xl transition-all duration-200 hover:shadow-md"
       style={{ borderColor: `${color}25` }}
     >
-      <div className="absolute inset-x-0 top-0 h-[2px]" style={{ background: `linear-gradient(90deg, ${color}00, ${color}, ${color}00)` }} />
+      <div className="absolute inset-x-0 top-0 h-0.5" style={{ background: `linear-gradient(90deg, ${color}00, ${color}, ${color}00)` }} />
 
       <div className="p-5">
         <div className="flex items-start justify-between mb-3">
@@ -266,26 +246,21 @@ function ClassDetailView({
   const [tab, setTab] = useState<'overview' | 'roster'>('overview');
   const [search, setSearch] = useState('');
 
-  const fallbackClass = FALLBACK.find(c => c.id === classId) ?? FALLBACK[0];
   const cls = detail ?? {
-    ...fallbackClass,
-    attendanceRate: 94.2,
-    assignmentCompletion: 87,
-    upcomingAssignments: 3,
-    recentAssignments: [
-      { id: 'a1', title: 'Homework Set 7', type: 'homework', dueDate: '2026-03-06', avgScore: 85, status: 'active' },
-      { id: 'a2', title: 'Quiz #4', type: 'quiz', dueDate: '2026-03-05', avgScore: null, status: 'closed' },
-    ],
-    students: [
-      { id: 's1', name: 'Sarah Ahmad', initials: 'SA', email: 'sarah.ahmad@lincoln.edu', average: 90.4, letterGrade: 'A-', attendanceRate: 98, streak: 14, missingAssignments: 0, status: 'excelling' as const },
-      { id: 's2', name: 'James Baker', initials: 'JB', email: 'james.baker@lincoln.edu', average: 80.0, letterGrade: 'B-', attendanceRate: 94, streak: 7, missingAssignments: 0, status: 'on-track' as const },
-      { id: 's3', name: 'Chen Wei', initials: 'CW', email: 'chen.wei@lincoln.edu', average: 92.1, letterGrade: 'A', attendanceRate: 82, streak: 0, missingAssignments: 0, status: 'on-track' as const },
-      { id: 's4', name: 'Maria Garcia', initials: 'MG', email: 'maria.garcia@lincoln.edu', average: 74.0, letterGrade: 'C', attendanceRate: 91, streak: 3, missingAssignments: 1, status: 'at-risk' as const },
-      { id: 's5', name: 'Jordan Kim', initials: 'JK', email: 'jordan.kim@lincoln.edu', average: 61.7, letterGrade: 'D', attendanceRate: 85, streak: 1, missingAssignments: 3, status: 'at-risk' as const },
-      { id: 's6', name: 'Emma Larsson', initials: 'EL', email: 'emma.larsson@lincoln.edu', average: 88.5, letterGrade: 'B+', attendanceRate: 96, streak: 10, missingAssignments: 0, status: 'on-track' as const },
-      { id: 's7', name: 'Alex Rivera', initials: 'AR', email: 'alex.rivera@lincoln.edu', average: 78.3, letterGrade: 'C+', attendanceRate: 93, streak: 5, missingAssignments: 0, status: 'on-track' as const },
-      { id: 's8', name: 'Sam Lee', initials: 'SL', email: 'sam.lee@lincoln.edu', average: 96.2, letterGrade: 'A+', attendanceRate: 100, streak: 28, missingAssignments: 0, status: 'excelling' as const },
-    ],
+    name: 'Loading…',
+    subject: '',
+    gradeLevel: '',
+    period: 0,
+    room: '',
+    studentCount: 0,
+    avgGrade: 0,
+    nextSession: '',
+    color: '#818cf8',
+    attendanceRate: 0,
+    assignmentCompletion: 0,
+    upcomingAssignments: 0,
+    recentAssignments: [] as { id: string; title: string; type: string; dueDate: string; avgScore: number | null; status: string }[],
+    students: [] as TeacherClassStudent[],
   };
 
   const students: TeacherClassStudent[] = cls.students ?? [];
@@ -348,7 +323,7 @@ function ClassDetailView({
           >
             {t === 'overview' ? 'Overview' : `Student Roster (${students.length})`}
             {tab === t && (
-              <div className="absolute inset-x-0 -bottom-px h-[2px] rounded-full" style={{ backgroundColor: color }} />
+              <div className="absolute inset-x-0 -bottom-px h-0.5 rounded-full" style={{ backgroundColor: color }} />
             )}
           </button>
         ))}
@@ -616,7 +591,7 @@ function TimetableView(_props: TeacherSectionProps) {
       }
     >
       <div className="overflow-x-auto" data-animate>
-        <div className="grid grid-cols-5 gap-3 min-w-[750px]">
+        <div className="grid grid-cols-5 gap-3 min-w-187.5">
           {timetable.map(day => (
             <div key={day.day}>
               <h4 className="text-xs font-semibold text-muted-foreground mb-2 text-center">{day.day}</h4>

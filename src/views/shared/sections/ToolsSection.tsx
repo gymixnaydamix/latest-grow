@@ -63,16 +63,16 @@ export function ToolsSection() {
 
 /* ── Overview ──────────────────────────────────────────────────── */
 
-const FALLBACK_OVERVIEW_STATS = [
-  { label: 'Focus Sessions', value: '24', desc: 'This week', icon: Timer, color: 'bg-indigo-500/10 text-indigo-400' },
-  { label: 'Mind Maps', value: '8', desc: 'Created', icon: GitBranch, color: 'bg-violet-500/10 text-violet-400' },
-  { label: 'Lab Experiments', value: '12', desc: 'Completed', icon: FlaskConical, color: 'bg-emerald-500/10 text-emerald-400' },
-  { label: 'Skill Points', value: '340', desc: 'Earned', icon: Zap, color: 'bg-amber-500/10 text-amber-400' },
-];
-
 function ToolsOverview() {
   const { data: platformConfigsData } = usePlatformConfigs();
-  void platformConfigsData;
+  const configs = (platformConfigsData as any);
+
+  const overviewStats = [
+    { label: 'Focus Sessions', value: String(configs?.focusSessions ?? 0), desc: 'This week', icon: Timer, color: 'bg-indigo-500/10 text-indigo-400' },
+    { label: 'Mind Maps', value: String(configs?.mindMaps ?? 0), desc: 'Created', icon: GitBranch, color: 'bg-violet-500/10 text-violet-400' },
+    { label: 'Lab Experiments', value: String(configs?.labExperiments ?? 0), desc: 'Completed', icon: FlaskConical, color: 'bg-emerald-500/10 text-emerald-400' },
+    { label: 'Skill Points', value: String(configs?.skillPoints ?? 0), desc: 'Earned', icon: Zap, color: 'bg-amber-500/10 text-amber-400' },
+  ];
 
   return (
     <>
@@ -82,7 +82,7 @@ function ToolsOverview() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        {FALLBACK_OVERVIEW_STATS.map((m) => (
+        {overviewStats.map((m) => (
           <div key={m.label} className="rounded-2xl border border-white/6 bg-white/3 backdrop-blur-xl p-4 flex items-center gap-3">
             <div className={`flex size-9 items-center justify-center rounded-lg ${m.color}`}>
               <m.icon className="size-4" />

@@ -17,6 +17,7 @@ interface Props {
   starterMessages?: ConciergeMessage[];
   suggestionChips?: string[];
   slashCommands?: string[];
+  isLoading?: boolean;
   onSend?: (text: string) => void;
   onChipClick?: (label: string) => void;
   className?: string;
@@ -24,7 +25,7 @@ interface Props {
 
 export function ConciergeChatView({
   greeting, contextSummary, suggestions, quickActions, todayChips,
-  starterMessages, suggestionChips, slashCommands, onSend, onChipClick, className,
+  starterMessages, suggestionChips, slashCommands, isLoading, onSend, onChipClick, className,
 }: Props) {
   return (
     <div className={cn('flex flex-1 flex-col gap-4', className)}>
@@ -35,6 +36,7 @@ export function ConciergeChatView({
         starterMessages={starterMessages}
         suggestionChips={suggestionChips}
         onChipClick={onChipClick}
+        isLoading={isLoading}
       />
       <ConciergeCommandComposer
         slashCommands={slashCommands}

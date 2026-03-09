@@ -7,10 +7,6 @@ import { Input } from '@/components/ui/input';
 import { useParentV2Invoices, useParentV2Payments, useParentV2Receipts, useCreateParentV2CheckoutSession } from '@/hooks/api/use-parent-v2';
 import {
   childDisplayName,
-  filterByChild,
-  parentInvoicesDemo as FALLBACK_INVOICES,
-  parentPaymentsDemo as FALLBACK_PAYMENTS,
-  parentReceiptsDemo as FALLBACK_RECEIPTS,
   formatDateLabel,
 } from './parent-v2-demo-data';
 import type { ParentInvoiceDemo, ParentPaymentDemo, ParentReceiptDemo } from './parent-v2-demo-data';
@@ -26,9 +22,9 @@ export function FeesPaymentsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawReceipts } = useParentV2Receipts({ scope, childId });
   const checkoutMut = useCreateParentV2CheckoutSession();
 
-  const invoices: ParentInvoiceDemo[] = (rawInvoices as ParentInvoiceDemo[] | undefined) ?? filterByChild(FALLBACK_INVOICES, childId, scope);
-  const payments: ParentPaymentDemo[] = (rawPayments as ParentPaymentDemo[] | undefined) ?? filterByChild(FALLBACK_PAYMENTS, childId, scope);
-  const receipts: ParentReceiptDemo[] = (rawReceipts as ParentReceiptDemo[] | undefined) ?? filterByChild(FALLBACK_RECEIPTS, childId, scope);
+  const invoices: ParentInvoiceDemo[] = (rawInvoices as ParentInvoiceDemo[] | undefined) ?? [];
+  const payments: ParentPaymentDemo[] = (rawPayments as ParentPaymentDemo[] | undefined) ?? [];
+  const receipts: ParentReceiptDemo[] = (rawReceipts as ParentReceiptDemo[] | undefined) ?? [];
 
   const [tab, setTab] = useState<Tab>('invoices');
   const [query, setQuery] = useState('');

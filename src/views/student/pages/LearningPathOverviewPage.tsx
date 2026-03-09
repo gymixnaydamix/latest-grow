@@ -15,15 +15,13 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { StatCard } from '@/components/features/StatCard';
 import { useStudentLearningPaths } from '@/hooks/api/use-student';
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _PATHS = [
+const FALLBACK_PATHS = [
   { id: 'stem', name: 'STEM Explorer', color: 'bg-cyan-500/20 text-cyan-400', icon: Globe, modules: 12, completed: 8, xp: 2400 },
   { id: 'humanities', name: 'Humanities Scholar', color: 'bg-amber-500/20 text-amber-400', icon: Layers, modules: 10, completed: 6, xp: 1800 },
   { id: 'leadership', name: 'Leadership Track', color: 'bg-violet-500/20 text-violet-400', icon: Compass, modules: 8, completed: 3, xp: 900 },
 ];
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _MODULES = [
+const FALLBACK_MODULES = [
   { title: 'Algebra Foundations', status: 'completed', xp: 300 },
   { title: 'Geometry & Proofs', status: 'completed', xp: 350 },
   { title: 'Trigonometry Basics', status: 'completed', xp: 320 },
@@ -65,8 +63,8 @@ export default function LearningPathOverviewPage() {
 
   /* ── API data ── */
   const { data: apiPaths } = useStudentLearningPaths();
-  const paths = (apiPaths as any[]) ?? [];
-  const modules = (paths.find((p: any) => p.id === activePath)?.modules as any[]) ?? [];
+  const paths = (apiPaths as any[])?.length > 0 ? (apiPaths as any[]) : FALLBACK_PATHS;
+  const modules = (paths.find((p: any) => p.id === activePath)?.modules as any[]) ?? FALLBACK_MODULES;
   const achievements = (apiPaths as any)?.achievements ?? FALLBACK_ACHIEVEMENTS;
   const leaderboard = (apiPaths as any)?.leaderboard ?? FALLBACK_LEADERBOARD;
   const skills = (apiPaths as any)?.skills ?? FALLBACK_SKILLS;
@@ -81,9 +79,9 @@ export default function LearningPathOverviewPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Total XP" value={totalXP} icon={<Zap className="h-5 w-5" />} trend="up" accentColor="#06b6d4" />
-        <StatCard label="Modules Completed" value={17} icon={<Target className="h-5 w-5" />} />
-        <StatCard label="Current Streak" value={12} suffix=" days" icon={<Flame className="h-5 w-5" />} accentColor="#f59e0b" />
-        <StatCard label="Achievements" value={3} suffix="/6" icon={<Trophy className="h-5 w-5" />} />
+        <StatCard label="Modules Completed" value={paths.reduce((s: number, p: any) => s + (p.completed ?? 0), 0)} icon={<Target className="h-5 w-5" />} />
+        <StatCard label="Current Streak" value={(apiPaths as any)?.streak ?? 0} suffix=" days" icon={<Flame className="h-5 w-5" />} accentColor="#f59e0b" />
+        <StatCard label="Achievements" value={achievements.filter((a: any) => a.earned).length} suffix={`/${achievements.length}`} icon={<Trophy className="h-5 w-5" />} />
       </div>
 
       {/* Path selector */}

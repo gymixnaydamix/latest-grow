@@ -20,8 +20,8 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  examsDemo as FALLBACK_examsDemo, attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo,
-  formatDateLabel, formatTimeRange,
+  attendanceStudentsDemo,
+  formatDateLabel, formatTimeRange, type ExamDemo,
 } from './teacher-demo-data';
 
 /* ── Marks entry demo ── */
@@ -55,7 +55,7 @@ const marksEntryDemo: Record<string, ExamStudentScore[]> = {
     { id: 'me15', name: 'Priya Patel', initials: 'PP', score: null, maxScore: 100, status: 'pending' },
     { id: 'me16', name: 'Emma Larsson', initials: 'EL', score: 78, maxScore: 100, status: 'entered' },
   ],
-  ex1: FALLBACK_attendanceStudentsDemo.slice(0, 8).map((st, i) => ({
+  ex1: attendanceStudentsDemo.slice(0, 8).map((st, i) => ({
     id: `me-new-${i}`,
     name: st.name,
     initials: st.initials,
@@ -121,9 +121,9 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
   // Prefetch — will render from API when data available
   useCourses(schoolId);
   const saveMarksMut = useSaveExamMarks();
-  const { data: apiExams } = useTeacherExams();
+  const { data: apiExams, isLoading: examsLoading } = useTeacherExams();
 
-  const exams = (apiExams as unknown as typeof FALLBACK_examsDemo) ?? FALLBACK_examsDemo;
+  const exams: ExamDemo[] = (apiExams as unknown as ExamDemo[]) ?? [];
   const upcomingExams = exams.filter(e => e.status === 'upcoming' || e.status === 'in-progress');
   const completedExams = exams.filter(e => e.status === 'completed' || e.status === 'graded');
 
@@ -578,9 +578,17 @@ export function ExamsSection({ schoolId }: TeacherSectionProps) {
 
   return (
     <TeacherSectionShell title={title} description={desc}>
-      {view === 'exam_schedule' && renderSchedule()}
-      {view === 'marks_entry' && renderMarksEntry()}
-      {view === 'exam_results' && renderResults()}
+      {examsLoading ? (
+        <div className="flex items-center justify-center py-20 text-muted-foreground/60">Loading exams…</div>
+      ) : exams.length === 0 ? (
+        <EmptyState title="No exams yet" message="Exams will appear here once they are scheduled." icon={<GraduationCap className="size-8" />} />
+      ) : (
+        <>
+          {view === 'exam_schedule' && renderSchedule()}
+          {view === 'marks_entry' && renderMarksEntry()}
+          {view === 'exam_results' && renderResults()}
+        </>
+      )}
     </TeacherSectionShell>
   );
 }

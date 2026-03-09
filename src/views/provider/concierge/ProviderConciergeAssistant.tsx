@@ -50,29 +50,7 @@ const FALLBACK_SLASH_CMDS = [
 const starterMessages: ConciergeMessage[] = [
   {
     id: 's1', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Tenant suspension draft for Bright Minds K-12 is ready for review. Module access will be frozen and billing paused.',
-    actionCard: {
-      id: 'ac1', type: 'TenantSuspensionCard', title: 'Suspend Tenant — Bright Minds K-12',
-      status: 'draft', linkedEntities: [{ type: 'Tenant', label: 'Bright Minds K-12', id: 'tenant-bm' }],
-      fields: [
-        { key: 'reason', label: 'Reason', value: 'Non-payment — 90 days overdue' },
-        { key: 'impact', label: 'Affected users', value: '342 users across 12 modules' },
-      ],
-      permissionChip: 'Tenant Admin',
-      auditWarning: 'This action suspends all portal access for the tenant',
-    },
-  },
-  {
-    id: 's2', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Production release v2.14.1 promotion draft is staged. 3 environments passed QA with zero critical issues.',
-  },
-  {
-    id: 's3', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Urgent support escalation from Sunrise Montessori routed to Tier 3 — enrollment module data inconsistency.',
-  },
-  {
-    id: 's4', role: 'assistant', timestamp: new Date().toISOString(),
-    content: 'Billing follow-up campaign targeting 3 tenants with overdue invoices has been drafted and awaits approval.',
+    content: 'Welcome! I\'m your Provider AI Assistant powered by a local LLM. Ask me anything about tenant management, billing, incidents, deployments, or platform operations.',
   },
 ];
 
@@ -145,6 +123,17 @@ export function ProviderConciergeAssistant() {
   const homeQuery = useProviderHome();
   const homeData = homeQuery.data;
 
+  /* System prompt giving the AI context about the provider role */
+  const systemPrompt: { role: 'system'; content: string } = {
+    role: 'system',
+    content: [
+      'You are an AI assistant for a SaaS education platform provider (GrowYourNeed).',
+      'You help the Provider Admin manage tenants (schools), billing, incidents, releases, feature flags, support tickets, and platform operations.',
+      'Be concise, professional, and action-oriented. When the user asks about an action, explain what steps are needed.',
+      'If you don\'t know something specific, say so — don\'t fabricate data.',
+    ].join(' '),
+  };
+
   /* Build todayChips from live home data when available */
   const todayChips: TodayChip[] = homeData
     ? [
@@ -187,13 +176,23 @@ export function ProviderConciergeAssistant() {
             todayChips={todayChips}
             starterMessages={starterMessages}
             slashCommands={slashCommands}
+            isLoading={aiChat.isPending}
             onSend={(t: string) => {
-              const userMsg = { id: `u-${Date.now()}`, role: 'user' as const, content: t, timestamp: new Date().toISOString() };
+              const userMsg: ConciergeMessage = { id: `u-${Date.now()}`, role: 'user', content: t, timestamp: new Date().toISOString() };
               addMessage(userMsg);
-              const history = [...messages, userMsg].map((m) => ({ role: m.role === 'user' ? 'user' as const : 'assistant' as const, content: m.content }));
-              aiChat.mutate({ messages: history }, {
+              const chatHistory = [
+                systemPrompt,
+                ...[...messages, userMsg].map((m) => ({
+                  role: m.role === 'user' ? 'user' as const : 'assistant' as const,
+                  content: m.content,
+                })),
+              ];
+              aiChat.mutate({ messages: chatHistory }, {
                 onSuccess: (res) => {
-                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text, timestamp: new Date().toISOString() });
+                  addMessage({ id: `a-${Date.now()}`, role: 'assistant', content: res.text || 'No response from AI.', timestamp: new Date().toISOString() });
+                },
+                onError: (err) => {
+                  addMessage({ id: `e-${Date.now()}`, role: 'assistant', content: `Error: ${err.message ?? 'Failed to get AI response. Check if Ollama is running.'}`, timestamp: new Date().toISOString() });
                 },
               });
             }}

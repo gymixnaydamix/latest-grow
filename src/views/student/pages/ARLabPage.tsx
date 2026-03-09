@@ -65,9 +65,9 @@ export default function ARLabPage() {
 
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
-        <StatCard label="Models Explored" value={12} icon={<Box className="h-5 w-5" />} />
-        <StatCard label="AR Sessions" value={28} icon={<Camera className="h-5 w-5" />} trend="up" />
-        <StatCard label="Time in AR" value={3.2} suffix="h" icon={<Clock className="h-5 w-5" />} decimals={1} />
+        <StatCard label="Models Explored" value={AR_MODELS.length} icon={<Box className="h-5 w-5" />} />
+        <StatCard label="AR Sessions" value={RECENT_SESSIONS.length} icon={<Camera className="h-5 w-5" />} trend="up" />
+        <StatCard label="Time in AR" value={+(RECENT_SESSIONS.reduce((s, r) => s + parseInt(r.duration, 10), 0) / 60).toFixed(1)} suffix="h" icon={<Clock className="h-5 w-5" />} decimals={1} />
         <StatCard label="Favorites" value={AR_MODELS.filter((m) => m.favorited).length} icon={<Heart className="h-5 w-5" />} />
       </div>
 

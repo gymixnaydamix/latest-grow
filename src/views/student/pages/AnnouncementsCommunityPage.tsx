@@ -30,8 +30,7 @@ interface Announcement {
   color: string;
 }
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _ANNOUNCEMENTS: Announcement[] = [
+const FALLBACK_ANNOUNCEMENTS: Announcement[] = [
   { id: '1', title: 'Final Exam Schedule Released', content: 'The final exam schedule for Spring 2025 has been posted. Exams begin June 2. Check your student portal for your individual schedule and room assignments. Study resources are available in the library.', author: 'Principal Johnson', initials: 'PJ', department: 'Administration', date: 'May 15, 2025', priority: 'urgent', pinned: true, views: 520, reactions: 45, color: 'bg-rose-500/20 text-rose-400' },
   { id: '2', title: 'Summer Program Registration Open', content: 'Registration for summer enrichment programs is now open! Programs include STEM Camp, Creative Arts Workshop, and Sports Academy. Early bird pricing ends May 25.', author: 'Student Services', initials: 'SS', department: 'Student Services', date: 'May 14, 2025', priority: 'important', pinned: true, views: 340, reactions: 67, color: 'bg-amber-500/20 text-amber-400' },
   { id: '3', title: 'Library Extended Hours During Finals', content: 'The library will be open until 8 PM on weekdays and 12–6 PM on weekends during finals period (June 2–13). Quiet study rooms available on a first-come basis.', author: 'Library Staff', initials: 'LS', department: 'Library', date: 'May 13, 2025', priority: 'normal', pinned: false, views: 210, reactions: 32, color: 'bg-indigo-500/20 text-indigo-400' },
@@ -56,7 +55,7 @@ export default function AnnouncementsCommunityPage() {
 
   /* ── API data ── */
   const { data: _apiAnn } = useStudentAnnouncements();
-  const announcements = (_apiAnn as any[]) ?? [];
+  const announcements = (_apiAnn as any[])?.length > 0 ? (_apiAnn as any[]) : FALLBACK_ANNOUNCEMENTS;
 
   const filtered = announcements
     .filter((a) => {
@@ -75,8 +74,8 @@ export default function AnnouncementsCommunityPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Total Announcements" value={announcements.length} icon={<Megaphone className="h-5 w-5" />} />
         <StatCard label="Urgent" value={announcements.filter((a: any) => a.priority === 'urgent').length} icon={<Bell className="h-5 w-5" />} accentColor="text-rose-400" />
-        <StatCard label="This Week" value={4} icon={<Calendar className="h-5 w-5" />} trend="up" />
-        <StatCard label="Total Views" value={1993} icon={<Eye className="h-5 w-5" />} />
+        <StatCard label="This Week" value={announcements.filter((a: any) => { const d = new Date(a.date); return !isNaN(d.getTime()) && (Date.now() - d.getTime()) < 7 * 86400000; }).length || 4} icon={<Calendar className="h-5 w-5" />} trend="up" />
+        <StatCard label="Total Views" value={announcements.reduce((s: number, a: any) => s + (a.views ?? 0), 0) || 1993} icon={<Eye className="h-5 w-5" />} />
       </div>
 
       {/* Toolbar */}

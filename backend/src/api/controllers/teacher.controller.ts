@@ -1,5 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
-import { NotFoundError } from '../../utils/errors.js';
+import bcrypt from 'bcryptjs';
+import { NotFoundError, AppError, UnauthorizedError } from '../../utils/errors.js';
+import { prisma } from '../../db/prisma.service.js';
 
 // ---------------------------------------------------------------------------
 // Wrap: catches synchronous & async errors and forwards to Express error handler
@@ -175,6 +177,141 @@ const messages = [
   { id: 'mt4', subject: 'Maria Garcia grade concern', participants: ['Ms. Johnson (Counselor)'], lastMessage: "I spoke with Maria today. There may be issues at home. Let's coordinate.", lastSender: 'Ms. Johnson', timestamp: '1d ago', unread: false, category: 'staff' },
 ];
 
+// ── Message Defaults ──
+const msgDefaults = {
+  autoReplyEnabled: false,
+  autoReplyMessage: 'Thank you for your message. I will respond within 24 hours during school days.',
+  defaultSignature: 'Best regards,\nMs. Sarah Chen\nSenior Mathematics Teacher\nLincoln Academy',
+  threadRetentionDays: 365,
+  maxAttachmentSizeMb: 25,
+  allowStudentMessages: true,
+  allowParentMessages: true,
+  requireApproval: false,
+};
+
+const msgReplySettings = {
+  defaultReplyMode: 'reply' as const,
+  includeOriginal: true,
+  quickReplies: [
+    'Thank you for reaching out. I will look into this.',
+    'Received — I will follow up by end of day.',
+    'Please schedule a meeting through the office hours portal.',
+    'Your child is doing well. Happy to discuss further.',
+  ],
+};
+
+const msgScheduling = {
+  sendWindowStart: '07:00',
+  sendWindowEnd: '18:00',
+  timezone: 'America/New_York',
+  delayedSendEnabled: true,
+  schedulingEnabled: true,
+};
+
+// ── Notification Settings ──
+const msgNotifChannels = {
+  email: true,
+  push: true,
+  inApp: true,
+  sms: false,
+};
+
+const msgNotifRules = [
+  { id: 'nr1', name: 'Parent urgent messages', condition: 'from_parents' as const, action: 'notify_immediately' as const, enabled: true },
+  { id: 'nr2', name: 'Admin announcements', condition: 'from_admin' as const, action: 'notify_immediately' as const, enabled: true },
+  { id: 'nr3', name: 'Student questions', condition: 'from_students' as const, action: 'digest_hourly' as const, enabled: true },
+  { id: 'nr4', name: 'Mentions', condition: 'mentions' as const, action: 'notify_immediately' as const, enabled: true },
+  { id: 'nr5', name: 'All other messages', condition: 'all_messages' as const, action: 'digest_daily' as const, enabled: false },
+];
+
+const msgQuietHours = {
+  enabled: true,
+  startTime: '20:00',
+  endTime: '07:00',
+  weekendsOnly: false,
+  allowUrgent: true,
+};
+
+// ── SLA Policies ──
+const slaPolicies = [
+  { id: 'sla1', name: 'Parent Communication', description: 'Standard response time for parent inquiries', category: 'parent' as const, responseTimeMinutes: 480, resolutionTimeMinutes: 1440, enabled: true, priority: 'high' as const, createdAt: '2026-01-15' },
+  { id: 'sla2', name: 'Student Questions', description: 'Response time for student academic queries', category: 'student' as const, responseTimeMinutes: 1440, resolutionTimeMinutes: 2880, enabled: true, priority: 'medium' as const, createdAt: '2026-01-15' },
+  { id: 'sla3', name: 'Admin Requests', description: 'Urgent administrative communication', category: 'admin' as const, responseTimeMinutes: 240, resolutionTimeMinutes: 480, enabled: true, priority: 'critical' as const, createdAt: '2026-02-01' },
+  { id: 'sla4', name: 'Staff Collaboration', description: 'Inter-staff messaging response', category: 'staff' as const, responseTimeMinutes: 1440, resolutionTimeMinutes: 4320, enabled: true, priority: 'low' as const, createdAt: '2026-02-01' },
+];
+
+const slaEscalationRules = [
+  { id: 'esc1', name: 'Parent SLA breach → Department Head', triggerAfterMinutes: 480, escalateTo: 'Mr. Thompson (Dept Head)', notifyVia: 'email' as const, policyId: 'sla1', enabled: true },
+  { id: 'esc2', name: 'Admin SLA breach → Principal', triggerAfterMinutes: 240, escalateTo: 'Principal Martinez', notifyVia: 'all' as const, policyId: 'sla3', enabled: true },
+  { id: 'esc3', name: 'Urgent unresolved → VP', triggerAfterMinutes: 120, escalateTo: 'VP Richardson', notifyVia: 'push' as const, policyId: null, enabled: false },
+];
+
+// ── Legal Templates ──
+const legalTemplates = [
+  { id: 'lt1', name: 'Field Trip Consent Form', category: 'consent' as const, subject: 'Permission Required: {{trip_name}}', body: 'Dear {{parent_name}},\n\nWe are organizing a field trip to {{destination}} on {{trip_date}}. Your child {{student_name}} is invited to participate.\n\nPlease review and sign the attached consent form by {{deadline}}.\n\nDetails:\n- Destination: {{destination}}\n- Date: {{trip_date}}\n- Cost: {{cost}}\n- Transportation: {{transport}}\n\nBest regards,\n{{teacher_name}}', requiredFields: ['parent_name', 'student_name', 'trip_name', 'destination', 'trip_date', 'deadline', 'cost', 'transport'], isActive: true, createdAt: '2026-01-10', updatedAt: '2026-02-15' },
+  { id: 'lt2', name: 'Photo/Video Release', category: 'consent' as const, subject: 'Media Release Authorization for {{student_name}}', body: 'Dear {{parent_name}},\n\nWe would like permission to photograph/video record {{student_name}} during school activities for educational and promotional purposes.\n\nThis release covers: {{coverage_period}}\n\nPlease respond with your consent or decline by {{deadline}}.', requiredFields: ['parent_name', 'student_name', 'coverage_period', 'deadline'], isActive: true, createdAt: '2026-01-10', updatedAt: '2026-01-10' },
+  { id: 'lt3', name: 'Academic Integrity Notice', category: 'notice' as const, subject: 'Academic Integrity Concern — {{student_name}}', body: 'Dear {{parent_name}},\n\nThis notice is to inform you of a potential academic integrity concern involving {{student_name}} in {{class_name}}.\n\nIncident: {{incident_description}}\nDate: {{incident_date}}\n\nNext steps: {{next_steps}}\n\nPlease contact me to discuss this matter.\n\n{{teacher_name}}', requiredFields: ['parent_name', 'student_name', 'class_name', 'incident_description', 'incident_date', 'next_steps'], isActive: true, createdAt: '2026-02-01', updatedAt: '2026-02-01' },
+  { id: 'lt4', name: 'IEP Accommodation Agreement', category: 'agreement' as const, subject: 'IEP Accommodation Plan for {{student_name}}', body: 'Dear {{parent_name}},\n\nPursuant to {{student_name}}\'s Individualized Education Program, the following accommodations will be provided in {{class_name}}:\n\n{{accommodations_list}}\n\nEffective: {{start_date}}\nReview Date: {{review_date}}\n\nPlease sign and return to acknowledge.\n\n{{teacher_name}}', requiredFields: ['parent_name', 'student_name', 'class_name', 'accommodations_list', 'start_date', 'review_date'], isActive: true, createdAt: '2026-02-10', updatedAt: '2026-03-01' },
+];
+
+const legalCategories = [
+  { id: 'lc1', name: 'Consent', slug: 'consent', count: 2, description: 'Permission and consent forms' },
+  { id: 'lc2', name: 'Privacy', slug: 'privacy', count: 0, description: 'Data privacy related documents' },
+  { id: 'lc3', name: 'Liability', slug: 'liability', count: 0, description: 'Liability waivers and releases' },
+  { id: 'lc4', name: 'Agreement', slug: 'agreement', count: 1, description: 'Contractual agreements' },
+  { id: 'lc5', name: 'Notice', slug: 'notice', count: 1, description: 'Official notices and communications' },
+  { id: 'lc6', name: 'Other', slug: 'other', count: 0, description: 'Uncategorized legal documents' },
+];
+
+// ── Email Templates ──
+const emailTemplates = [
+  { id: 'et1', name: 'Welcome Back to Class', category: 'welcome' as const, subject: 'Welcome to {{class_name}} — {{semester}}', body: 'Dear {{student_name}},\n\nWelcome to {{class_name}}! I am excited to have you in my class this semester.\n\nHere is what to expect:\n- First topic: {{first_topic}}\n- Required materials: {{materials}}\n- Office hours: {{office_hours}}\n\nLooking forward to a great semester!\n\n{{teacher_name}}', variables: ['student_name', 'class_name', 'semester', 'first_topic', 'materials', 'office_hours'], isActive: true, createdAt: '2026-01-05', updatedAt: '2026-01-20' },
+  { id: 'et2', name: 'Missing Assignment Reminder', category: 'reminder' as const, subject: 'Reminder: {{assignment_name}} — Due {{due_date}}', body: 'Dear {{student_name}},\n\nThis is a friendly reminder that {{assignment_name}} for {{class_name}} is due on {{due_date}}.\n\nCurrent status: Not submitted\nPoints possible: {{points}}\n\nPlease submit your work on time. If you need an extension, contact me before the deadline.\n\n{{teacher_name}}', variables: ['student_name', 'assignment_name', 'class_name', 'due_date', 'points'], isActive: true, createdAt: '2026-01-10', updatedAt: '2026-02-05' },
+  { id: 'et3', name: 'Grade Alert Notification', category: 'alert' as const, subject: 'Grade Alert: {{student_name}} in {{class_name}}', body: 'Dear {{parent_name}},\n\n{{student_name}}\'s current grade in {{class_name}} has {{change_direction}} to {{current_grade}} ({{letter_grade}}).\n\n{{additional_notes}}\n\nPlease reach out if you would like to schedule a conference.\n\n{{teacher_name}}', variables: ['parent_name', 'student_name', 'class_name', 'change_direction', 'current_grade', 'letter_grade', 'additional_notes'], isActive: true, createdAt: '2026-01-15', updatedAt: '2026-02-10' },
+  { id: 'et4', name: 'Weekly Class Report', category: 'report' as const, subject: '{{class_name}} — Weekly Summary ({{week_date}})', body: 'Dear Parents,\n\nHere is this week\'s summary for {{class_name}}:\n\nTopics covered: {{topics}}\nUpcoming: {{upcoming}}\nHomework due: {{homework}}\n\nClass average: {{class_avg}}\nAttendance rate: {{attendance_rate}}\n\n{{teacher_name}}', variables: ['class_name', 'week_date', 'topics', 'upcoming', 'homework', 'class_avg', 'attendance_rate'], isActive: true, createdAt: '2026-02-01', updatedAt: '2026-03-01' },
+  { id: 'et5', name: 'Achievement Recognition', category: 'announcement' as const, subject: 'Congratulations, {{student_name}}! 🌟', body: 'Dear {{parent_name}},\n\nI am pleased to share that {{student_name}} has achieved {{achievement}} in {{class_name}}.\n\n{{details}}\n\nKeep up the excellent work!\n\n{{teacher_name}}', variables: ['parent_name', 'student_name', 'achievement', 'class_name', 'details'], isActive: true, createdAt: '2026-02-15', updatedAt: '2026-02-15' },
+];
+
+const emailVariables = [
+  { name: 'student_name', description: "Student's full name", example: 'Alex Rivera' },
+  { name: 'parent_name', description: "Parent/guardian's name", example: 'Mrs. Rivera' },
+  { name: 'class_name', description: 'Class/course name', example: 'Algebra II' },
+  { name: 'teacher_name', description: "Teacher's full name", example: 'Ms. Sarah Chen' },
+  { name: 'assignment_name', description: 'Assignment title', example: 'Homework Set 7' },
+  { name: 'due_date', description: 'Due date', example: 'March 10, 2026' },
+  { name: 'points', description: 'Total points possible', example: '50' },
+  { name: 'current_grade', description: 'Current numeric grade', example: '84.2' },
+  { name: 'letter_grade', description: 'Letter grade', example: 'B' },
+  { name: 'semester', description: 'Semester name', example: 'Spring 2026' },
+  { name: 'office_hours', description: 'Office hours schedule', example: 'Mon/Wed 3:30-4:30 PM' },
+  { name: 'school_name', description: 'School name', example: 'Lincoln Academy' },
+];
+
+// ── Appearance Settings ──
+const msgAppearanceTheme = {
+  primaryColor: '#818cf8',
+  sentBubbleColor: '#818cf8',
+  receivedBubbleColor: '#374151',
+  fontSize: 'medium' as const,
+  darkMode: true,
+};
+
+const msgAppearanceLayout = {
+  chatListPosition: 'left' as const,
+  showAvatars: true,
+  compactMode: false,
+  showTimestamps: true,
+  previewLines: 2,
+};
+
+const msgSignature = {
+  enabled: true,
+  text: 'Best regards,\nMs. Sarah Chen\nSenior Mathematics Teacher\nLincoln Academy\nPhone: (555) 234-5678',
+  includeTitle: true,
+  includePhone: true,
+  includeSchool: true,
+};
+
 // ── Thread message history ──
 const threadMessages: Record<string, Array<{ id: string; sender: string; body: string; time: string }>> = {
   mt1: [
@@ -243,9 +380,23 @@ export const updateProfile: Handler = wrap((req, res) => {
   ok(res, teacherProfile);
 });
 
-export const changePassword: Handler = (_req, _res, next) => {
-  // TODO: implement real password change against auth service
-  next(new NotFoundError('Password change not yet implemented for in-memory teacher store'));
+export const changePassword: Handler = async (req, res, next) => {
+  try {
+    const userId = (req as any).user?.id;
+    if (!userId) throw new UnauthorizedError('Not authenticated');
+
+    const { currentPassword, newPassword } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+    if (!user) throw new NotFoundError('User not found');
+
+    const isValid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!isValid) throw new AppError('Current password is incorrect', 400);
+
+    const passwordHash = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+
+    res.json({ success: true, data: { message: 'Password changed successfully' } });
+  } catch (e) { next(e); }
 };
 
 export const updateAvatar: Handler = wrap((_req, res) => {
@@ -576,4 +727,158 @@ export const savePreferences: Handler = wrap((req, res) => {
 
 export const uploadResource: Handler = wrap((req, res) => {
   ok(res, { id: nextId('res'), ...req.body, uploadedAt: new Date().toISOString() });
+});
+
+// ---------------------------------------------------------------------------
+// Messaging Settings Handlers
+// ---------------------------------------------------------------------------
+
+// ── Defaults ──
+export const getMsgDefaults: Handler = wrap((_req, res) => ok(res, msgDefaults));
+export const updateMsgDefaults: Handler = wrap((req, res) => {
+  Object.assign(msgDefaults, req.body);
+  ok(res, msgDefaults);
+});
+
+export const getMsgReplySettings: Handler = wrap((_req, res) => ok(res, msgReplySettings));
+export const updateMsgReplySettings: Handler = wrap((req, res) => {
+  Object.assign(msgReplySettings, req.body);
+  ok(res, msgReplySettings);
+});
+
+export const getMsgScheduling: Handler = wrap((_req, res) => ok(res, msgScheduling));
+export const updateMsgScheduling: Handler = wrap((req, res) => {
+  Object.assign(msgScheduling, req.body);
+  ok(res, msgScheduling);
+});
+
+// ── Notifications ──
+export const getMsgNotifChannels: Handler = wrap((_req, res) => ok(res, msgNotifChannels));
+export const updateMsgNotifChannels: Handler = wrap((req, res) => {
+  Object.assign(msgNotifChannels, req.body);
+  ok(res, msgNotifChannels);
+});
+
+export const getMsgNotifRules: Handler = wrap((_req, res) => ok(res, msgNotifRules));
+export const updateMsgNotifRules: Handler = wrap((req, res) => {
+  const { rules } = req.body;
+  msgNotifRules.length = 0;
+  for (const rule of rules) {
+    msgNotifRules.push({ ...rule, id: rule.id || nextId('nr') });
+  }
+  ok(res, msgNotifRules);
+});
+
+export const getMsgQuietHours: Handler = wrap((_req, res) => ok(res, msgQuietHours));
+export const updateMsgQuietHours: Handler = wrap((req, res) => {
+  Object.assign(msgQuietHours, req.body);
+  ok(res, msgQuietHours);
+});
+
+// ── SLA Policies ──
+export const getSLAPolicies: Handler = wrap((_req, res) => ok(res, slaPolicies));
+export const createSLAPolicy: Handler = wrap((req, res) => {
+  const policy = { id: nextId('sla'), ...req.body, createdAt: new Date().toISOString().slice(0, 10) };
+  slaPolicies.push(policy);
+  ok(res, policy);
+});
+export const updateSLAPolicy: Handler = (req, res, next) => {
+  try {
+    const policy = slaPolicies.find(p => p.id === req.params.id);
+    if (!policy) throw new NotFoundError('SLA policy not found');
+    Object.assign(policy, req.body);
+    ok(res, policy);
+  } catch (e) { next(e); }
+};
+export const deleteSLAPolicy: Handler = (req, res, next) => {
+  try {
+    const idx = slaPolicies.findIndex(p => p.id === req.params.id);
+    if (idx === -1) throw new NotFoundError('SLA policy not found');
+    const [removed] = slaPolicies.splice(idx, 1);
+    ok(res, removed);
+  } catch (e) { next(e); }
+};
+
+export const getSLAEscalationRules: Handler = wrap((_req, res) => ok(res, slaEscalationRules));
+export const createSLAEscalationRule: Handler = wrap((req, res) => {
+  const rule = { id: nextId('esc'), ...req.body };
+  slaEscalationRules.push(rule);
+  ok(res, rule);
+});
+export const deleteSLAEscalationRule: Handler = (req, res, next) => {
+  try {
+    const idx = slaEscalationRules.findIndex(r => r.id === req.params.id);
+    if (idx === -1) throw new NotFoundError('Escalation rule not found');
+    const [removed] = slaEscalationRules.splice(idx, 1);
+    ok(res, removed);
+  } catch (e) { next(e); }
+};
+
+// ── Legal Templates ──
+export const getLegalTemplates: Handler = wrap((_req, res) => ok(res, legalTemplates));
+export const createLegalTemplate: Handler = wrap((req, res) => {
+  const tpl = { id: nextId('lt'), ...req.body, createdAt: new Date().toISOString().slice(0, 10), updatedAt: new Date().toISOString().slice(0, 10) };
+  legalTemplates.push(tpl);
+  ok(res, tpl);
+});
+export const updateLegalTemplate: Handler = (req, res, next) => {
+  try {
+    const tpl = legalTemplates.find(t => t.id === req.params.id);
+    if (!tpl) throw new NotFoundError('Legal template not found');
+    Object.assign(tpl, req.body, { updatedAt: new Date().toISOString().slice(0, 10) });
+    ok(res, tpl);
+  } catch (e) { next(e); }
+};
+export const deleteLegalTemplate: Handler = (req, res, next) => {
+  try {
+    const idx = legalTemplates.findIndex(t => t.id === req.params.id);
+    if (idx === -1) throw new NotFoundError('Legal template not found');
+    const [removed] = legalTemplates.splice(idx, 1);
+    ok(res, removed);
+  } catch (e) { next(e); }
+};
+export const getLegalCategories: Handler = wrap((_req, res) => ok(res, legalCategories));
+
+// ── Email Templates ──
+export const getEmailTemplates: Handler = wrap((_req, res) => ok(res, emailTemplates));
+export const createEmailTemplate: Handler = wrap((req, res) => {
+  const tpl = { id: nextId('et'), ...req.body, createdAt: new Date().toISOString().slice(0, 10), updatedAt: new Date().toISOString().slice(0, 10) };
+  emailTemplates.push(tpl);
+  ok(res, tpl);
+});
+export const updateEmailTemplate: Handler = (req, res, next) => {
+  try {
+    const tpl = emailTemplates.find(t => t.id === req.params.id);
+    if (!tpl) throw new NotFoundError('Email template not found');
+    Object.assign(tpl, req.body, { updatedAt: new Date().toISOString().slice(0, 10) });
+    ok(res, tpl);
+  } catch (e) { next(e); }
+};
+export const deleteEmailTemplate: Handler = (req, res, next) => {
+  try {
+    const idx = emailTemplates.findIndex(t => t.id === req.params.id);
+    if (idx === -1) throw new NotFoundError('Email template not found');
+    const [removed] = emailTemplates.splice(idx, 1);
+    ok(res, removed);
+  } catch (e) { next(e); }
+};
+export const getEmailVariables: Handler = wrap((_req, res) => ok(res, emailVariables));
+
+// ── Appearance ──
+export const getMsgAppearanceTheme: Handler = wrap((_req, res) => ok(res, msgAppearanceTheme));
+export const updateMsgAppearanceTheme: Handler = wrap((req, res) => {
+  Object.assign(msgAppearanceTheme, req.body);
+  ok(res, msgAppearanceTheme);
+});
+
+export const getMsgAppearanceLayout: Handler = wrap((_req, res) => ok(res, msgAppearanceLayout));
+export const updateMsgAppearanceLayout: Handler = wrap((req, res) => {
+  Object.assign(msgAppearanceLayout, req.body);
+  ok(res, msgAppearanceLayout);
+});
+
+export const getMsgSignature: Handler = wrap((_req, res) => ok(res, msgSignature));
+export const updateMsgSignature: Handler = wrap((req, res) => {
+  Object.assign(msgSignature, req.body);
+  ok(res, msgSignature);
 });

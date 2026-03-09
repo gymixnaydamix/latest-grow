@@ -53,17 +53,16 @@ function SubNavContent({ items, parentLabel, onItemClick }: SubNavContentProps) 
   return (
     <aside
       className={cn(
-        'relative flex shrink-0 flex-col rounded-xl border border-border/60 bg-card/80 shadow-[var(--shadow-sm)]',
+        'relative flex h-full min-h-0 shrink-0 self-stretch flex-col rounded-xl border border-border/60 bg-card/80 shadow-(--shadow-sm)',
         'w-28',
       )}
-      style={{ height: 'calc(100vh - 5.5rem)' }}
     >
       <div className="border-b border-border/60 px-2 py-3 text-center">
         <p className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Subnav</p>
         <p className="mt-1 truncate text-[9px] uppercase tracking-[0.12em] text-foreground">{parentLabel}</p>
       </div>
 
-      <ScrollArea className="flex-1">
+      <ScrollArea className="min-h-0 flex-1">
         <div ref={listRef} className="space-y-1 p-2">
           {items.map((item) => {
             const isActive = activeSubNav === item.id;
@@ -84,7 +83,7 @@ function SubNavContent({ items, parentLabel, onItemClick }: SubNavContentProps) 
                 className={cn(
                   'w-full rounded-lg border px-2 py-2 text-center transition-colors',
                   isActive
-                    ? 'border-primary/30 bg-primary/8 text-primary shadow-[var(--shadow-xs)]'
+                    ? 'border-primary/30 bg-primary/8 text-primary shadow-(--shadow-xs)'
                     : 'border-transparent text-muted-foreground hover:border-border/60 hover:bg-muted/50 hover:text-foreground',
                 )}
               >
@@ -147,7 +146,7 @@ export function LeftSubNav({ items, parentLabel }: LeftSubNavProps) {
               aria-label="Close parent sub navigation"
             />
             <div className="absolute bottom-16 left-4 top-20 w-64">
-              <div className="mb-2 flex items-center justify-between rounded-t-xl border border-border/60 bg-card px-3 py-2 shadow-[var(--shadow-xs)]">
+              <div className="mb-2 flex items-center justify-between rounded-t-xl border border-border/60 bg-card px-3 py-2 shadow-(--shadow-xs)">
                 <p className="text-sm font-semibold">Section Navigation</p>
                 <Button
                   type="button"

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useParentV2Exams } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateLabel, parentExamsDemo as FALLBACK_EXAMS } from './parent-v2-demo-data';
+import { childDisplayName, formatDateLabel } from './parent-v2-demo-data';
 import type { ParentExamDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, StatusBadge } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -18,7 +18,7 @@ function daysDiff(dateStr: string): number {
 
 export function ExamsSection({ scope, childId }: ParentSectionProps) {
   const { data: rawData } = useParentV2Exams({ scope, childId });
-  const allRows: ParentExamDemo[] = (rawData as ParentExamDemo[] | undefined) ?? filterByChild(FALLBACK_EXAMS, childId, scope);
+  const allRows: ParentExamDemo[] = (rawData as ParentExamDemo[] | undefined) ?? [];
 
   const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>('ALL');
   const [query, setQuery] = useState('');

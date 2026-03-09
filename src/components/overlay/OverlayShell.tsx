@@ -9,6 +9,8 @@ import {
   getOverlayDefaultSecondaryId,
   getOverlayPrimaryNav,
 } from '@/overlay/overlay-registry';
+import { canAccessOverlayApp } from '@/overlay/overlay-access';
+import { useAuthStore } from '@/store/auth.store';
 import { useOverlayStore } from '@/store/overlay.store';
 import { OverlayContentHost } from './OverlayContentHost';
 
@@ -21,6 +23,7 @@ export function OverlayShell() {
   const setSecondaryNav = useOverlayStore((s) => s.setSecondaryNav);
   const minimizeApp = useOverlayStore((s) => s.minimizeApp);
   const closeApp = useOverlayStore((s) => s.closeApp);
+  const role = useAuthStore((s) => s.user?.role);
 
   const [subNavCollapsed, setSubNavCollapsed] = useState(false);
   const [isCompact, setIsCompact] = useState(() =>
@@ -65,7 +68,14 @@ export function OverlayShell() {
     if (activeAppId) setSubNavCollapsed(isCompact);
   }, [activeAppId, isCompact]);
 
+  useEffect(() => {
+    if (!activeAppId) return;
+    if (canAccessOverlayApp(activeAppId, role)) return;
+    closeApp(activeAppId);
+  }, [activeAppId, closeApp, role]);
+
   if (!overlayV2Enabled) return null;
+  if (activeAppId && !canAccessOverlayApp(activeAppId, role)) return null;
 
   return (
     <AnimatePresence>

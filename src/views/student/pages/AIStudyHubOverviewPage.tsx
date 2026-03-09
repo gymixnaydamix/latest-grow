@@ -62,15 +62,16 @@ export default function AIStudyHubOverviewPage() {
   const [quickQuestion, setQuickQuestion] = useState('');
   const { data: apiSessions } = useStudentSessions();
   const aiChat = useAIChat();
-  void apiSessions;
-  const AI_TOOLS = FALLBACK_AI_TOOLS;
-  const RECENT_SESSIONS = FALLBACK_RECENT_SESSIONS;
-  const SUGGESTED_TOPICS = FALLBACK_SUGGESTED_TOPICS;
-  const WEEKLY_USAGE = FALLBACK_WEEKLY_USAGE;
-  const MASTERY = FALLBACK_MASTERY;
 
-  const totalSessions = AI_TOOLS.reduce((s, t) => s + t.sessions, 0);
-  const maxMinutes = Math.max(...WEEKLY_USAGE.map((w) => w.minutes));
+  const sessionsArr = (apiSessions as any)?.sessions;
+  const AI_TOOLS = sessionsArr?.tools ?? FALLBACK_AI_TOOLS;
+  const RECENT_SESSIONS = sessionsArr?.recentSessions ?? FALLBACK_RECENT_SESSIONS;
+  const SUGGESTED_TOPICS = sessionsArr?.suggestedTopics ?? FALLBACK_SUGGESTED_TOPICS;
+  const WEEKLY_USAGE = sessionsArr?.weeklyUsage ?? FALLBACK_WEEKLY_USAGE;
+  const MASTERY = sessionsArr?.mastery ?? FALLBACK_MASTERY;
+
+  const totalSessions = AI_TOOLS.reduce((s: number, t: any) => s + (t.sessions ?? 0), 0);
+  const maxMinutes = Math.max(1, ...WEEKLY_USAGE.map((w: any) => w.minutes));
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -79,9 +80,9 @@ export default function AIStudyHubOverviewPage() {
       {/* Stats */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Total Sessions" value={totalSessions} icon={<Sparkles className="h-5 w-5" />} trend="up" />
-        <StatCard label="Study Streak" value={5} suffix=" days" icon={<Zap className="h-5 w-5" />} accentColor="#a78bfa" />
-        <StatCard label="Topics Mastered" value={23} icon={<Target className="h-5 w-5" />} />
-        <StatCard label="Time Saved" value={4.2} suffix="h" icon={<TrendingUp className="h-5 w-5" />} decimals={1} />
+        <StatCard label="Study Streak" value={sessionsArr?.streak ?? 0} suffix=" days" icon={<Zap className="h-5 w-5" />} accentColor="#a78bfa" />
+        <StatCard label="Topics Mastered" value={sessionsArr?.topicsMastered ?? 0} icon={<Target className="h-5 w-5" />} />
+        <StatCard label="Time Saved" value={sessionsArr?.timeSavedHours ?? 0} suffix="h" icon={<TrendingUp className="h-5 w-5" />} decimals={1} />
       </div>
 
       {/* Quick Ask bar */}
@@ -102,7 +103,7 @@ export default function AIStudyHubOverviewPage() {
 
       {/* AI Tools */}
       <div className="grid gap-4 sm:grid-cols-3" data-animate>
-        {AI_TOOLS.map((tool) => (
+        {AI_TOOLS.map((tool: any) => (
           <Card key={tool.id} className="border-white/6 bg-white/3 backdrop-blur-xl hover:border-white/12 transition-all cursor-pointer group" onClick={() => notifySuccess('AI Tool', 'Opening tool…')}>
             <CardContent className="p-5 flex flex-col items-center text-center gap-3">
               <div className={cn('size-14 rounded-2xl flex items-center justify-center', tool.color)}>
@@ -135,7 +136,7 @@ export default function AIStudyHubOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="grid gap-2 sm:grid-cols-2">
-              {SUGGESTED_TOPICS.map((s, i) => (
+              {SUGGESTED_TOPICS.map((s: any, i: number) => (
                 <div key={i} className="flex items-center gap-2.5 rounded-lg border border-white/6 bg-white/2 p-2.5 hover:border-indigo-500/20 transition-all cursor-pointer" onClick={() => notifySuccess('Activity', 'Opening recent session…')}>
                   <div className="size-8 rounded-md bg-amber-500/10 flex items-center justify-center shrink-0">
                     <BookOpen className="size-3.5 text-amber-400" />
@@ -158,7 +159,7 @@ export default function AIStudyHubOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2">
-              {RECENT_SESSIONS.map((s, i) => (
+              {RECENT_SESSIONS.map((s: any, i: number) => (
                 <div key={i} className="flex items-center gap-3 rounded-lg border border-white/6 bg-white/2 p-2.5">
                   <div className="size-7 rounded-md bg-violet-500/10 flex items-center justify-center shrink-0">
                     {s.tool === 'AI Tutor' ? <Brain className="size-3 text-violet-400" /> :
@@ -192,7 +193,7 @@ export default function AIStudyHubOverviewPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-end gap-2 h-20">
-                {WEEKLY_USAGE.map((w) => (
+                {WEEKLY_USAGE.map((w: any) => (
                   <div key={w.day} className="flex-1 flex flex-col items-center gap-1">
                     <div
                       className="w-full rounded-t-sm bg-gradient-to-t from-indigo-500/30 to-indigo-500/60"
@@ -214,7 +215,7 @@ export default function AIStudyHubOverviewPage() {
               </CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col gap-2.5">
-              {MASTERY.map((m) => (
+              {MASTERY.map((m: any) => (
                 <div key={m.subject}>
                   <div className="flex justify-between text-[9px] mb-1">
                     <span className="text-white/50">{m.subject}</span>

@@ -24,7 +24,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  lessonPlansDemo as FALLBACK_lessonPlansDemo, teacherClassesDemo as FALLBACK_teacherClassesDemo, formatDateLabel,
+  formatDateLabel, type LessonPlanDemo,
 } from './teacher-demo-data';
 
 /* ── Week helpers ── */
@@ -84,13 +84,13 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
   const standards: CurriculumStandard[] = standardsRes ?? [];
   const classes = courses.length > 0
     ? courses.filter(c => !teacherId || c.teacherId === teacherId)
-    : FALLBACK_teacherClassesDemo;
+    : [];
 
   const createLessonMut = useCreateLessonPlan();
   const deleteLessonMut = useDeleteLessonPlan();
   const uploadResourceMut = useUploadResource();
   const { data: apiLessonPlans } = useTeacherLessonPlans();
-  const lessonPlans = (apiLessonPlans as unknown as typeof FALLBACK_lessonPlansDemo) ?? FALLBACK_lessonPlansDemo;
+  const lessonPlans: LessonPlanDemo[] = (apiLessonPlans as unknown as LessonPlanDemo[]) ?? [];
 
   /* ── Calendar state ── */
   const [weekOffset, setWeekOffset] = useState(0);
@@ -119,7 +119,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
   });
 
   /* ── Selected lesson & resource state ── */
-  const [selectedLesson, setSelectedLesson] = useState<typeof FALLBACK_lessonPlansDemo[0] | null>(null);
+  const [selectedLesson, setSelectedLesson] = useState<LessonPlanDemo | null>(null);
   const [selectedResource, setSelectedResource] = useState<typeof resourceItems[0] | null>(null);
 
   const toneMap: Record<string, 'good' | 'warn' | 'neutral' | 'info'> = {
@@ -145,7 +145,7 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
         {weekDates.map(day => {
           const plans = lessonPlans.filter(lp => lp.date === day.iso);
           return (
-            <div key={day.iso} className="rounded-xl border border-border/50 bg-card/80 p-3 min-h-[160px]">
+            <div key={day.iso} className="rounded-xl border border-border/50 bg-card/80 p-3 min-h-40">
               <p className="text-[11px] font-medium text-muted-foreground mb-2">{day.label}</p>
               {plans.length === 0 && (
                 <p className="text-[10px] text-muted-foreground/50 italic">No lessons</p>
@@ -535,7 +535,14 @@ export function LessonsSection({ schoolId, teacherId }: TeacherSectionProps) {
                 <Button
                   size="sm"
                   className="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/30"
-                  onClick={() => { notifySuccess('Opening resource', selectedResource.name); setSelectedResource(null); }}
+                  onClick={() => {
+                    if (selectedResource.format === 'Link') {
+                      window.open(`https://search.google.com/search?q=${encodeURIComponent(selectedResource.name)}`, '_blank', 'noopener,noreferrer');
+                    } else {
+                      notifyError('Download', `${selectedResource.format} download not available — demo resource`);
+                    }
+                    setSelectedResource(null);
+                  }}
                 >
                   {selectedResource.format === 'Link' ? 'Open Link' : 'Download'}
                 </Button>

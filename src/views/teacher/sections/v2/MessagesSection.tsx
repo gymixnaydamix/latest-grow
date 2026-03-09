@@ -22,15 +22,18 @@ import {
   TeacherSectionShell, GlassCard, MetricCard, EmptyState,
 } from './shared';
 import type { TeacherSectionProps } from './shared';
+import { MsgDefaultsView } from './messages/MsgDefaultsView';
+import { MsgNotificationsView } from './messages/MsgNotificationsView';
+import { MsgSLAPoliciesView } from './messages/MsgSLAPoliciesView';
+import { MsgLegalTemplatesView } from './messages/MsgLegalTemplatesView';
+import { MsgEmailTemplatesView } from './messages/MsgEmailTemplatesView';
+import { MsgAppearanceView } from './messages/MsgAppearanceView';
 import {
-  messageThreadsDemo as FALLBACK_messageThreadsDemo,
-  attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo,
   type MessageThreadDemo,
 } from './teacher-demo-data';
 
-/* ── Compose recipient suggestions from demo data ── */
+/* ── Compose recipient suggestions ── */
 const recipientSuggestions = [
-  ...FALLBACK_attendanceStudentsDemo.map(s => `${s.name} (Student)`),
   'Mrs. Kim (Parent)', 'Mr. Wei (Parent)', 'Mr. Brooks (Parent)',
   'Mr. Davis (Admin)', 'Ms. Johnson (Counselor)',
   'Mr. Thompson (Principal)', 'Ms. Rivera (Science Dept)',
@@ -45,20 +48,31 @@ const categoryStyles: Record<string, { bg: string; text: string; label: string }
 };
 
 /* ── Demo conversation messages for expanded threads ── */
-export function MessagesSection({ schoolId }: TeacherSectionProps) {
+export function MessagesSection({ schoolId, teacherId }: TeacherSectionProps) {
   const { activeHeader, setHeader } = useNavigationStore();
   const { user } = useAuthStore();
   const header = activeHeader || 'inbox';
 
+  /* ── Settings sub-sections: delegate to dedicated views ── */
+  const settingsViews: Record<string, React.ReactNode> = {
+    msg_defaults: <MsgDefaultsView schoolId={schoolId} teacherId={teacherId} />,
+    msg_notifications: <MsgNotificationsView schoolId={schoolId} teacherId={teacherId} />,
+    msg_sla_policies: <MsgSLAPoliciesView schoolId={schoolId} teacherId={teacherId} />,
+    msg_legal_templates: <MsgLegalTemplatesView schoolId={schoolId} teacherId={teacherId} />,
+    msg_email_templates: <MsgEmailTemplatesView schoolId={schoolId} teacherId={teacherId} />,
+    msg_appearance: <MsgAppearanceView schoolId={schoolId} teacherId={teacherId} />,
+  };
+  if (header in settingsViews) return <>{settingsViews[header]}</>
+
   const { data: apiThreads } = useMessageThreads(schoolId);
-  const threads: MessageThreadDemo[] = (apiThreads as unknown as MessageThreadDemo[]) ?? FALLBACK_messageThreadsDemo;
+  const threads: MessageThreadDemo[] = (apiThreads as unknown as MessageThreadDemo[]) ?? [];
 
   const sendMessageMut = useSendTeacherMessage();
   const createThreadMut = useCreateTeacherThread();
   const { data: apiTeacherMessages } = useTeacherMessages();
   // Use teacher-specific messages as secondary fallback if generic threads empty
   const teacherMsgThreads = (apiTeacherMessages as any)?.data as MessageThreadDemo[] | undefined;
-  const effectiveThreads: MessageThreadDemo[] = threads.length > 0 ? threads : (teacherMsgThreads ?? FALLBACK_messageThreadsDemo);
+  const effectiveThreads: MessageThreadDemo[] = threads.length > 0 ? threads : (teacherMsgThreads ?? []);
 
   const [search, setSearch] = useState('');
   const [filterCategory, setFilterCategory] = useState<string | 'all'>('all');

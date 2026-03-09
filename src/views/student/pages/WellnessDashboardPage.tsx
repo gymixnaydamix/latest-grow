@@ -78,7 +78,11 @@ export default function WellnessDashboardPage() {
   const tips = (apiWellness as any)?.tips ?? FALLBACK_TIPS;
 
   const wellnessScore = Math.round(metrics.reduce((s: number, m: any) => s + ((m.value ?? 0) / (m.max ?? 1)), 0) / (metrics.length || 1) * 100);
-  const streakDays = 7;
+  const streakDays = (apiWellness as any)?.streakDays ?? 0;
+  const todaySteps = (metrics.find((m: any) => m.label === 'Steps') as any)?.value ?? 0;
+  const avgMood = moodLog.length > 0
+    ? Number((moodLog.reduce((s: number, e: any) => s + ({ great: 5, good: 4, okay: 3, low: 2, bad: 1 }[e.mood as Mood] ?? 3), 0) / moodLog.length).toFixed(1))
+    : 4.2;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -88,8 +92,8 @@ export default function WellnessDashboardPage() {
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4" data-animate>
         <StatCard label="Wellness Score" value={wellnessScore} suffix="%" icon={<Heart className="h-5 w-5" />} trend="up" />
         <StatCard label="Active Streak" value={streakDays} suffix=" days" icon={<TrendingUp className="h-5 w-5" />} trend="up" />
-        <StatCard label="Today's Steps" value={8432} icon={<Footprints className="h-5 w-5" />} />
-        <StatCard label="Mood Score" value={4.2} suffix="/5" icon={<Smile className="h-5 w-5" />} decimals={1} />
+        <StatCard label="Today's Steps" value={todaySteps} icon={<Footprints className="h-5 w-5" />} />
+        <StatCard label="Mood Score" value={avgMood} suffix="/5" icon={<Smile className="h-5 w-5" />} decimals={1} />
       </div>
 
       {/* Mood check-in */}

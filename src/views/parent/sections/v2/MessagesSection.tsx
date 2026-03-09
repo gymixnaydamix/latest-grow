@@ -6,7 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useParentV2MessageThreads, useCreateParentV2MessageThread, usePostParentV2Message } from '@/hooks/api/use-parent-v2';
-import { childDisplayName, filterByChild, formatDateTimeLabel, parentMessageThreadsDemo as FALLBACK_MESSAGE_THREADS } from './parent-v2-demo-data';
+import { childDisplayName, formatDateTimeLabel } from './parent-v2-demo-data';
 import type { ParentMessageThreadDemo } from './parent-v2-demo-data';
 import { EmptyActionState, ParentSectionShell, PriorityBadge } from './shared';
 import type { ParentSectionProps } from './shared';
@@ -17,7 +17,7 @@ export function MessagesSection({ scope, childId }: ParentSectionProps) {
   const { data: rawThreads } = useParentV2MessageThreads({ scope, childId });
   const createThread = useCreateParentV2MessageThread();
   const postMessage = usePostParentV2Message();
-  const allRows: ParentMessageThreadDemo[] = (rawThreads as ParentMessageThreadDemo[] | undefined) ?? filterByChild(FALLBACK_MESSAGE_THREADS, childId, scope);
+  const allRows: ParentMessageThreadDemo[] = (rawThreads as ParentMessageThreadDemo[] | undefined) ?? [];
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<(typeof FILTER_OPTIONS)[number]>('ALL');
   const [showCompose, setShowCompose] = useState(false);

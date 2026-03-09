@@ -132,6 +132,8 @@ export default function App() {
             <Route index element={<Navigate to={getDashboardRedirect()} replace />} />
 
             {/* Provider */}
+            <Route path="provider/templates/*" element={<Navigate to="/provider/home" replace />} />
+            <Route path="provider/usage/*" element={<Navigate to="/provider/home" replace />} />
             <Route path="provider/*" element={<RoleGuard roles={['PROVIDER']}><ProviderDashboard /></RoleGuard>} />
 
             {/* Admin */}

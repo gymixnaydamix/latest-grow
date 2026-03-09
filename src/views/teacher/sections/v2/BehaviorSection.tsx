@@ -22,8 +22,7 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  behaviorNotesDemo as FALLBACK_behaviorNotesDemo, attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo,
-  teacherClassesDemo as FALLBACK_teacherClassesDemo,
+  attendanceStudentsDemo,
   formatDateLabel, type BehaviorNoteDemo,
 } from './teacher-demo-data';
 
@@ -40,9 +39,9 @@ export function BehaviorSection({ schoolId }: TeacherSectionProps) {
   const saveBehaviorNoteMut = useSaveBehaviorNote();
   const { data: apiBehaviorNotes } = useTeacherBehaviorNotes();
   const { data: coursesRes } = useCourses(schoolId);
-  const classes = coursesRes ?? FALLBACK_teacherClassesDemo;
+  const classes = coursesRes ?? [];
 
-  const notes: BehaviorNoteDemo[] = (apiBehaviorNotes as unknown as BehaviorNoteDemo[]) ?? FALLBACK_behaviorNotesDemo;
+  const notes: BehaviorNoteDemo[] = (apiBehaviorNotes as unknown as BehaviorNoteDemo[]) ?? [];
 
   const [search, setSearch] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -79,7 +78,7 @@ export function BehaviorSection({ schoolId }: TeacherSectionProps) {
   const matchingStudents = useMemo(() => {
     if (studentSearch.length < 2) return [];
     const q = studentSearch.toLowerCase();
-    return FALLBACK_attendanceStudentsDemo.filter(s => s.name.toLowerCase().includes(q)).slice(0, 5);
+    return attendanceStudentsDemo.filter(s => s.name.toLowerCase().includes(q)).slice(0, 5);
   }, [studentSearch]);
 
   const handleAddNote = () => {

@@ -63,6 +63,10 @@ export default function FinanceAnalyticsView() {
     days: Math.ceil((Date.now() - new Date(inv.dueDate).getTime()) / 86400000), risk: 'high' as const,
   })) ?? FALLBACK_OVERDUE_ACCOUNTS;
 
+  const totalRevenue = MONTHLY_REVENUE.reduce((s: number, m: any) => s + (m.revenue ?? 0), 0);
+  const totalExpenses = MONTHLY_REVENUE.reduce((s: number, m: any) => s + (m.expenses ?? 0), 0);
+  const latestCollectionRate = COLLECTION_TREND.at(-1)?.rate ?? 93;
+
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
       {/* Header */}
@@ -76,7 +80,7 @@ export default function FinanceAnalyticsView() {
       <div data-animate className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
           label="Net Revenue"
-          value={1.24}
+          value={Number((totalRevenue / 1_000_000).toFixed(2))}
           prefix="$"
           suffix="M"
           decimals={2}
@@ -88,7 +92,7 @@ export default function FinanceAnalyticsView() {
         />
         <StatCard
           label="Total Expenses"
-          value={742}
+          value={Math.round(totalExpenses / 1000)}
           prefix="$"
           suffix="K"
           trend="up"
@@ -99,7 +103,7 @@ export default function FinanceAnalyticsView() {
         />
         <StatCard
           label="Collection Rate"
-          value={93}
+          value={latestCollectionRate}
           suffix="%"
           trend="up"
           trendLabel="+4.2% this quarter"
@@ -109,7 +113,7 @@ export default function FinanceAnalyticsView() {
         />
         <StatCard
           label="Overdue Invoices"
-          value={16}
+          value={OVERDUE_ACCOUNTS.length}
           trend="down"
           trendLabel="-4 this month"
           icon={<PieChart className="size-5" />}

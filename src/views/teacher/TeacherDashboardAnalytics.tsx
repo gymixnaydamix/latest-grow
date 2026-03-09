@@ -48,11 +48,15 @@ export default function TeacherDashboardAnalytics() {
   const { data: apiClasses } = useTeacherClasses();
 
   const CLASS_PERFORMANCE = (apiClassPerf as any[]) ?? FALLBACK_CLASS_PERFORMANCE;
-  const WEEKLY_DATA = FALLBACK_WEEKLY_DATA;
-  const MONTHLY_TREND = FALLBACK_MONTHLY_TREND;
-  const TOP_STUDENTS = FALLBACK_TOP_STUDENTS;
+  const classArr = (apiClasses as any);
+  const WEEKLY_DATA = classArr?.weeklyData ?? FALLBACK_WEEKLY_DATA;
+  const MONTHLY_TREND = classArr?.monthlyTrend ?? FALLBACK_MONTHLY_TREND;
+  const TOP_STUDENTS = classArr?.topStudents ?? FALLBACK_TOP_STUDENTS;
 
-  const totalStudents = apiClasses ? (apiClasses as any[]).reduce((s: number, c: any) => s + (c.studentCount ?? 0), 0) : 95;
+  const totalStudents = apiClasses ? (apiClasses as any[]).reduce((s: number, c: any) => s + (c.studentCount ?? 0), 0) : 0;
+  const avgGrade = CLASS_PERFORMANCE.length > 0 ? +(CLASS_PERFORMANCE.reduce((s: number, c: any) => s + (c.avgGrade ?? 0), 0) / CLASS_PERFORMANCE.length).toFixed(1) : 0;
+  const attendanceRate = CLASS_PERFORMANCE.length > 0 ? +(CLASS_PERFORMANCE.reduce((s: number, c: any) => s + (c.attendance ?? 0), 0) / CLASS_PERFORMANCE.length).toFixed(1) : 0;
+  const classesThisWeek = WEEKLY_DATA.reduce((s: number, d: any) => s + (d.classes ?? 0), 0);
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -65,10 +69,10 @@ export default function TeacherDashboardAnalytics() {
 
       {/* KPI Cards */}
       <div data-animate className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <StatCard label="Total Students" value={totalStudents} icon={<Users className="size-5" />} trend="up" trendLabel="+12%" sparklineData={[80, 85, 88, 90, 92, 95]} />
-        <StatCard label="Avg Grade" value={84.5} suffix="%" icon={<Award className="size-5" />} trend="up" trendLabel="+3.2%" sparklineData={[78, 80, 81, 83, 84, 84.5]} />
-        <StatCard label="Attendance Rate" value={94.2} suffix="%" icon={<Target className="size-5" />} trend="up" trendLabel="+1.5%" sparklineData={[91, 92, 93, 94, 94, 94.2]} />
-        <StatCard label="Classes This Week" value={23} icon={<BookOpen className="size-5" />} trend="up" trendLabel="+2%" sparklineData={[18, 20, 21, 22, 23, 23]} />
+        <StatCard label="Total Students" value={totalStudents} icon={<Users className="size-5" />} trend="up" trendLabel="" sparklineData={[]} />
+        <StatCard label="Avg Grade" value={avgGrade} suffix="%" icon={<Award className="size-5" />} trend="up" trendLabel="" sparklineData={[]} />
+        <StatCard label="Attendance Rate" value={attendanceRate} suffix="%" icon={<Target className="size-5" />} trend="up" trendLabel="" sparklineData={[]} />
+        <StatCard label="Classes This Week" value={classesThisWeek} icon={<BookOpen className="size-5" />} trend="up" trendLabel="" sparklineData={[]} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -132,11 +136,11 @@ export default function TeacherDashboardAnalytics() {
         <Card data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
           <CardHeader><CardTitle className="text-white/90 text-sm flex items-center gap-2"><Award className="size-4 text-amber-400" />Top Performing Students</CardTitle></CardHeader>
           <CardContent className="flex flex-col gap-2">
-            {TOP_STUDENTS.map((s, i) => (
+            {TOP_STUDENTS.map((s: typeof TOP_STUDENTS[number], i: number) => (
               <div key={s.name} className="flex items-center gap-3 rounded-lg border border-white/4 bg-white/2 px-3 py-2">
                 <span className="text-[10px] text-white/20 font-mono w-4">#{i + 1}</span>
                 <div className="size-7 rounded-full bg-indigo-500/20 flex items-center justify-center text-xs font-bold text-indigo-300">
-                  {s.name.split(' ').map((n) => n[0]).join('')}
+                  {s.name.split(' ').map((n: string) => n[0]).join('')}
                 </div>
                 <div className="flex-1">
                   <p className="text-xs text-white/70 font-medium">{s.name}</p>

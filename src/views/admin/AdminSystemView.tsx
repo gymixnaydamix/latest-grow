@@ -54,11 +54,17 @@ export default function AdminSystemView() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const { data: apiSystem } = useSystemHealth();
 
-  const UPTIME_HISTORY = FALLBACK_UPTIME;
-  const RESOURCE_USAGE = FALLBACK_RESOURCES;
+  const systemData = apiSystem as any;
+  const UPTIME_HISTORY = systemData?.uptimeHistory ?? FALLBACK_UPTIME;
+  const RESOURCE_USAGE = systemData?.resourceUsage ?? FALLBACK_RESOURCES;
   const ACTIVE_SERVICES = apiSystem?.services?.map(s => ({ name: s.name, status: s.status, uptime: '—', latency: '—' })) ?? FALLBACK_SERVICES;
-  const RECENT_INCIDENTS = FALLBACK_INCIDENTS;
-  const SECURITY_METRICS = FALLBACK_SECURITY;
+  const RECENT_INCIDENTS = systemData?.recentIncidents ?? FALLBACK_INCIDENTS;
+  const SECURITY_METRICS = systemData?.securityMetrics ?? FALLBACK_SECURITY;
+
+  const avgUptime = UPTIME_HISTORY.length > 0 ? +(UPTIME_HISTORY.reduce((s: number, u: any) => s + u.uptime, 0) / UPTIME_HISTORY.length).toFixed(1) : 0;
+  const latestCpu = RESOURCE_USAGE.length > 0 ? RESOURCE_USAGE[RESOURCE_USAGE.length - 1].cpu : 0;
+  const latestMemory = RESOURCE_USAGE.length > 0 ? RESOURCE_USAGE[RESOURCE_USAGE.length - 1].memory : 0;
+  const latestStorage = RESOURCE_USAGE.length > 0 ? RESOURCE_USAGE[RESOURCE_USAGE.length - 1].storage : 0;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -69,10 +75,10 @@ export default function AdminSystemView() {
       </div>
 
       <div data-animate className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Uptime" value={99.9} suffix="%" decimals={1} trend="up" trendLabel="7-day avg" icon={<Server className="size-5" />} accentColor="#34d399" sparklineData={UPTIME_HISTORY.map(u => u.uptime)} />
-        <StatCard label="CPU Usage" value={45} suffix="%" trend="down" trendLabel="Normal load" icon={<Cpu className="size-5" />} accentColor="#818cf8" sparklineData={RESOURCE_USAGE.map(r => r.cpu)} />
-        <StatCard label="Memory" value={58} suffix="%" trend="up" trendLabel="3.5 / 6 GB" icon={<Activity className="size-5" />} accentColor="#fbbf24" sparklineData={RESOURCE_USAGE.map(r => r.memory)} />
-        <StatCard label="Storage" value={63} suffix="%" trend="up" trendLabel="126 / 200 GB" icon={<HardDrive className="size-5" />} accentColor="#f472b6" />
+        <StatCard label="Uptime" value={avgUptime} suffix="%" decimals={1} trend="up" trendLabel="7-day avg" icon={<Server className="size-5" />} accentColor="#34d399" sparklineData={UPTIME_HISTORY.map((u: any) => u.uptime)} />
+        <StatCard label="CPU Usage" value={latestCpu} suffix="%" trend="down" trendLabel="Normal load" icon={<Cpu className="size-5" />} accentColor="#818cf8" sparklineData={RESOURCE_USAGE.map((r: any) => r.cpu)} />
+        <StatCard label="Memory" value={latestMemory} suffix="%" trend="up" trendLabel="" icon={<Activity className="size-5" />} accentColor="#fbbf24" sparklineData={RESOURCE_USAGE.map((r: any) => r.memory)} />
+        <StatCard label="Storage" value={latestStorage} suffix="%" trend="up" trendLabel="" icon={<HardDrive className="size-5" />} accentColor="#f472b6" />
       </div>
 
       {/* Resource Usage Chart */}
@@ -128,7 +134,7 @@ export default function AdminSystemView() {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-3">
-              {SECURITY_METRICS.map((m, i) => (
+              {SECURITY_METRICS.map((m: typeof SECURITY_METRICS[number], i: number) => (
                 <div key={i} className="rounded-lg border border-white/6 bg-white/2 p-3">
                   <span className="text-[10px] text-white/30 block">{m.label}</span>
                   <span className="text-sm font-medium text-white/80">{m.value}</span>
@@ -150,7 +156,7 @@ export default function AdminSystemView() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {RECENT_INCIDENTS.map((inc, i) => (
+            {RECENT_INCIDENTS.map((inc: typeof RECENT_INCIDENTS[number], i: number) => (
               <div key={i} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 px-3 py-2">
                 <div className="flex items-center gap-2">
                   {inc.resolved ? (

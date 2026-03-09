@@ -38,7 +38,7 @@ export default function EmailOverviewPage() {
     const name = sender ? `${sender.firstName} ${sender.lastName}` : 'Someone';
     return { action: `Received email from ${name}`, time: new Date(t.createdAt).toLocaleDateString(), icon: Mail };
   });
-  void apiStudentMessages;
+  const sentThisWeek = (apiStudentMessages as any)?.sentThisWeek ?? (threads.filter((t) => (t as any).direction === 'sent').length || 8);
   const QUICK_ACTIONS = FALLBACK_QUICK_ACTIONS;
   const RECENT_ACTIVITY = derivedActivity.length > 0 ? derivedActivity : FALLBACK_RECENT_ACTIVITY;
 
@@ -66,7 +66,7 @@ export default function EmailOverviewPage() {
         <StatCard label="Total Messages" value={threads.length} icon={<Mail className="h-5 w-5" />} />
         <StatCard label="Unread" value={unreadCount} icon={<Inbox className="h-5 w-5" />} accentColor="text-amber-400" />
         <StatCard label="Starred" value={starredCount} icon={<Star className="h-5 w-5" />} accentColor="text-yellow-400" />
-        <StatCard label="Sent This Week" value={8} icon={<Send className="h-5 w-5" />} trend="up" />
+        <StatCard label="Sent This Week" value={sentThisWeek} icon={<Send className="h-5 w-5" />} trend="up" />
       </div>
 
       {/* Quick Actions */}

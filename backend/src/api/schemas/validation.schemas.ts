@@ -1330,9 +1330,14 @@ export const providerUpdateTicketStatusSchema = z.object({
 
 export const providerCreateIncidentSchema = z.object({
   title: z.string().min(1).max(200),
-  description: z.string().min(1),
-  severity: z.enum(['minor', 'major', 'critical']).default('minor'),
+  severity: z.enum(['SEV1', 'SEV2', 'SEV3', 'SEV4']).default('SEV2'),
   affectedServices: z.array(z.string().max(200)).optional().default([]),
+  tenantIds: z.array(z.string().min(1)).optional().default([]),
+});
+
+export const providerResolveIncidentSchema = z.object({
+  status: z.enum(['MONITORING', 'RESOLVED']),
+  note: z.string().max(2000).optional().default(''),
 });
 
 export const providerUpdateFlagSchema = z.object({
@@ -1437,10 +1442,10 @@ export const providerSendCsatSurveySchema = z.object({
 
 export const providerCreateMaintenanceWindowSchema = z.object({
   title: z.string().min(1).max(200),
-  description: z.string().max(2000).optional().default(''),
-  scheduledStart: z.string().datetime(),
-  scheduledEnd: z.string().datetime(),
+  startAt: z.string().datetime(),
+  endAt: z.string().datetime(),
   affectedServices: z.array(z.string().max(200)).optional().default([]),
+  notify: z.boolean().optional().default(false),
 });
 
 export const providerCreateReleaseSchema = z.object({
@@ -1545,6 +1550,135 @@ export const providerApplyThemeSchema = z.object({
 
 export const providerCustomCssSchema = z.object({
   css: z.string().max(50000),
+});
+
+/* ── Provider Settings: Defaults sub-views ── */
+export const providerUpdateGeneralConfigSchema = z.object({
+  timezone: z.string().max(100),
+  locale: z.string().max(10),
+  currency: z.string().max(10),
+  dateFormat: z.string().max(30),
+  schoolYearStart: z.string().max(10),
+});
+export const providerUpdateProvisioningRulesSchema = z.object({
+  autoApprove: z.boolean(),
+  requireEmailVerification: z.boolean(),
+  defaultPlan: z.string().max(50),
+  trialDays: z.coerce.number().int().min(0).max(365),
+  maxTenantsPerOwner: z.coerce.number().int().min(1).max(1000),
+  requirePaymentMethod: z.boolean(),
+});
+export const providerUpdateRetentionPolicySchema = z.object({
+  dataRetentionDays: z.coerce.number().int().min(30).max(3650),
+  backupRetentionDays: z.coerce.number().int().min(7).max(730),
+  auditLogRetentionDays: z.coerce.number().int().min(90).max(3650),
+  deleteOnTenantClose: z.boolean(),
+  anonymizeAfterDays: z.coerce.number().int().min(0).max(3650),
+});
+
+/* ── Provider Settings: Notifications sub-views ── */
+export const providerUpdateAlertChannelsSchema = z.object({
+  email: z.boolean(),
+  slack: z.boolean(),
+  webhook: z.boolean(),
+  sms: z.boolean(),
+  inApp: z.boolean(),
+});
+export const providerUpdateEscalationRulesSchema = z.object({
+  rules: z.array(z.object({
+    id: z.string().optional(),
+    triggerEvent: z.enum(['sla_breach', 'payment_failed', 'incident_critical', 'tenant_suspended', 'security_alert']),
+    escalateTo: z.string().max(100),
+    delayMinutes: z.coerce.number().int().min(0).max(10080),
+    channel: z.enum(['email', 'slack', 'sms', 'webhook']),
+    enabled: z.boolean(),
+  })),
+});
+export const providerUpdateNotifQuietHoursSchema = z.object({
+  enabled: z.boolean(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/),
+  weekendsOnly: z.boolean(),
+  allowCritical: z.boolean(),
+});
+
+/* ── Provider Settings: SLA sub-views ── */
+export const providerCreateSLAPolicySchema = z.object({
+  name: z.string().min(1).max(200),
+  priority: z.enum(['URGENT', 'HIGH', 'NORMAL', 'LOW']),
+  firstResponseMinutes: z.coerce.number().int().min(1),
+  resolutionMinutes: z.coerce.number().int().min(1),
+  escalationMinutes: z.coerce.number().int().min(1),
+  category: z.enum(['support', 'billing', 'onboarding', 'incident', 'general']),
+  isActive: z.boolean().optional().default(true),
+});
+export const providerUpdateSLAPolicySchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  firstResponseMinutes: z.coerce.number().int().min(1).optional(),
+  resolutionMinutes: z.coerce.number().int().min(1).optional(),
+  escalationMinutes: z.coerce.number().int().min(1).optional(),
+  isActive: z.boolean().optional(),
+});
+export const providerCreateSLAEscalationRuleSchema = z.object({
+  policyId: z.string().min(1),
+  triggerMinutes: z.coerce.number().int().min(1),
+  escalateTo: z.string().min(1).max(100),
+  notifyVia: z.enum(['email', 'slack', 'sms', 'webhook']),
+});
+
+/* ── Provider Settings: Legal sub-views ── */
+export const providerCreateLegalTemplateV2Schema = z.object({
+  name: z.string().min(1).max(200),
+  category: z.enum(['tos', 'privacy', 'dpa', 'consent', 'liability', 'notice', 'other']),
+  subject: z.string().min(1).max(300),
+  body: z.string().min(1),
+  requiredFields: z.array(z.string().max(50)).optional().default([]),
+  isActive: z.boolean().optional().default(true),
+});
+export const providerUpdateLegalTemplateV2Schema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  category: z.enum(['tos', 'privacy', 'dpa', 'consent', 'liability', 'notice', 'other']).optional(),
+  subject: z.string().min(1).max(300).optional(),
+  body: z.string().optional(),
+  requiredFields: z.array(z.string().max(50)).optional(),
+  isActive: z.boolean().optional(),
+});
+
+/* ── Provider Settings: Email Templates sub-views ── */
+export const providerCreateEmailTemplateV2Schema = z.object({
+  name: z.string().min(1).max(200),
+  category: z.enum(['welcome', 'reminder', 'alert', 'report', 'announcement', 'onboarding', 'billing', 'custom']),
+  subject: z.string().min(1).max(300),
+  body: z.string().min(1),
+  variables: z.array(z.string().max(50)).optional().default([]),
+  isActive: z.boolean().optional().default(true),
+});
+export const providerUpdateEmailTemplateV2Schema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  category: z.enum(['welcome', 'reminder', 'alert', 'report', 'announcement', 'onboarding', 'billing', 'custom']).optional(),
+  subject: z.string().min(1).max(300).optional(),
+  body: z.string().optional(),
+  variables: z.array(z.string().max(50)).optional(),
+  isActive: z.boolean().optional(),
+});
+
+/* ── Provider Settings: Appearance sub-views ── */
+export const providerUpdateThemeSchema = z.object({
+  primaryColor: z.string().max(20),
+  sidebarColor: z.string().max(20),
+  accentColor: z.string().max(20),
+  textColor: z.string().max(20),
+  fontFamily: z.string().max(100),
+  borderRadius: z.enum(['none', 'sm', 'md', 'lg', 'full']),
+  darkMode: z.boolean(),
+});
+export const providerUpdateLayoutSettingsSchema = z.object({
+  sidebarPosition: z.enum(['left', 'right']),
+  sidebarCollapsed: z.boolean(),
+  headerFixed: z.boolean(),
+  contentMaxWidth: z.enum(['full', 'xl', '2xl', '4xl']),
+  showBreadcrumbs: z.boolean(),
+  compactMode: z.boolean(),
 });
 
 export const providerCreateAnnouncementSchema = z.object({
@@ -1688,14 +1822,14 @@ export const providerUpdateRateLimitSchema = z.object({
 });
 
 export const providerRevokeSessionsSchema = z.object({
-  userIds: z.array(z.string().min(1)).optional(),
-  allSessions: z.boolean().optional().default(false),
+  sessionId: z.string().min(1).optional(),
+  all: z.boolean().optional().default(false),
 });
 
 export const providerIpRuleSchema = z.object({
-  ip: z.string().min(1).max(45),
+  cidr: z.string().min(1).max(45),
   label: z.string().max(200).optional().default(''),
-  type: z.enum(['allow', 'block']).default('allow'),
+  type: z.enum(['ALLOW', 'BLOCK']).default('ALLOW'),
 });
 
 export const providerGenerateApiKeySchema = z.object({
@@ -1730,4 +1864,125 @@ export const idParamSchema = z.object({
 
 export const schoolIdParamSchema = z.object({
   schoolId: z.string().min(1),
+});
+
+// ---------------------------------------------------------------------------
+// Teacher Messaging Settings schemas
+// ---------------------------------------------------------------------------
+
+export const updateMsgDefaultsSchema = z.object({
+  autoReplyEnabled: z.boolean().optional(),
+  autoReplyMessage: z.string().max(2000).optional(),
+  defaultSignature: z.string().max(1000).optional(),
+  threadRetentionDays: z.coerce.number().int().min(1).max(3650).optional(),
+  maxAttachmentSizeMb: z.coerce.number().min(1).max(100).optional(),
+  allowStudentMessages: z.boolean().optional(),
+  allowParentMessages: z.boolean().optional(),
+  requireApproval: z.boolean().optional(),
+});
+
+export const updateMsgReplySettingsSchema = z.object({
+  defaultReplyMode: z.enum(['reply', 'reply_all']).optional(),
+  includeOriginal: z.boolean().optional(),
+  quickReplies: z.array(z.string().min(1).max(500)).optional(),
+});
+
+export const updateMsgSchedulingSchema = z.object({
+  sendWindowStart: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  sendWindowEnd: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  timezone: z.string().max(50).optional(),
+  delayedSendEnabled: z.boolean().optional(),
+  schedulingEnabled: z.boolean().optional(),
+});
+
+export const updateMsgNotifChannelsSchema = z.object({
+  email: z.boolean().optional(),
+  push: z.boolean().optional(),
+  inApp: z.boolean().optional(),
+  sms: z.boolean().optional(),
+});
+
+export const updateMsgNotifRulesSchema = z.object({
+  rules: z.array(z.object({
+    id: z.string().optional(),
+    name: z.string().min(1).max(200),
+    condition: z.enum(['all_messages', 'urgent_only', 'from_parents', 'from_admin', 'from_students', 'mentions']),
+    action: z.enum(['notify_immediately', 'digest_hourly', 'digest_daily', 'silent']),
+    enabled: z.boolean(),
+  })),
+});
+
+export const updateMsgQuietHoursSchema = z.object({
+  enabled: z.boolean(),
+  startTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  endTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
+  weekendsOnly: z.boolean().optional(),
+  allowUrgent: z.boolean().optional(),
+});
+
+export const createSLAPolicySchema = z.object({
+  name: z.string().min(1).max(200),
+  description: z.string().max(1000).optional().default(''),
+  category: z.enum(['parent', 'student', 'admin', 'staff', 'urgent']),
+  responseTimeMinutes: z.coerce.number().int().min(1).max(43200),
+  resolutionTimeMinutes: z.coerce.number().int().min(1).max(43200),
+  enabled: z.boolean().optional().default(true),
+  priority: z.enum(['low', 'medium', 'high', 'critical']).optional().default('medium'),
+});
+
+export const updateSLAPolicySchema = createSLAPolicySchema.partial();
+
+export const createSLAEscalationRuleSchema = z.object({
+  name: z.string().min(1).max(200),
+  triggerAfterMinutes: z.coerce.number().int().min(1).max(43200),
+  escalateTo: z.string().min(1).max(200),
+  notifyVia: z.enum(['email', 'push', 'sms', 'all']).optional().default('email'),
+  policyId: z.string().optional(),
+  enabled: z.boolean().optional().default(true),
+});
+
+export const createLegalTemplateSchema = z.object({
+  name: z.string().min(1).max(200),
+  category: z.enum(['consent', 'privacy', 'liability', 'agreement', 'notice', 'other']),
+  subject: z.string().min(1).max(300),
+  body: z.string().min(1),
+  requiredFields: z.array(z.string()).optional().default([]),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const updateLegalTemplateSchema = createLegalTemplateSchema.partial();
+
+export const createEmailTemplateSchema = z.object({
+  name: z.string().min(1).max(200),
+  category: z.enum(['welcome', 'reminder', 'alert', 'report', 'announcement', 'custom']),
+  subject: z.string().min(1).max(300),
+  body: z.string().min(1),
+  variables: z.array(z.string()).optional().default([]),
+  isActive: z.boolean().optional().default(true),
+});
+
+export const updateEmailTemplateSchema = createEmailTemplateSchema.partial();
+
+export const updateMsgAppearanceThemeSchema = z.object({
+  primaryColor: z.string().max(20).optional(),
+  sentBubbleColor: z.string().max(20).optional(),
+  receivedBubbleColor: z.string().max(20).optional(),
+  fontSize: z.enum(['small', 'medium', 'large']).optional(),
+  darkMode: z.boolean().optional(),
+});
+
+export const updateMsgAppearanceLayoutSchema = z.object({
+  chatListPosition: z.enum(['left', 'right']).optional(),
+  showAvatars: z.boolean().optional(),
+  compactMode: z.boolean().optional(),
+  showTimestamps: z.boolean().optional(),
+  previewLines: z.coerce.number().int().min(1).max(5).optional(),
+});
+
+export const updateMsgSignatureSchema = z.object({
+  enabled: z.boolean().optional(),
+  text: z.string().max(2000).optional(),
+  includeTitle: z.boolean().optional(),
+  includePhone: z.boolean().optional(),
+  includeSchool: z.boolean().optional(),
 });

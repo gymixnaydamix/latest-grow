@@ -26,7 +26,6 @@ import {
 } from './shared';
 import type { TeacherSectionProps } from './shared';
 import {
-  assignmentsDemo as FALLBACK_assignmentsDemo, teacherClassesDemo as FALLBACK_teacherClassesDemo,
   formatDateLabel, type AssignmentDemo,
 } from './teacher-demo-data';
 
@@ -86,7 +85,7 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
   const courses: Course[] = coursesRes ?? [];
   const classes = courses.length > 0
     ? courses.filter(c => !teacherId || c.teacherId === teacherId)
-    : FALLBACK_teacherClassesDemo;
+    : [];
 
   /* ── Pick first real course for hook ── */
   const firstCourseId = classes.length > 0 && 'id' in classes[0] ? (classes[0] as { id: string }).id : null;
@@ -128,7 +127,7 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
         status: 'active' as const,
       }));
     }
-    return FALLBACK_assignmentsDemo;
+    return [];
   }, [apiAssignments, teacherAssignmentsApi]);
 
   /* ── Filters ── */
@@ -193,7 +192,7 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
-          <div className="relative flex-1 min-w-[200px]">
+          <div className="relative flex-1 min-w-50">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground/60" />
             <Input
               value={filterSearch}
@@ -422,7 +421,7 @@ export function AssignmentsSection({ schoolId, teacherId }: TeacherSectionProps)
                       <td className="py-3">
                         {gradingStudentId === s.id ? (
                           /* ── Inline Grading Form ── */
-                          <div className="flex flex-col gap-2 min-w-[220px]">
+                          <div className="flex flex-col gap-2 min-w-55">
                             <div className="flex items-center gap-2">
                               <Input
                                 type="number"

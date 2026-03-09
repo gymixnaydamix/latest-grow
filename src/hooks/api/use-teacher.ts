@@ -21,6 +21,22 @@ import type {
   TeacherBehaviorNote,
   TeacherMeeting,
   TeacherClassPerformance,
+  // Messaging settings types
+  TeacherMsgDefaults,
+  TeacherMsgReplySettings,
+  TeacherMsgScheduling,
+  TeacherMsgNotifChannels,
+  TeacherMsgNotifRule,
+  TeacherMsgQuietHours,
+  TeacherSLAPolicy,
+  TeacherSLAEscalationRule,
+  TeacherLegalTemplate,
+  TeacherLegalCategory,
+  TeacherEmailTemplate,
+  TeacherEmailVariable,
+  TeacherMsgAppearanceTheme,
+  TeacherMsgAppearanceLayout,
+  TeacherMsgSignature,
 } from '@root/types';
 
 // ---------------------------------------------------------------------------
@@ -62,6 +78,22 @@ export const teacherKeys = {
   meetings: ['teacher', 'meetings'] as const,
   // Reports
   classPerformance: ['teacher', 'class-performance'] as const,
+  // Messaging settings
+  msgDefaults: ['teacher', 'msg-defaults'] as const,
+  msgReplySettings: ['teacher', 'msg-reply-settings'] as const,
+  msgScheduling: ['teacher', 'msg-scheduling'] as const,
+  msgNotifChannels: ['teacher', 'msg-notif-channels'] as const,
+  msgNotifRules: ['teacher', 'msg-notif-rules'] as const,
+  msgQuietHours: ['teacher', 'msg-quiet-hours'] as const,
+  slaPolicies: ['teacher', 'sla-policies'] as const,
+  slaEscalationRules: ['teacher', 'sla-escalation-rules'] as const,
+  legalTemplates: ['teacher', 'legal-templates'] as const,
+  legalCategories: ['teacher', 'legal-categories'] as const,
+  emailTemplates: ['teacher', 'email-templates'] as const,
+  emailVariables: ['teacher', 'email-variables'] as const,
+  msgAppearanceTheme: ['teacher', 'msg-appearance-theme'] as const,
+  msgAppearanceLayout: ['teacher', 'msg-appearance-layout'] as const,
+  msgSignature: ['teacher', 'msg-signature'] as const,
 };
 
 // ---------------------------------------------------------------------------
@@ -402,5 +434,298 @@ export function useUploadResource() {
     mutationFn: (data: { title: string; category: string; type: string; url?: string }) =>
       api.post<ApiSuccessResponse<{ id: string; title: string }>>('/teacher/resources', data).then((r) => r.data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.lessonPlans }); },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// MESSAGING SETTINGS — QUERY HOOKS
+// ---------------------------------------------------------------------------
+
+export function useTeacherMsgDefaults() {
+  return useQuery({
+    queryKey: teacherKeys.msgDefaults,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgDefaults>>('/teacher/messages/settings/defaults').then((r) => r.data),
+  });
+}
+
+export function useTeacherMsgReplySettings() {
+  return useQuery({
+    queryKey: teacherKeys.msgReplySettings,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgReplySettings>>('/teacher/messages/settings/reply').then((r) => r.data),
+  });
+}
+
+export function useTeacherMsgScheduling() {
+  return useQuery({
+    queryKey: teacherKeys.msgScheduling,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgScheduling>>('/teacher/messages/settings/scheduling').then((r) => r.data),
+  });
+}
+
+export function useTeacherMsgNotifChannels() {
+  return useQuery({
+    queryKey: teacherKeys.msgNotifChannels,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgNotifChannels>>('/teacher/messages/settings/notif-channels').then((r) => r.data),
+  });
+}
+
+export function useTeacherMsgNotifRules() {
+  return useQuery({
+    queryKey: teacherKeys.msgNotifRules,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgNotifRule[]>>('/teacher/messages/settings/notif-rules').then((r) => r.data),
+  });
+}
+
+export function useTeacherMsgQuietHours() {
+  return useQuery({
+    queryKey: teacherKeys.msgQuietHours,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgQuietHours>>('/teacher/messages/settings/quiet-hours').then((r) => r.data),
+  });
+}
+
+export function useTeacherSLAPolicies() {
+  return useQuery({
+    queryKey: teacherKeys.slaPolicies,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherSLAPolicy[]>>('/teacher/messages/sla-policies').then((r) => r.data),
+  });
+}
+
+export function useTeacherSLAEscalationRules() {
+  return useQuery({
+    queryKey: teacherKeys.slaEscalationRules,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherSLAEscalationRule[]>>('/teacher/messages/sla-escalation').then((r) => r.data),
+  });
+}
+
+export function useTeacherLegalTemplates() {
+  return useQuery({
+    queryKey: teacherKeys.legalTemplates,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherLegalTemplate[]>>('/teacher/messages/legal-templates').then((r) => r.data),
+  });
+}
+
+export function useTeacherLegalCategories() {
+  return useQuery({
+    queryKey: teacherKeys.legalCategories,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherLegalCategory[]>>('/teacher/messages/legal-categories').then((r) => r.data),
+  });
+}
+
+export function useTeacherEmailTemplates() {
+  return useQuery({
+    queryKey: teacherKeys.emailTemplates,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherEmailTemplate[]>>('/teacher/messages/email-templates').then((r) => r.data),
+  });
+}
+
+export function useTeacherEmailVariables() {
+  return useQuery({
+    queryKey: teacherKeys.emailVariables,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherEmailVariable[]>>('/teacher/messages/email-variables').then((r) => r.data),
+  });
+}
+
+export function useTeacherMsgAppearanceTheme() {
+  return useQuery({
+    queryKey: teacherKeys.msgAppearanceTheme,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgAppearanceTheme>>('/teacher/messages/appearance/theme').then((r) => r.data),
+  });
+}
+
+export function useTeacherMsgAppearanceLayout() {
+  return useQuery({
+    queryKey: teacherKeys.msgAppearanceLayout,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgAppearanceLayout>>('/teacher/messages/appearance/layout').then((r) => r.data),
+  });
+}
+
+export function useTeacherMsgSignature() {
+  return useQuery({
+    queryKey: teacherKeys.msgSignature,
+    queryFn: () => api.get<ApiSuccessResponse<TeacherMsgSignature>>('/teacher/messages/appearance/signature').then((r) => r.data),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// MESSAGING SETTINGS — MUTATION HOOKS
+// ---------------------------------------------------------------------------
+
+export function useUpdateMsgDefaults() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TeacherMsgDefaults>) =>
+      api.patch<ApiSuccessResponse<TeacherMsgDefaults>>('/teacher/messages/settings/defaults', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgDefaults }); },
+  });
+}
+
+export function useUpdateMsgReplySettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TeacherMsgReplySettings>) =>
+      api.patch<ApiSuccessResponse<TeacherMsgReplySettings>>('/teacher/messages/settings/reply', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgReplySettings }); },
+  });
+}
+
+export function useUpdateMsgScheduling() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TeacherMsgScheduling>) =>
+      api.patch<ApiSuccessResponse<TeacherMsgScheduling>>('/teacher/messages/settings/scheduling', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgScheduling }); },
+  });
+}
+
+export function useUpdateMsgNotifChannels() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TeacherMsgNotifChannels>) =>
+      api.patch<ApiSuccessResponse<TeacherMsgNotifChannels>>('/teacher/messages/settings/notif-channels', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgNotifChannels }); },
+  });
+}
+
+export function useUpdateMsgNotifRules() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { rules: TeacherMsgNotifRule[] }) =>
+      api.put<ApiSuccessResponse<TeacherMsgNotifRule[]>>('/teacher/messages/settings/notif-rules', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgNotifRules }); },
+  });
+}
+
+export function useUpdateMsgQuietHours() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TeacherMsgQuietHours>) =>
+      api.patch<ApiSuccessResponse<TeacherMsgQuietHours>>('/teacher/messages/settings/quiet-hours', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgQuietHours }); },
+  });
+}
+
+export function useCreateSLAPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<TeacherSLAPolicy, 'id' | 'createdAt'>) =>
+      api.post<ApiSuccessResponse<TeacherSLAPolicy>>('/teacher/messages/sla-policies', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.slaPolicies }); },
+  });
+}
+
+export function useUpdateSLAPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: Partial<TeacherSLAPolicy> & { id: string }) =>
+      api.patch<ApiSuccessResponse<TeacherSLAPolicy>>(`/teacher/messages/sla-policies/${id}`, data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.slaPolicies }); },
+  });
+}
+
+export function useDeleteSLAPolicy() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.del<ApiSuccessResponse<TeacherSLAPolicy>>(`/teacher/messages/sla-policies/${id}`).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.slaPolicies }); },
+  });
+}
+
+export function useCreateSLAEscalationRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<TeacherSLAEscalationRule, 'id'>) =>
+      api.post<ApiSuccessResponse<TeacherSLAEscalationRule>>('/teacher/messages/sla-escalation', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.slaEscalationRules }); },
+  });
+}
+
+export function useDeleteSLAEscalationRule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.del<ApiSuccessResponse<TeacherSLAEscalationRule>>(`/teacher/messages/sla-escalation/${id}`).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.slaEscalationRules }); },
+  });
+}
+
+export function useCreateLegalTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<TeacherLegalTemplate, 'id' | 'createdAt' | 'updatedAt'>) =>
+      api.post<ApiSuccessResponse<TeacherLegalTemplate>>('/teacher/messages/legal-templates', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.legalTemplates }); },
+  });
+}
+
+export function useUpdateLegalTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: Partial<TeacherLegalTemplate> & { id: string }) =>
+      api.patch<ApiSuccessResponse<TeacherLegalTemplate>>(`/teacher/messages/legal-templates/${id}`, data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.legalTemplates }); },
+  });
+}
+
+export function useDeleteLegalTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.del<ApiSuccessResponse<TeacherLegalTemplate>>(`/teacher/messages/legal-templates/${id}`).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.legalTemplates }); },
+  });
+}
+
+export function useCreateEmailTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<TeacherEmailTemplate, 'id' | 'createdAt' | 'updatedAt'>) =>
+      api.post<ApiSuccessResponse<TeacherEmailTemplate>>('/teacher/messages/email-templates', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.emailTemplates }); },
+  });
+}
+
+export function useUpdateEmailTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...data }: Partial<TeacherEmailTemplate> & { id: string }) =>
+      api.patch<ApiSuccessResponse<TeacherEmailTemplate>>(`/teacher/messages/email-templates/${id}`, data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.emailTemplates }); },
+  });
+}
+
+export function useDeleteEmailTemplate() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) =>
+      api.del<ApiSuccessResponse<TeacherEmailTemplate>>(`/teacher/messages/email-templates/${id}`).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.emailTemplates }); },
+  });
+}
+
+export function useUpdateMsgAppearanceTheme() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TeacherMsgAppearanceTheme>) =>
+      api.patch<ApiSuccessResponse<TeacherMsgAppearanceTheme>>('/teacher/messages/appearance/theme', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgAppearanceTheme }); },
+  });
+}
+
+export function useUpdateMsgAppearanceLayout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TeacherMsgAppearanceLayout>) =>
+      api.patch<ApiSuccessResponse<TeacherMsgAppearanceLayout>>('/teacher/messages/appearance/layout', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgAppearanceLayout }); },
+  });
+}
+
+export function useUpdateMsgSignature() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<TeacherMsgSignature>) =>
+      api.patch<ApiSuccessResponse<TeacherMsgSignature>>('/teacher/messages/appearance/signature', data).then((r) => r.data),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: teacherKeys.msgSignature }); },
   });
 }

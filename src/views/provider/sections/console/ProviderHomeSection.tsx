@@ -1,5 +1,5 @@
 /* ─── ProviderHomeSection ─── Command Center with sub-page routing ─── */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -74,16 +74,20 @@ function CommandCenterView() {
   const retryInvoice = useRetryProviderInvoice();
 
   const home = homeQuery.data;
-  const tenants = tenantsQuery.data ?? [];
   const moduleData = moduleQuery.data;
-  const actionInbox = home?.actionInbox ?? [];
-  const healthWatch = home?.tenantHealthWatchlist ?? [];
-  const billing = (moduleData?.invoices ?? []) as BillingExceptionItem[];
-  const tickets = (moduleData?.tickets ?? []) as SupportTicketDTO[];
-  const flags = (moduleData?.featureFlags ?? []) as FeatureFlagRuleDTO[];
+
+  /* ── Memoize derived arrays to keep stable references across re-renders ── */
+  const tenants = useMemo(() => tenantsQuery.data ?? [], [tenantsQuery.data]);
+  const actionInbox = useMemo(() => home?.actionInbox ?? [], [home?.actionInbox]);
+  const healthWatch = useMemo(() => home?.tenantHealthWatchlist ?? [], [home?.tenantHealthWatchlist]);
+  const billing = useMemo(() => (moduleData?.invoices ?? []) as BillingExceptionItem[], [moduleData?.invoices]);
+  const tickets = useMemo(() => (moduleData?.tickets ?? []) as SupportTicketDTO[], [moduleData?.tickets]);
+  const flags = useMemo(() => (moduleData?.featureFlags ?? []) as FeatureFlagRuleDTO[], [moduleData?.featureFlags]);
 
   /* ── Sync API data into provider-data store for cross-component access ── */
-  const { setTenantSummary, setPlatformHealth, setQuickStats } = useProviderStore();
+  const setTenantSummary = useProviderStore((s) => s.setTenantSummary);
+  const setPlatformHealth = useProviderStore((s) => s.setPlatformHealth);
+  const setQuickStats = useProviderStore((s) => s.setQuickStats);
 
   useEffect(() => {
     if (!tenants.length && !homeQuery.isSuccess) return;

@@ -661,6 +661,54 @@ export const teacherNav: RoleNavConfig = {
       headerItems: [
         { id: 'inbox', label: 'Inbox', icon: Inbox },
         { id: 'compose', label: 'Compose', icon: Send },
+        {
+          id: 'msg_defaults', label: 'Defaults', icon: Settings,
+          subNav: [
+            { id: 'msg_general', label: 'General' },
+            { id: 'msg_reply_settings', label: 'Reply Settings' },
+            { id: 'msg_scheduling', label: 'Scheduling' },
+          ],
+        },
+        {
+          id: 'msg_notifications', label: 'Notifications', icon: Bell,
+          subNav: [
+            { id: 'msg_notif_channels', label: 'Channels' },
+            { id: 'msg_notif_rules', label: 'Rules' },
+            { id: 'msg_quiet_hours', label: 'Quiet Hours' },
+          ],
+        },
+        {
+          id: 'msg_sla_policies', label: 'SLA Policies', icon: Clock,
+          subNav: [
+            { id: 'msg_sla_active', label: 'Active Policies' },
+            { id: 'msg_sla_create', label: 'Create Policy' },
+            { id: 'msg_sla_escalation', label: 'Escalation Rules' },
+          ],
+        },
+        {
+          id: 'msg_legal_templates', label: 'Legal Templates', icon: Scale,
+          subNav: [
+            { id: 'msg_legal_all', label: 'All Templates' },
+            { id: 'msg_legal_create', label: 'Create Template' },
+            { id: 'msg_legal_categories', label: 'Categories' },
+          ],
+        },
+        {
+          id: 'msg_email_templates', label: 'Email Templates', icon: Mail,
+          subNav: [
+            { id: 'msg_email_all', label: 'All Templates' },
+            { id: 'msg_email_create', label: 'Create Template' },
+            { id: 'msg_email_variables', label: 'Variables' },
+          ],
+        },
+        {
+          id: 'msg_appearance', label: 'Appearance', icon: PaintBucket,
+          subNav: [
+            { id: 'msg_theme', label: 'Theme' },
+            { id: 'msg_layout', label: 'Layout' },
+            { id: 'msg_signature', label: 'Signature' },
+          ],
+        },
       ],
     },
     {

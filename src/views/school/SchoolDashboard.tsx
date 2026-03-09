@@ -79,10 +79,15 @@ export function SchoolDashboard() {
   const upcomingEvents = eventsData ?? [];
   const strategicGoals = goalsData ?? [];
 
-  const enrollmentTrend = FALLBACK_ENROLLMENT_TREND;
-  const gradeDistribution = FALLBACK_GRADE_DIST;
+  const enrollmentTrend = (kpiData as any)?.enrollmentTrend ?? FALLBACK_ENROLLMENT_TREND;
+  const gradeDistribution = (kpiData as any)?.gradeDistribution ?? FALLBACK_GRADE_DIST;
   const aiTools = FALLBACK_AI_TOOLS;
-  const kpiSparklines = FALLBACK_KPI_SPARKLINES;
+  const kpiSparklines = {
+    students: kpiArr[0]?.sparklineData ?? FALLBACK_KPI_SPARKLINES.students,
+    staff: kpiArr[1]?.sparklineData ?? FALLBACK_KPI_SPARKLINES.staff,
+    courses: kpiArr[2]?.sparklineData ?? FALLBACK_KPI_SPARKLINES.courses,
+    attendance: kpiArr[3]?.sparklineData ?? FALLBACK_KPI_SPARKLINES.attendance,
+  };
 
   // Route to section components for non-dashboard sections
   const sectionContent = (() => {
@@ -188,7 +193,7 @@ export function SchoolDashboard() {
             subtitle="By school level"
             data={gradeDistribution}
             centerLabel="Total"
-            centerValue="550"
+            centerValue={String(Number(kpiArr[0]?.value) || enrollmentTrend.reduce((s: number, d: any) => s + d.value, 0))}
           />
         </div>
       </div>

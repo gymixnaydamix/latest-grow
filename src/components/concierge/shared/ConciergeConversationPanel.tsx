@@ -9,15 +9,16 @@ interface Props {
   starterMessages?: ConciergeMessage[];
   suggestionChips?: string[];
   onChipClick?: (label: string) => void;
+  isLoading?: boolean;
   className?: string;
 }
 
-export function ConciergeConversationPanel({ starterMessages = [], suggestionChips = [], onChipClick, className }: Props) {
+export function ConciergeConversationPanel({ starterMessages = [], suggestionChips = [], onChipClick, isLoading = false, className }: Props) {
   const { messages } = useConciergeStore();
   const endRef = useRef<HTMLDivElement>(null);
   const all = messages.length > 0 ? messages : starterMessages;
 
-  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [all.length]);
+  useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [all.length, isLoading]);
 
   return (
     <div className={cn('flex flex-1 flex-col gap-3 overflow-y-auto px-1 py-4', className)}>
@@ -29,7 +30,7 @@ export function ConciergeConversationPanel({ starterMessages = [], suggestionChi
               ? 'bg-primary text-primary-foreground'
               : 'bg-muted/60 text-foreground dark:bg-zinc-800/60',
           )}>
-            <p>{msg.content}</p>
+            <p className="whitespace-pre-wrap">{msg.content}</p>
             {msg.actionCard && (
               <div className="mt-3">
                 <ConciergeActionCard card={msg.actionCard} />
@@ -43,6 +44,16 @@ export function ConciergeConversationPanel({ starterMessages = [], suggestionChi
           </div>
         </div>
       ))}
+      {isLoading && (
+        <div className="flex justify-start">
+          <div className="flex items-center gap-1.5 rounded-2xl bg-muted/60 px-4 py-3 dark:bg-zinc-800/60">
+            <span className="inline-block h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:0ms]" />
+            <span className="inline-block h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:150ms]" />
+            <span className="inline-block h-2 w-2 animate-bounce rounded-full bg-muted-foreground/60 [animation-delay:300ms]" />
+            <span className="ml-2 text-xs text-muted-foreground">AI is thinking…</span>
+          </div>
+        </div>
+      )}
       {suggestionChips.length > 0 && (
         <div className="flex flex-wrap gap-2 pt-2">
           {suggestionChips.map((chip) => (

@@ -49,11 +49,11 @@ export default function AdminMarketView() {
   const containerRef = useStaggerAnimate<HTMLDivElement>([]);
   const { data: apiMarket } = useMarketIntelligence();
 
-  const MARKET_POSITION = FALLBACK_MARKET_POSITION;
-  const ENROLLMENT_COMPARISON = FALLBACK_ENROLLMENT_COMP;
-  const DEMAND_TREND = FALLBACK_DEMAND_TREND;
-  const COMPETITOR_BENCHMARKS = FALLBACK_BENCHMARKS;
-  void apiMarket;
+  const apiKpis = (apiMarket as any)?.kpis;
+  const MARKET_POSITION = (apiMarket as any)?.marketPosition ?? FALLBACK_MARKET_POSITION;
+  const ENROLLMENT_COMPARISON = (apiMarket as any)?.enrollmentComparison ?? FALLBACK_ENROLLMENT_COMP;
+  const DEMAND_TREND = (apiMarket as any)?.demandTrend ?? FALLBACK_DEMAND_TREND;
+  const COMPETITOR_BENCHMARKS = (apiMarket as any)?.benchmarks ?? FALLBACK_BENCHMARKS;
 
   return (
     <div ref={containerRef} className="flex flex-col gap-6">
@@ -64,15 +64,15 @@ export default function AdminMarketView() {
       </div>
 
       <div data-animate className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Market Share" value={35} suffix="%" trend="up" trendLabel="+3% YoY" icon={<Target className="size-5" />} accentColor="#818cf8" />
-        <StatCard label="Inquiry Volume" value={168} trend="up" trendLabel="+38% MoM" icon={<Users className="size-5" />} accentColor="#34d399" sparklineData={DEMAND_TREND.map(d => d.inquiries)} />
-        <StatCard label="Waitlist Students" value={42} trend="up" trendLabel="+8 this month" icon={<Building className="size-5" />} accentColor="#fbbf24" />
-        <StatCard label="Brand Score" value={4.6} suffix="/5" decimals={1} trend="up" trendLabel="+0.3" icon={<Globe className="size-5" />} accentColor="#f472b6" />
+        <StatCard label="Market Share" value={Number(apiKpis?.[0]?.value) || 0} suffix="%" trend="up" trendLabel={apiKpis?.[0]?.change ?? ''} icon={<Target className="size-5" />} accentColor="#818cf8" />
+        <StatCard label="Inquiry Volume" value={Number(apiKpis?.[1]?.value) || 0} trend="up" trendLabel={apiKpis?.[1]?.change ?? ''} icon={<Users className="size-5" />} accentColor="#34d399" sparklineData={DEMAND_TREND.map((d: any) => d.inquiries)} />
+        <StatCard label="Waitlist Students" value={Number(apiKpis?.[2]?.value) || 0} trend="up" trendLabel={apiKpis?.[2]?.change ?? ''} icon={<Building className="size-5" />} accentColor="#fbbf24" />
+        <StatCard label="Brand Score" value={Number(apiKpis?.[3]?.value) || 0} suffix="/5" decimals={1} trend="up" trendLabel={apiKpis?.[3]?.change ?? ''} icon={<Globe className="size-5" />} accentColor="#f472b6" />
       </div>
 
       <div data-animate className="grid gap-4 lg:grid-cols-5">
         <div className="lg:col-span-3">
-          <NeonBarChart title="Enrollment: You vs District Avg" subtitle="6-year enrollment comparison" data={ENROLLMENT_COMPARISON.map(e => ({ name: e.name, primary: e.yours, secondary: e.district }))} dataKey="primary" secondaryDataKey="secondary" xAxisKey="name" colors={['#818cf8']} secondaryColor="#fbbf24" height={280} />
+          <NeonBarChart title="Enrollment: You vs District Avg" subtitle="6-year enrollment comparison" data={ENROLLMENT_COMPARISON.map((e: typeof ENROLLMENT_COMPARISON[number]) => ({ name: e.name, primary: e.yours, secondary: e.district }))} dataKey="primary" secondaryDataKey="secondary" xAxisKey="name" colors={['#818cf8']} secondaryColor="#fbbf24" height={280} />
         </div>
         <div className="lg:col-span-2">
           <GlowPieChart title="Local Market Share" subtitle="Enrollment share among area schools" data={MARKET_POSITION} height={280} />
@@ -92,7 +92,7 @@ export default function AdminMarketView() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            {COMPETITOR_BENCHMARKS.map((b, i) => (
+            {COMPETITOR_BENCHMARKS.map((b: typeof COMPETITOR_BENCHMARKS[number], i: number) => (
               <div key={i} className="flex items-center justify-between rounded-lg border border-white/6 bg-white/2 px-3 py-2">
                 <span className="text-xs text-white/50">{b.name}</span>
                 <div className="flex items-center gap-6">

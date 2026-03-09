@@ -88,12 +88,12 @@ function SidebarNavList({ sections, compact, onSectionClick }: SidebarNavListPro
             {CustomIcon ? (
               <CustomIcon
                 className={cn(
-                  'shrink-0 transition-all duration-200',
+                  'shrink-0 overflow-visible drop-shadow-[0_3px_10px_rgba(15,23,42,0.32)] transition-all duration-200',
                   compact
                     ? isActive
-                      ? 'size-4.5'
-                      : 'size-4 opacity-60 group-hover:opacity-100'
-                    : 'size-4.5',
+                      ? 'size-5 opacity-100'
+                      : 'size-4.5 opacity-90 saturate-125 group-hover:scale-[1.05] group-hover:opacity-100'
+                    : 'size-5',
                 )}
               />
             ) : (

@@ -8,6 +8,7 @@ import {
   type OverlayAppId,
 } from '@/overlay/overlay-registry';
 import { OverlayShell } from '@/components/overlay/OverlayShell';
+import { useAuthStore } from '@/store/auth.store';
 import { useOverlayStore } from '@/store/overlay.store';
 
 function buildDefaultPrimaryByApp(): Record<OverlayAppId, string> {
@@ -39,6 +40,19 @@ function resetOverlayStore() {
 
 beforeEach(() => {
   localStorage.clear();
+  useAuthStore.setState({
+    user: {
+      id: 'u-admin-1',
+      email: 'admin@test.dev',
+      firstName: 'Admin',
+      lastName: 'User',
+      role: 'ADMIN',
+    } as any,
+    schoolId: 'school-1',
+    schoolMemberships: [],
+    isLoading: false,
+    error: null,
+  });
   resetOverlayStore();
 });
 

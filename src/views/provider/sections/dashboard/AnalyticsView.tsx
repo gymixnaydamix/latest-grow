@@ -222,7 +222,7 @@ export function AnalyticsView() {
       {/* ═══ Right sidebar ═══ */}
       <div className="hidden lg:flex w-44 flex-col gap-1.5 shrink-0 min-h-0">
         {/* Live Activity — blue chroma card */}
-        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-blue-500/20 bg-linear-to-br from-blue-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-blue-500/30 overflow-hidden min-h-0">
+        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-blue-500/20 bg-linear-to-br from-blue-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-blue-500/30 overflow-hidden min-h-0">
           <div className="mb-1.5 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
               <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-cyan-500"><Activity className="h-3 w-3 text-white" /></div>
@@ -244,7 +244,7 @@ export function AnalyticsView() {
         </div>
 
         {/* Retention — emerald chroma card */}
-        <div data-animate className="group flex flex-col rounded-xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-emerald-500/30 overflow-hidden" style={{ minHeight: 120 }}>
+        <div data-animate className="group flex flex-col rounded-xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-emerald-500/30 overflow-hidden" style={{ minHeight: 120 }}>
           <div className="mb-1 flex items-center justify-between">
             <h3 className="text-[10px] font-semibold text-foreground">Retention</h3>
             <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">94.2%</span>

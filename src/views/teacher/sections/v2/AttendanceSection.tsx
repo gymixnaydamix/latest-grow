@@ -18,7 +18,6 @@ import { useNavigationStore } from '@/store/navigation.store';
 import type { Course, AttendanceRecord } from '@root/types';
 import { TeacherSectionShell, GlassCard, MetricCard, StatusBadge } from './shared';
 import type { TeacherSectionProps } from './shared';
-import { teacherClassesDemo as FALLBACK_teacherClassesDemo, attendanceStudentsDemo as FALLBACK_attendanceStudentsDemo } from './teacher-demo-data';
 
 type AttendanceStatus = 'PRESENT' | 'ABSENT' | 'LATE' | 'EXCUSED';
 
@@ -50,19 +49,19 @@ function TakeAttendanceView({ schoolId, teacherId }: TeacherSectionProps) {
   const [submitted, setSubmitted] = useState(false);
   const submitAttendanceMut = useSubmitAttendance();
 
-  // Use real courses if available, otherwise demo
+  // Use real courses if available, otherwise empty
   const classes = teacherCourses.length > 0
     ? teacherCourses.map((c) => ({ id: c.id, name: c.name, studentCount: c._count?.enrollments ?? 25 }))
-    : FALLBACK_teacherClassesDemo.map(c => ({ id: c.id, name: c.name, studentCount: c.studentCount }));
+    : [];
   
   const selectedClass = classes[selectedClassIdx] ?? classes[0];
 
-  // Students from API with demo fallback
+  // Students from API
   const { data: apiAttendanceData } = useTeacherAttendance(selectedClass?.id ?? null);
-  const apiStudents = (apiAttendanceData as any)?.data as typeof FALLBACK_attendanceStudentsDemo | undefined;
+  const apiStudents = (apiAttendanceData as any)?.data as { id: string; name: string; initials: string; streak: number; overallRate: number }[] | undefined;
 
   const students = useMemo(() => {
-    const list = apiStudents?.length ? apiStudents : FALLBACK_attendanceStudentsDemo;
+    const list = apiStudents?.length ? apiStudents : [];
     if (searchTerm) {
       return list.filter(s => s.name.toLowerCase().includes(searchTerm.toLowerCase()));
     }
@@ -272,7 +271,7 @@ function AttendanceHistoryView({ schoolId, teacherId }: TeacherSectionProps) {
 
   const classes = teacherCourses.length > 0
     ? teacherCourses.map(c => ({ id: c.id, name: c.name }))
-    : FALLBACK_teacherClassesDemo.map(c => ({ id: c.id, name: c.name }));
+    : [];
 
   const selectedClass = classes[selectedCourseIdx];
   const { data: attendanceData } = useCourseAttendance(selectedClass?.id ?? null);

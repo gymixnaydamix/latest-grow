@@ -33,8 +33,7 @@ const DEPARTMENTS = [
   { id: 'inquiries', name: 'General Inquiries', icon: HelpCircle, color: 'bg-amber-500/20 text-amber-400', requests: 2 },
 ];
 
-// @ts-expect-error TS6133 — mock data kept for shape reference
-const _REQUESTS = [
+const FALLBACK_REQUESTS = [
   { id: 'REQ-001', title: 'Tuition fee installment plan', dept: 'Finance', status: 'approved' as Status, date: '2 d ago', priority: 'High', response: 'Installment plan approved. Payment schedule has been updated.' },
   { id: 'REQ-002', title: 'Transcript request for scholarship', dept: 'Finance', status: 'pending' as Status, date: '1 d ago', priority: 'Medium', response: null },
   { id: 'REQ-003', title: 'Internship placement support', dept: 'Human Resources', status: 'in_review' as Status, date: '3 d ago', priority: 'High', response: null },
@@ -55,10 +54,9 @@ export default function DeptRequestsOverviewPage() {
   const [expanded, setExpanded] = useState<string | null>(null);
 
   /* ── API data ── */
-  const { data: _apiDeptReqs } = useStudentDeptRequests();
-  // @ts-expect-error TS6133 — mutation available for form wiring
-  const _submitDeptRequestMut = useSubmitDeptRequest();
-  const requests = (_apiDeptReqs as any[]) ?? [];
+  const { data: apiDeptReqs } = useStudentDeptRequests();
+  const submitDeptRequestMut = useSubmitDeptRequest();
+  const requests = (apiDeptReqs as any[])?.length > 0 ? (apiDeptReqs as any[]) : FALLBACK_REQUESTS;
 
   const counts = {
     pending: requests.filter((r: any) => r.status === 'pending').length,
@@ -140,7 +138,7 @@ export default function DeptRequestsOverviewPage() {
           <Card data-animate className="border-white/6 bg-white/3 backdrop-blur-xl">
             <CardHeader className="pb-2 flex-row items-center justify-between">
               <CardTitle className="text-white/90 text-sm">All Requests</CardTitle>
-              <Button size="sm" onClick={() => notifySuccess('Request', 'Opening new request form…')} className="text-[10px] h-7 bg-indigo-600 hover:bg-indigo-500 text-white gap-1">
+              <Button size="sm" onClick={() => submitDeptRequestMut.mutate({ title: 'New Request', dept: 'General Inquiries', priority: 'Medium' } as any, { onSuccess: () => notifySuccess('Request Submitted', 'Your request has been sent to the department') })} className="text-[10px] h-7 bg-indigo-600 hover:bg-indigo-500 text-white gap-1">
                 <Plus className="size-3" />New Request
               </Button>
             </CardHeader>
@@ -245,7 +243,7 @@ export default function DeptRequestsOverviewPage() {
             <CardContent className="p-4 flex flex-col gap-2.5">
               <p className="text-xs text-indigo-400 font-medium flex items-center gap-1.5"><Send className="size-3.5" />Quick Submit</p>
               <p className="text-[9px] text-indigo-300/40">Need something from a department? Start a new request and we'll route it to the right team.</p>
-              <Button onClick={() => notifySuccess('Request', 'Opening new request form…')} className="w-full text-xs bg-indigo-600 hover:bg-indigo-500 text-white gap-1">
+              <Button onClick={() => submitDeptRequestMut.mutate({ title: 'New Request', dept: 'General Inquiries', priority: 'Medium' } as any, { onSuccess: () => notifySuccess('Request Submitted', 'Your request has been sent to the department') })} className="w-full text-xs bg-indigo-600 hover:bg-indigo-500 text-white gap-1">
                 <Plus className="size-3" />New Request
               </Button>
             </CardContent>

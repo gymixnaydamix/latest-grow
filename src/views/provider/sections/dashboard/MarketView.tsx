@@ -9,7 +9,8 @@ import { useProviderReports } from '@/hooks/api/use-provider-console';
 export function MarketView() {
   const { data: apiData } = useMarketIntelligence();
   const { data: reportsData } = useProviderReports();
-  void reportsData; // available for market intelligence integration
+  const apiFeatures = (reportsData as any)?.features;
+  const apiOpportunities = (reportsData as any)?.opportunities;
   /* ── Inline 3D SVG Icons ── */
   const Icon3D_TAM = () => (
     <svg viewBox="0 0 40 40" className="h-9 w-9 drop-shadow-lg" style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.35))' }}>
@@ -70,14 +71,14 @@ export function MarketView() {
     { feat: 'Overlay Apps', us: true, compA: false, compB: false },
     { feat: 'Gamification', us: true, compA: false, compB: false },
   ];
-  const features = FALLBACK_features;
+  const features = apiFeatures ?? FALLBACK_features;
   const FALLBACK_opportunities = [
     { name: 'K-12 STEM Programs', desc: 'Untapped $2.1B segment — STEM-focused schools switching platforms', priority: 'High', color: 'from-emerald-500' },
     { name: 'International Schools', desc: 'Multi-language + currency support differentiator', priority: 'High', color: 'from-blue-500' },
     { name: 'Parent Engagement', desc: 'Mobile-first parent portal — competitor gap identified', priority: 'Medium', color: 'from-violet-500' },
     { name: 'After-school Programs', desc: 'Scheduling + billing module extension opportunity', priority: 'Medium', color: 'from-amber-500' },
   ];
-  const opportunities = FALLBACK_opportunities;
+  const opportunities = apiOpportunities ?? FALLBACK_opportunities;
 
   const threatColors: Record<string, { color: string; bg: string; border: string }> = {
     High: { color: 'text-red-600 dark:text-red-400', bg: 'bg-red-500/10', border: 'border-red-500/20' },
@@ -208,7 +209,7 @@ export function MarketView() {
       {/* ═══ Right sidebar ═══ */}
       <div className="hidden lg:flex w-44 flex-col gap-1.5 shrink-0 min-h-0">
         {/* Competitor Radar — rose chroma card */}
-        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-rose-500/20 bg-linear-to-br from-rose-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-rose-500/30 overflow-hidden min-h-0">
+        <div data-animate className="group flex flex-1 flex-col rounded-xl border border-rose-500/20 bg-linear-to-br from-rose-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-rose-500/30 overflow-hidden min-h-0">
           <div className="mb-1.5 flex items-center justify-between">
             <h3 className="text-[10px] font-semibold text-foreground">Competitor Radar</h3>
             <span className="flex items-center gap-1 rounded-full bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 text-[8px] font-medium text-red-600 dark:text-red-400"><span className="h-1 w-1 rounded-full bg-red-500 animate-pulse" />Watch</span>
@@ -224,7 +225,7 @@ export function MarketView() {
         </div>
 
         {/* Market Pulse — violet chroma card */}
-        <div data-animate className="group flex flex-col rounded-xl border border-violet-500/20 bg-linear-to-br from-violet-500/8 via-card to-card p-2.5 shadow-[var(--shadow-sm)] transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:border-violet-500/30 overflow-hidden" style={{ minHeight: 120 }}>
+        <div data-animate className="group flex flex-col rounded-xl border border-violet-500/20 bg-linear-to-br from-violet-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-violet-500/30 overflow-hidden" style={{ minHeight: 120 }}>
           <div className="flex items-center justify-between mb-1.5">
             <h3 className="text-[10px] font-semibold text-foreground">Market Pulse</h3>
             <span className="flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-medium text-emerald-600 dark:text-emerald-400"><span className="h-1 w-1 rounded-full bg-emerald-500 animate-pulse" />Live</span>
