@@ -63,6 +63,8 @@ jobs:
             ~/.pnpm-store
           key: deps-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
       - run: pnpm install --frozen-lockfile
+      - name: Generate Prisma Client
+        run: pnpm --filter ./backend exec prisma generate
       - name: Frontend typecheck
         run: pnpm tsc --noEmit
       - name: Backend typecheck
