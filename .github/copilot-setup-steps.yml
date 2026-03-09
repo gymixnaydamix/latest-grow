@@ -1,0 +1,35 @@
+name: Copilot Setup Steps
+
+on: workflow_dispatch
+
+env:
+  NODE_VERSION: "20"
+  PNPM_VERSION: "9"
+  DATABASE_URL: postgresql://postgres:postgres@localhost:5432/growyourneed?schema=public
+  REDIS_URL: redis://localhost:6379
+  JWT_SECRET: copilot-dev-jwt-secret-do-not-use-in-production
+  NODE_ENV: development
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Copy environment file
+        run: cp .env.example .env.local
+
+      - name: Generate Prisma Client
+        run: pnpm --filter ./backend exec prisma generate
