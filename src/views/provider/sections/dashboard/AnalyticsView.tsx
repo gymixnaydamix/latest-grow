@@ -58,19 +58,19 @@ export function AnalyticsView() {
     </svg>
   );
 
-  /* ── Demo data (merged with API when available) ── */
-  const apiKpis = apiData?.kpis;
+  /* ── Wire data from API (backend returns kpis as object keyed by metric) ── */
+  const kpisObj = apiData?.kpis as Record<string, { value: string; change: string; sparkline?: number[] }> | undefined;
   const apiTopPages = apiData?.topPages;
-  const apiMrrData = apiData?.mrrData;
+  const apiMrrData = apiData?.mrrData as Array<{ month: string; mrr: number; users?: number }> | undefined;
 
   const analyticsKpis: KpiDef[] = [
-    { label: 'Total API Calls', value: apiKpis?.[0]?.value ?? '1.2M', change: apiKpis?.[0]?.change ?? '+14%', up: true, sub: 'Last 30 days', icon3d: Icon3D_APICalls, gradient: 'from-blue-500/10 to-blue-500/5', borderGlow: 'hover:shadow-blue-500/20', sparkline: apiKpis?.[0]?.sparkline ?? [820, 860, 910, 880, 950, 1020, 1080, 1050, 1120, 1150, 1180, 1200], sparkColor: '#3b82f6', prefix: 'a_' },
-    { label: 'Avg Session', value: apiKpis?.[1]?.value ?? '18m 32s', change: apiKpis?.[1]?.change ?? '+3.2%', up: true, sub: 'Per active user', icon3d: Icon3D_Session, gradient: 'from-violet-500/10 to-violet-500/5', borderGlow: 'hover:shadow-violet-500/20', sparkline: apiKpis?.[1]?.sparkline ?? [14, 15, 15.5, 16, 16.2, 16.8, 17, 17.4, 17.8, 18, 18.2, 18.5], sparkColor: '#8b5cf6', prefix: 'a_' },
-    { label: 'Active DAU', value: apiKpis?.[2]?.value ?? '3,420', change: apiKpis?.[2]?.change ?? '+8.1%', up: true, sub: 'Daily active users', icon3d: Icon3D_DAU, gradient: 'from-emerald-500/10 to-emerald-500/5', borderGlow: 'hover:shadow-emerald-500/20', sparkline: apiKpis?.[2]?.sparkline ?? [2800, 2900, 2950, 3020, 3080, 3120, 3180, 3220, 3280, 3340, 3380, 3420], sparkColor: '#10b981', prefix: 'a_' },
-    { label: 'Bounce Rate', value: apiKpis?.[3]?.value ?? '26.8%', change: apiKpis?.[3]?.change ?? '-2.4%', up: false, sub: 'Improved from 29.2%', icon3d: Icon3D_Bounce, gradient: 'from-amber-500/10 to-amber-500/5', borderGlow: 'hover:shadow-amber-500/20', sparkline: apiKpis?.[3]?.sparkline ?? [34, 33, 32, 31, 30.5, 29.8, 29.2, 28.6, 28, 27.4, 27, 26.8], sparkColor: '#f59e0b', prefix: 'a_' },
+    { label: 'Total API Calls', value: kpisObj?.apiCalls?.value ?? '…', change: kpisObj?.apiCalls?.change ?? '', up: true, sub: 'Last 30 days', icon3d: Icon3D_APICalls, gradient: 'from-blue-500/10 to-blue-500/5', borderGlow: 'hover:shadow-blue-500/20', sparkline: kpisObj?.apiCalls?.sparkline ?? [820, 860, 910, 880, 950, 1020, 1080, 1050, 1120, 1150, 1180, 1200], sparkColor: '#3b82f6', prefix: 'a_' },
+    { label: 'Avg Session', value: kpisObj?.avgSession?.value ?? '…', change: kpisObj?.avgSession?.change ?? '', up: true, sub: 'Per active user', icon3d: Icon3D_Session, gradient: 'from-violet-500/10 to-violet-500/5', borderGlow: 'hover:shadow-violet-500/20', sparkline: kpisObj?.avgSession?.sparkline ?? [14, 15, 15.5, 16, 16.2, 16.8, 17, 17.4, 17.8, 18, 18.2, 18.5], sparkColor: '#8b5cf6', prefix: 'a_' },
+    { label: 'Active DAU', value: kpisObj?.dau?.value ?? '…', change: kpisObj?.dau?.change ?? '', up: true, sub: 'Daily active users', icon3d: Icon3D_DAU, gradient: 'from-emerald-500/10 to-emerald-500/5', borderGlow: 'hover:shadow-emerald-500/20', sparkline: kpisObj?.dau?.sparkline ?? [2800, 2900, 2950, 3020, 3080, 3120, 3180, 3220, 3280, 3340, 3380, 3420], sparkColor: '#10b981', prefix: 'a_' },
+    { label: 'Bounce Rate', value: kpisObj?.bounceRate?.value ?? '…', change: kpisObj?.bounceRate?.change ?? '', up: false, sub: 'Lower is better', icon3d: Icon3D_Bounce, gradient: 'from-amber-500/10 to-amber-500/5', borderGlow: 'hover:shadow-amber-500/20', sparkline: kpisObj?.bounceRate?.sparkline ?? [34, 33, 32, 31, 30.5, 29.8, 29.2, 28.6, 28, 27.4, 27, 26.8], sparkColor: '#f59e0b', prefix: 'a_' },
   ];
   const chartData = apiMrrData ?? FALLBACK_mrrData;
-  const userGrowthData = chartData.map((d, i) => ({ month: d.month, users: 2800 + i * 120 }));
+  const userGrowthData = chartData.map((d, i) => ({ month: d.month, users: (d as { users?: number }).users ?? 2800 + i * 120 }));
   const topPages = apiTopPages ?? [
     { page: '/dashboard', views: '45.2K', pct: 92 }, { page: '/courses', views: '32.1K', pct: 70 },
     { page: '/students', views: '28.4K', pct: 62 }, { page: '/settings', views: '18.7K', pct: 41 }, { page: '/reports', views: '12.3K', pct: 27 },
@@ -108,7 +108,7 @@ export function AnalyticsView() {
               <div className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 shadow-sm shadow-blue-500/25"><TrendingUp className="size-3 text-white" /></div>
               <div><h3 className="text-[11px] font-semibold">User Growth</h3><p className="text-[8px] text-muted-foreground">Daily active users trend</p></div>
             </div>
-            <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600"><ArrowUpRight className="size-2.5" />+21.4%</span>
+            <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600"><ArrowUpRight className="size-2.5" />{userGrowthData.length >= 2 ? `+${(((userGrowthData.at(-1)!.users - userGrowthData[0].users) / userGrowthData[0].users) * 100).toFixed(1)}%` : '—'}</span>
           </div>
           <div className="flex-1 px-1 pb-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -212,7 +212,7 @@ export function AnalyticsView() {
                 </div>
               ))}
               <div className="mt-0.5 rounded-md bg-violet-500/8 px-1.5 py-0.5 text-[8px] font-medium text-violet-600 flex items-center gap-1">
-                <ArrowUpRight className="size-2" />Mobile traffic grew 12%
+                <ArrowUpRight className="size-2" />Device breakdown
               </div>
             </div>
           </div>
@@ -247,7 +247,7 @@ export function AnalyticsView() {
         <div data-animate className="group flex flex-col rounded-xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-emerald-500/30 overflow-hidden" style={{ minHeight: 120 }}>
           <div className="mb-1 flex items-center justify-between">
             <h3 className="text-[10px] font-semibold text-foreground">Retention</h3>
-            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">94.2%</span>
+            <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">{retentionWeeks.at(-1)?.pct ?? '—'}%</span>
           </div>
           <div className="flex items-end gap-0.5" style={{ height: 48 }}>
             {retentionWeeks.map((w: typeof retentionWeeks[number]) => (

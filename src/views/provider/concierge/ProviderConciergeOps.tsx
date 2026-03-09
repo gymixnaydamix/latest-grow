@@ -99,7 +99,8 @@ export function ProviderConciergeOps() {
   const { data: moduleData } = useProviderModuleData();
   const updateTicketStatus = useUpdateProviderSupportTicketStatus();
 
-  const tickets = (moduleData?.tickets as any as Ticket[]) ?? FALLBACK_TICKETS;
+  const rawTickets = (moduleData as Record<string, unknown> | undefined)?.tickets;
+  const tickets: Ticket[] = Array.isArray(rawTickets) ? rawTickets as Ticket[] : FALLBACK_TICKETS;
   const [selected, setSelected] = useState<Ticket | null>(tickets[0] ?? null);
   const sendMessage = useSendProviderMessage();
 

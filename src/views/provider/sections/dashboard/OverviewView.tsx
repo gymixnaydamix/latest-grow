@@ -12,6 +12,7 @@ import { KPITicker } from '@/components/features/KPITicker';
 import { GlowDonutChart } from '@/components/features/charts/DonutChart';
 import { useTenantStats } from '@/hooks/api';
 import { useProviderBillingOverview } from '@/hooks/api/use-provider-console';
+import { useNavigationStore } from '@/store/navigation.store';
 import {
   Icon3D_Dollar, Icon3D_Users, Icon3D_LTV, Icon3D_Churn,
   KpiCard,
@@ -24,6 +25,7 @@ export function OverviewView() {
   /* ── Wire KPIs to real tenant stats ── */
   const { data: statsResp } = useTenantStats();
   const { data: billingData } = useProviderBillingOverview();
+  const setSection = useNavigationStore((st) => st.setSection);
   const s = statsResp;
   const bAnalytics = billingData?.analytics;
 
@@ -35,14 +37,16 @@ export function OverviewView() {
   const avgMrr = monthlyRev ? Math.round(monthlyRev.reduce((t, m) => t + m.billed, 0) / monthlyRev.length) : 12721;
   const peakMrr = monthlyRev ? Math.max(...monthlyRev.map((m) => m.billed)) : 15230;
   const firstMrr = monthlyRev?.[0]?.billed ?? 10200;
+  const prevMrr = monthlyRev && monthlyRev.length >= 2 ? monthlyRev[monthlyRev.length - 2].billed : firstMrr;
   const mrrGrowthPct = firstMrr > 0 ? (((currentMrr - firstMrr) / firstMrr) * 100).toFixed(1) : '49.3';
-  const alerts = (billingData as any)?.alerts ?? FALLBACK_alerts;
+  const mrrMonthChange = prevMrr > 0 ? (((currentMrr - prevMrr) / prevMrr) * 100).toFixed(1) : '0';
+  const alerts = (billingData as Record<string, unknown>)?.alerts as typeof FALLBACK_alerts | undefined ?? FALLBACK_alerts;
 
   const kpis: KpiDef[] = [
     {
       label: 'MRR',
       value: s ? `$${s.totalMrr.toLocaleString()}` : '$…',
-      change: '+2.1%', up: true, sub: 'from last month',
+      change: `+${mrrMonthChange}%`, up: true, sub: 'from last month',
       icon3d: Icon3D_Dollar, gradient: 'from-emerald-500/10 to-emerald-500/5',
       borderGlow: 'hover:shadow-emerald-500/20', sparkline: mrrSpark, sparkColor: '#10b981',
     },
@@ -63,8 +67,8 @@ export function OverviewView() {
     },
     {
       label: 'Churn Rate',
-      value: s ? `${s.total > 0 ? ((s.churned / s.total) * 100).toFixed(1) : '0'}%` : '2.1%',
-      change: '-0.5%', up: false, sub: 'from last month',
+      value: s ? `${s.total > 0 ? ((s.churned / s.total) * 100).toFixed(1) : '0'}%` : '…',
+      change: s ? `${s.churned} churned` : '', up: false, sub: `of ${s?.total ?? 0} total`,
       icon3d: Icon3D_Churn, gradient: 'from-amber-500/10 to-amber-500/5',
       borderGlow: 'hover:shadow-amber-500/20', sparkline: FALLBACK_churnSpark, sparkColor: '#f59e0b',
     },
@@ -80,12 +84,12 @@ export function OverviewView() {
   ];
 
   const FALLBACK_tickerItems = [
-    { label: 'MRR', value: s ? `$${s.totalMrr.toLocaleString()}` : '$15.2K', change: '+2.1%', trend: 'up' as const },
-    { label: 'Active Tenants', value: s ? String(s.active) : '124', change: '+5', trend: 'up' as const },
-    { label: 'Churn Rate', value: s ? `${s.total > 0 ? ((s.churned / s.total) * 100).toFixed(1) : '0'}%` : '2.1%', change: '-0.5%', trend: 'down' as const },
-    { label: 'LTV', value: bAnalytics ? `$${Math.round(bAnalytics.summary.arpt * 14).toLocaleString()}` : '$2,450', change: bAnalytics ? `ARPT $${bAnalytics.summary.arpt}` : '+$120', trend: 'up' as const },
-    { label: 'ARR', value: bAnalytics ? `$${bAnalytics.summary.arr.toLocaleString()}` : '$182K', change: bAnalytics ? `${bAnalytics.summary.atRiskTenants} at-risk` : '', trend: 'up' as const },
-    { label: 'Collected', value: bAnalytics ? `$${bAnalytics.summary.collectedThisMonth.toLocaleString()}` : '$12K', trend: 'up' as const },
+    { label: 'MRR', value: s ? `$${s.totalMrr.toLocaleString()}` : '$…', change: `+${mrrMonthChange}%`, trend: 'up' as const },
+    { label: 'Active Tenants', value: s ? String(s.active) : '…', change: s ? `${s.total} total` : '', trend: 'up' as const },
+    { label: 'Churn Rate', value: s ? `${s.total > 0 ? ((s.churned / s.total) * 100).toFixed(1) : '0'}%` : '…', change: s ? `${s.churned} churned` : '', trend: 'down' as const },
+    { label: 'LTV', value: bAnalytics ? `$${Math.round(bAnalytics.summary.arpt * 14).toLocaleString()}` : '$…', change: bAnalytics ? `ARPT $${bAnalytics.summary.arpt}` : '', trend: 'up' as const },
+    { label: 'ARR', value: bAnalytics ? `$${bAnalytics.summary.arr.toLocaleString()}` : '$…', change: bAnalytics ? `${bAnalytics.summary.atRiskTenants} at-risk` : '', trend: 'up' as const },
+    { label: 'Collected', value: bAnalytics ? `$${bAnalytics.summary.collectedThisMonth.toLocaleString()}` : '$…', trend: 'up' as const },
   ];
   const tickerItems = FALLBACK_tickerItems;
 
@@ -195,7 +199,7 @@ export function OverviewView() {
               <div><h3 className="text-[11px] font-semibold">New Trials</h3><p className="text-[8px] text-muted-foreground">Sign-ups per month</p></div>
             </div>
             <div className="flex items-center gap-1.5">
-              {(() => { const best = FALLBACK_trialData.reduce((a, b) => b.trials > a.trials ? b : a, FALLBACK_trialData[0]); return <span className="rounded-md bg-muted/40 px-1.5 py-0.5 text-[7px] font-medium text-muted-foreground">Best: {best.month} ({best.trials})</span>; })()}
+              {(() => { const trialArr = FALLBACK_trialData; const best = trialArr.reduce((a, b) => b.trials > a.trials ? b : a, trialArr[0]); return <span className="rounded-md bg-muted/40 px-1.5 py-0.5 text-[7px] font-medium text-muted-foreground">Best: {best.month} ({best.trials})</span>; })()}
               <span className="flex items-center gap-0.5 rounded-full bg-violet-500/10 px-1.5 py-0.5 text-[8px] font-bold text-violet-600">
                 <svg className="size-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M16 11V3H8v6H2v12h20V11h-6zm-6-6h4v14h-4V5zm-6 8h4v6H4v-6zm16 6h-4v-4h4v4z" /></svg>
                 {s?.trial ?? FALLBACK_trialData.reduce((t, m) => t + m.trials, 0)} total
@@ -204,7 +208,7 @@ export function OverviewView() {
           </div>
           <div className="flex items-center gap-1 px-2.5 pb-0.5">
             <div className="flex items-center gap-1 rounded-md bg-violet-500/8 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-violet-500" /><span className="text-[7px] font-semibold text-violet-600">Avg: {Math.round(FALLBACK_trialData.reduce((t, m) => t + m.trials, 0) / FALLBACK_trialData.length)}/mo</span></div>
-            <div className="flex items-center gap-1 rounded-md bg-emerald-500/8 px-1.5 py-0.5"><ArrowUpRight className="size-2 text-emerald-600" /><span className="text-[7px] font-semibold text-emerald-600">+94% YoY</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-emerald-500/8 px-1.5 py-0.5"><ArrowUpRight className="size-2 text-emerald-600" /><span className="text-[7px] font-semibold text-emerald-600">+{mrrGrowthPct}% growth</span></div>
             <div className="flex items-center gap-1 rounded-md bg-muted/30 px-1.5 py-0.5"><span className="h-1.5 w-1.5 rounded-full bg-blue-500" /><span className="text-[7px] font-medium text-muted-foreground">Q4: {FALLBACK_trialData.slice(-3).reduce((t, m) => t + m.trials, 0)}</span></div>
           </div>
           <div className="flex-1 px-1 pb-1 min-h-0">
@@ -236,18 +240,18 @@ export function OverviewView() {
             </div>
           </div>
           <div className="flex items-center gap-1 px-2.5 pb-0.5">
-            <div className="flex items-center gap-1 rounded-md bg-sky-500/8 px-1.5 py-0.5"><Server className="size-2 text-sky-600" /><span className="text-[7px] font-semibold text-sky-600">Uptime 99.9%</span></div>
-            <div className="flex items-center gap-1 rounded-md bg-violet-500/8 px-1.5 py-0.5"><Users className="size-2 text-violet-600" /><span className="text-[7px] font-semibold text-violet-600">{s ? `${s.active} tenants` : '120 tenants'}</span></div>
-            <div className="flex items-center gap-1 rounded-md bg-amber-500/8 px-1.5 py-0.5"><CreditCard className="size-2 text-amber-600" /><span className="text-[7px] font-semibold text-amber-600">4 plans</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-sky-500/8 px-1.5 py-0.5"><Server className="size-2 text-sky-600" /><span className="text-[7px] font-semibold text-sky-600">Uptime {monthlyRev ? '99.9%' : '—'}</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-violet-500/8 px-1.5 py-0.5"><Users className="size-2 text-violet-600" /><span className="text-[7px] font-semibold text-violet-600">{s ? `${s.active} tenants` : '— tenants'}</span></div>
+            <div className="flex items-center gap-1 rounded-md bg-amber-500/8 px-1.5 py-0.5"><CreditCard className="size-2 text-amber-600" /><span className="text-[7px] font-semibold text-amber-600">{bAnalytics ? `${bAnalytics.revenueByPlan.length} plans` : '— plans'}</span></div>
           </div>
           <div className="flex flex-1 flex-col gap-0.5 px-2.5 pb-2 min-h-0">
             {[
-              { icon: CreditCard, label: 'Manage Subscription Plans', badge: '4 plans', color: 'from-amber-500 to-orange-600', badgeBg: 'bg-amber-500/10', badgeText: 'text-amber-600', hoverBorder: 'hover:border-amber-400/40', hoverBg: 'hover:bg-amber-500/5' },
-              { icon: Settings, label: 'Platform Settings', badge: null, color: 'from-slate-500 to-slate-700', badgeBg: '', badgeText: '', hoverBorder: 'hover:border-slate-400/40', hoverBg: 'hover:bg-slate-500/5' },
-              { icon: Users, label: 'View All Tenants', badge: s ? String(s.total) : '120', color: 'from-violet-500 to-purple-600', badgeBg: 'bg-violet-500/10', badgeText: 'text-violet-600', hoverBorder: 'hover:border-violet-400/40', hoverBg: 'hover:bg-violet-500/5' },
-              { icon: Activity, label: 'System Health', badge: '99.9%', color: 'from-emerald-500 to-teal-600', badgeBg: 'bg-emerald-500/10', badgeText: 'text-emerald-600', hoverBorder: 'hover:border-emerald-400/40', hoverBg: 'hover:bg-emerald-500/5' },
+              { icon: CreditCard, label: 'Manage Subscription Plans', badge: bAnalytics ? `${bAnalytics.revenueByPlan.length} plans` : null, color: 'from-amber-500 to-orange-600', badgeBg: 'bg-amber-500/10', badgeText: 'text-amber-600', hoverBorder: 'hover:border-amber-400/40', hoverBg: 'hover:bg-amber-500/5', section: 'plans' },
+              { icon: Settings, label: 'Platform Settings', badge: null, color: 'from-slate-500 to-slate-700', badgeBg: '', badgeText: '', hoverBorder: 'hover:border-slate-400/40', hoverBg: 'hover:bg-slate-500/5', section: 'settings' },
+              { icon: Users, label: 'View All Tenants', badge: s ? String(s.total) : null, color: 'from-violet-500 to-purple-600', badgeBg: 'bg-violet-500/10', badgeText: 'text-violet-600', hoverBorder: 'hover:border-violet-400/40', hoverBg: 'hover:bg-violet-500/5', section: 'tenants' },
+              { icon: Activity, label: 'System Health', badge: null, color: 'from-emerald-500 to-teal-600', badgeBg: 'bg-emerald-500/10', badgeText: 'text-emerald-600', hoverBorder: 'hover:border-emerald-400/40', hoverBg: 'hover:bg-emerald-500/5', section: 'incidents' },
             ].map((ctrl) => (
-              <button key={ctrl.label} className={`group/btn relative flex items-center gap-2 rounded-lg border border-border/40 bg-muted/5 px-2 py-1.5 text-[9px] font-medium text-foreground/80 transition-all duration-200 ${ctrl.hoverBorder} ${ctrl.hoverBg} hover:translate-x-0.5 hover:shadow-sm`}>
+              <button key={ctrl.label} onClick={() => setSection(ctrl.section)} className={`group/btn relative flex items-center gap-2 rounded-lg border border-border/40 bg-muted/5 px-2 py-1.5 text-[9px] font-medium text-foreground/80 transition-all duration-200 ${ctrl.hoverBorder} ${ctrl.hoverBg} hover:translate-x-0.5 hover:shadow-sm`}>
                 <span className={`absolute left-0 top-1/2 -translate-y-1/2 h-4 w-0.5 rounded-r-full bg-linear-to-b ${ctrl.color} opacity-0 transition-opacity group-hover/btn:opacity-100`} />
                 <div className={`flex h-5 w-5 items-center justify-center rounded-md bg-linear-to-br ${ctrl.color} shadow-sm`}><ctrl.icon className="size-2.5 text-white" /></div>
                 <span className="flex-1 text-left truncate">{ctrl.label}</span>
@@ -275,13 +279,13 @@ export function OverviewView() {
           <div className="mb-1.5 grid grid-cols-2 gap-1">
             <div className="rounded-lg bg-muted/40 p-1 border border-border/40">
               <p className="text-[8px] font-medium text-muted-foreground">Views</p>
-              <p className="text-xs font-semibold text-foreground">{monthlyRev ? `${(monthlyRev.reduce((t, m) => t + m.billed, 0) / 1000).toFixed(1)}K` : '24.5K'}</p>
-              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">{mrrGrowthPct !== '49.3' ? `+${mrrGrowthPct}%` : '+12.3%'}</span>
+              <p className="text-xs font-semibold text-foreground">{monthlyRev ? `${(monthlyRev.reduce((t, m) => t + m.billed, 0) / 1000).toFixed(1)}K` : '—'}</p>
+              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">{mrrGrowthPct !== '49.3' ? `+${mrrGrowthPct}%` : '—'}</span>
             </div>
             <div className="rounded-lg bg-muted/40 p-1 border border-border/40">
               <p className="text-[8px] font-medium text-muted-foreground">Converts</p>
-              <p className="text-xs font-semibold text-foreground">{s ? `${(s.active / 1000).toFixed(1)}K` : '1.2K'}</p>
-              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">{s ? `${s.total > 0 ? ((s.active / s.total) * 100).toFixed(1) : 0}%` : '+8.1%'}</span>
+              <p className="text-xs font-semibold text-foreground">{s ? `${(s.active / 1000).toFixed(1)}K` : '—'}</p>
+              <span className="text-[8px] font-medium text-emerald-600 dark:text-emerald-400">{s ? `${s.total > 0 ? ((s.active / s.total) * 100).toFixed(1) : 0}%` : '—'}</span>
             </div>
           </div>
           <div className="mb-1.5 flex-1 min-h-0 w-full overflow-hidden rounded-lg bg-muted/30 p-1 border border-border/40">
@@ -295,7 +299,7 @@ export function OverviewView() {
           </div>
           <div className="flex items-center justify-between">
             <span className="text-[8px] font-medium text-muted-foreground">Last 7 days</span>
-            <button className="flex items-center gap-0.5 rounded-md bg-linear-to-r from-indigo-500 to-purple-500 px-1.5 py-0.5 text-[8px] font-medium text-white transition-all duration-300 hover:from-indigo-600 hover:to-purple-600 hover:scale-105">
+            <button onClick={() => setSection('incidents')} className="flex items-center gap-0.5 rounded-md bg-linear-to-r from-indigo-500 to-purple-500 px-1.5 py-0.5 text-[8px] font-medium text-white transition-all duration-300 hover:from-indigo-600 hover:to-purple-600 hover:scale-105">
               Details
               <svg className="h-2 w-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
             </button>
@@ -306,7 +310,7 @@ export function OverviewView() {
           <GlowDonutChart
             data={planDistribution}
             centerLabel="Plans"
-            centerValue={s ? String(s.total) : '124'}
+            centerValue={s ? String(s.total) : '…'}
             height={120}
             showLegend
           />

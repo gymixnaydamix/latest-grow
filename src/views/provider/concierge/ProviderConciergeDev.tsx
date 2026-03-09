@@ -155,14 +155,38 @@ export function ProviderConciergeDev() {
   const createRelease = useCreateProviderRelease();
   const updateFlag = useUpdateProviderFeatureFlag();
 
-  const devItems = ([
-    ...((releasesData as any)?.releases ?? []),
-    ...((moduleData as any)?.featureFlags ?? []),
-  ] as any as DevItem[]).length
-    ? ([
-        ...((releasesData as any)?.releases ?? []),
-        ...((moduleData as any)?.featureFlags ?? []),
-      ] as any as DevItem[])
+  /* ── Map API data → DevItem shape, falling back to FALLBACK_DEV_ITEMS ── */
+  const releasesObj = releasesData as Record<string, unknown> | undefined;
+  const moduleObj = moduleData as Record<string, unknown> | undefined;
+  const apiReleases = Array.isArray(releasesObj?.releases) ? releasesObj.releases as Array<Record<string, unknown>> : [];
+  const apiFlags = Array.isArray(moduleObj?.featureFlags) ? moduleObj.featureFlags as Array<Record<string, unknown>> : [];
+
+  const mappedReleases: DevItem[] = apiReleases.map((r, i) => ({
+    id: String(r.id ?? `REL-${i}`),
+    title: String(r.version ?? r.title ?? ''),
+    category: 'Release' as DevItemCategory,
+    status: String(r.status ?? 'Unknown'),
+    priority: (r.priority as DevItem['priority']) ?? 'Medium',
+    assignee: String(r.assignee ?? 'Release Manager'),
+    updated: String(r.updated ?? r.createdAt ?? ''),
+    detail: String(r.changes ?? r.detail ?? ''),
+    meta: r.meta as Record<string, string> | undefined,
+  }));
+
+  const mappedFlags: DevItem[] = apiFlags.map((f, i) => ({
+    id: String(f.id ?? `FLAG-${i}`),
+    title: String(f.name ?? f.title ?? ''),
+    category: 'Feature Flag' as DevItemCategory,
+    status: f.enabled ? 'Enabled' : 'Disabled',
+    priority: (f.priority as DevItem['priority']) ?? 'Medium',
+    assignee: String(f.assignee ?? 'Product Team'),
+    updated: String(f.updatedAt ?? f.updated ?? ''),
+    detail: String(f.description ?? f.detail ?? ''),
+    meta: f.meta as Record<string, string> | undefined,
+  }));
+
+  const devItems: DevItem[] = (mappedReleases.length + mappedFlags.length) > 0
+    ? [...mappedReleases, ...mappedFlags]
     : FALLBACK_DEV_ITEMS;
   const [selected, setSelected] = useState<DevItem | null>(devItems[0] ?? null);
 

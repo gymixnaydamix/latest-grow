@@ -9,8 +9,9 @@ import { useProviderReports } from '@/hooks/api/use-provider-console';
 export function MarketView() {
   const { data: apiData } = useMarketIntelligence();
   const { data: reportsData } = useProviderReports();
-  const apiFeatures = (reportsData as any)?.features;
-  const apiOpportunities = (reportsData as any)?.opportunities;
+  const reportsObj = reportsData as Record<string, unknown> | undefined;
+  const apiFeatures = reportsObj?.features as typeof FALLBACK_features | undefined;
+  const apiOpportunities = reportsObj?.opportunities as typeof FALLBACK_opportunities | undefined;
   /* ── Inline 3D SVG Icons ── */
   const Icon3D_TAM = () => (
     <svg viewBox="0 0 40 40" className="h-9 w-9 drop-shadow-lg" style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.35))' }}>
@@ -53,15 +54,15 @@ export function MarketView() {
     </svg>
   );
 
-  /* ── Demo data (merged with API when available) ── */
-  const apiKpis = apiData?.kpis;
+  /* ── Wire data from API (backend returns kpis as object keyed by metric) ── */
+  const kpisObj = apiData?.kpis as Record<string, { value: string; change: string; sparkline?: number[] }> | undefined;
   const apiCompetitors = apiData?.competitors;
 
   const marketKpis: KpiDef[] = [
-    { label: 'TAM (K-12 SaaS)', value: apiKpis?.[0]?.value ?? '$12.4B', change: apiKpis?.[0]?.change ?? '+18% YoY', up: true, sub: 'Total addressable market', icon3d: Icon3D_TAM, gradient: 'from-blue-500/12 via-blue-400/6 to-transparent', borderGlow: 'hover:shadow-blue-500/15', sparkline: apiKpis?.[0]?.sparkline ?? [8.2, 8.8, 9.4, 9.9, 10.3, 10.8, 11.1, 11.5, 11.8, 12, 12.2, 12.4], sparkColor: '#3b82f6', prefix: 'm_' },
-    { label: 'Market Share', value: apiKpis?.[1]?.value ?? '0.12%', change: apiKpis?.[1]?.change ?? '+0.03%', up: true, sub: '$15.2K MRR', icon3d: Icon3D_ShareMkt, gradient: 'from-violet-500/12 via-violet-400/6 to-transparent', borderGlow: 'hover:shadow-violet-500/15', sparkline: apiKpis?.[1]?.sparkline ?? [0.05, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.1, 0.11, 0.12], sparkColor: '#8b5cf6', prefix: 'm_' },
-    { label: 'NPS Score', value: apiKpis?.[2]?.value ?? '72', change: apiKpis?.[2]?.change ?? '+5 pts', up: true, sub: 'Excellent', icon3d: Icon3D_NPSHeart, gradient: 'from-rose-500/12 via-rose-400/6 to-transparent', borderGlow: 'hover:shadow-rose-500/15', sparkline: apiKpis?.[2]?.sparkline ?? [58, 60, 62, 63, 65, 66, 67, 68, 69, 70, 71, 72], sparkColor: '#f43f5e', prefix: 'm_' },
-    { label: 'Growth Rate', value: apiKpis?.[3]?.value ?? '18% YoY', change: apiKpis?.[3]?.change ?? '+3.2%', up: true, sub: 'Revenue growth', icon3d: Icon3D_Rocket, gradient: 'from-emerald-500/12 via-emerald-400/6 to-transparent', borderGlow: 'hover:shadow-emerald-500/15', sparkline: apiKpis?.[3]?.sparkline ?? [10, 11, 12, 12.5, 13.2, 14, 14.8, 15.5, 16, 16.8, 17.4, 18], sparkColor: '#10b981', prefix: 'm_' },
+    { label: 'TAM (K-12 SaaS)', value: kpisObj?.tam?.value ?? '…', change: kpisObj?.tam?.change ?? '', up: true, sub: 'Total addressable market', icon3d: Icon3D_TAM, gradient: 'from-blue-500/12 via-blue-400/6 to-transparent', borderGlow: 'hover:shadow-blue-500/15', sparkline: kpisObj?.tam?.sparkline ?? [8.2, 8.8, 9.4, 9.9, 10.3, 10.8, 11.1, 11.5, 11.8, 12, 12.2, 12.4], sparkColor: '#3b82f6', prefix: 'm_' },
+    { label: 'Market Share', value: kpisObj?.marketShare?.value ?? '…', change: kpisObj?.marketShare?.change ?? '', up: true, sub: 'Platform share', icon3d: Icon3D_ShareMkt, gradient: 'from-violet-500/12 via-violet-400/6 to-transparent', borderGlow: 'hover:shadow-violet-500/15', sparkline: kpisObj?.marketShare?.sparkline ?? [0.05, 0.06, 0.065, 0.07, 0.075, 0.08, 0.085, 0.09, 0.095, 0.1, 0.11, 0.12], sparkColor: '#8b5cf6', prefix: 'm_' },
+    { label: 'NPS Score', value: kpisObj?.nps?.value ?? '…', change: kpisObj?.nps?.change ?? '', up: true, sub: 'Customer satisfaction', icon3d: Icon3D_NPSHeart, gradient: 'from-rose-500/12 via-rose-400/6 to-transparent', borderGlow: 'hover:shadow-rose-500/15', sparkline: kpisObj?.nps?.sparkline ?? [58, 60, 62, 63, 65, 66, 67, 68, 69, 70, 71, 72], sparkColor: '#f43f5e', prefix: 'm_' },
+    { label: 'Growth Rate', value: kpisObj?.growthRate?.value ?? '…', change: kpisObj?.growthRate?.change ?? '', up: true, sub: 'Revenue growth', icon3d: Icon3D_Rocket, gradient: 'from-emerald-500/12 via-emerald-400/6 to-transparent', borderGlow: 'hover:shadow-emerald-500/15', sparkline: kpisObj?.growthRate?.sparkline ?? [10, 11, 12, 12.5, 13.2, 14, 14.8, 15.5, 16, 16.8, 17.4, 18], sparkColor: '#10b981', prefix: 'm_' },
   ];
   const marketGrowthData = FALLBACK_mrrData.map(d => ({ month: d.month, size: parseFloat((d.mrr / 15230 * 12.4).toFixed(1)) }));
   const FALLBACK_features = [
@@ -70,14 +71,14 @@ export function MarketView() {
     { feat: 'White Labeling', us: true, compA: false, compB: true },
     { feat: 'Overlay Apps', us: true, compA: false, compB: false },
     { feat: 'Gamification', us: true, compA: false, compB: false },
-  ];
+  ] as const;
   const features = apiFeatures ?? FALLBACK_features;
   const FALLBACK_opportunities = [
     { name: 'K-12 STEM Programs', desc: 'Untapped $2.1B segment — STEM-focused schools switching platforms', priority: 'High', color: 'from-emerald-500' },
     { name: 'International Schools', desc: 'Multi-language + currency support differentiator', priority: 'High', color: 'from-blue-500' },
     { name: 'Parent Engagement', desc: 'Mobile-first parent portal — competitor gap identified', priority: 'Medium', color: 'from-violet-500' },
     { name: 'After-school Programs', desc: 'Scheduling + billing module extension opportunity', priority: 'Medium', color: 'from-amber-500' },
-  ];
+  ] as const;
   const opportunities = apiOpportunities ?? FALLBACK_opportunities;
 
   const threatColors: Record<string, { color: string; bg: string; border: string }> = {
@@ -112,7 +113,7 @@ export function MarketView() {
               <div className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-blue-500 to-indigo-600 shadow-sm shadow-blue-500/25"><TrendingUp className="size-3 text-white" /></div>
               <div><h3 className="text-[11px] font-semibold">Market Growth</h3><p className="text-[8px] text-muted-foreground">K-12 SaaS TAM trend (12mo)</p></div>
             </div>
-            <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600 dark:text-emerald-400"><ArrowUpRight className="size-2.5" />+18% YoY</span>
+            <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600 dark:text-emerald-400"><ArrowUpRight className="size-2.5" />{kpisObj?.growthRate?.change ?? '—'}</span>
           </div>
           <div className="flex-1 px-1 pb-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -184,7 +185,7 @@ export function MarketView() {
               </div>
               <h3 className="text-[11px] font-semibold">NPS &amp; Sentiment</h3>
             </div>
-            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Score: 72</span>
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">Score: {kpisObj?.nps?.value ?? '—'}</span>
           </div>
           <div className="flex flex-1 flex-col gap-2 px-2.5 pb-2 min-h-0">
             <div className="flex items-end gap-0.5" style={{ height: 40 }}>

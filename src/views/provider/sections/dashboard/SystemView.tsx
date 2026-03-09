@@ -4,15 +4,15 @@ import { XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Area, AreaCh
 import { KpiCard } from './shared';
 import type { KpiDef } from './shared';
 import { useSystemHealth } from '@/hooks/api';
-import { useSystemHealth as useSystemHealthAnalytics } from '@/hooks/api/use-analytics';
 
 export function SystemView() {
   const { data: apiData } = useSystemHealth();
-  const { data: analyticsHealth } = useSystemHealthAnalytics();
-  /* Merge analyticsHealth into apiData when available */
-  const mergedKpis = analyticsHealth?.kpis ?? apiData?.kpis;
-  const mergedServices = analyticsHealth?.services ?? apiData?.services;
-  const mergedGauges = analyticsHealth?.gauges ?? apiData?.gauges;
+  /* Backend returns kpis as object, services as array, gauges as array, process info */
+  const apiObj = apiData as Record<string, unknown> | undefined;
+  const kpisObj = apiObj?.kpis as Record<string, { value: string; change: string; sparkline?: number[] }> | undefined;
+  const mergedServices = apiObj?.services as Array<{ name: string; status: string }> | undefined;
+  const mergedGauges = apiObj?.gauges as Array<{ label: string; pct: number; color?: string }> | undefined;
+  const processInfo = apiObj?.process as { heapUsedMB: number; heapTotalMB: number; uptimeHours: number } | undefined;
   /* ── Inline 3D SVG Icons ── */
   const Icon3D_Server = () => (
     <svg viewBox="0 0 40 40" className="h-9 w-9 drop-shadow-lg" style={{ filter: 'drop-shadow(0 4px 6px rgba(59,130,246,.35))' }}>
@@ -56,16 +56,15 @@ export function SystemView() {
     </svg>
   );
 
-  /* ── Demo data (merged with API when available) ── */
-  const apiKpis = mergedKpis;
+  /* ── Wire data from API (backend returns kpis as object keyed by metric) ── */
   const apiServices = mergedServices;
   const apiGauges = mergedGauges;
 
   const systemKpis: KpiDef[] = [
-    { label: 'API Response', value: apiKpis?.[0]?.value ?? '42ms', change: apiKpis?.[0]?.change ?? '-8ms', up: true, sub: 'P95 latency', icon3d: Icon3D_Server, gradient: 'from-blue-500/10 to-blue-500/5', borderGlow: 'hover:shadow-blue-500/20', sparkline: apiKpis?.[0]?.sparkline ?? [55, 52, 49, 48, 47, 45, 44, 44, 43, 43, 42, 42], sparkColor: '#3b82f6', chipColor: 'bg-emerald-500/10 text-emerald-600', prefix: 's_' },
-    { label: 'DB Load', value: apiKpis?.[1]?.value ?? '23%', change: apiKpis?.[1]?.change ?? '-4%', up: true, sub: 'PostgreSQL CPU', icon3d: Icon3D_DB, gradient: 'from-emerald-500/10 to-emerald-500/5', borderGlow: 'hover:shadow-emerald-500/20', sparkline: apiKpis?.[1]?.sparkline ?? [30, 28, 27, 26, 25, 25, 24, 24, 23, 23, 23, 23], sparkColor: '#10b981', chipColor: 'bg-emerald-500/10 text-emerald-600', prefix: 's_' },
-    { label: 'Queue Depth', value: apiKpis?.[2]?.value ?? '12', change: apiKpis?.[2]?.change ?? '+3', up: false, sub: 'Jobs pending', icon3d: Icon3D_Queue, gradient: 'from-amber-500/10 to-amber-500/5', borderGlow: 'hover:shadow-amber-500/20', sparkline: apiKpis?.[2]?.sparkline ?? [5, 6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12], sparkColor: '#f59e0b', chipColor: 'bg-amber-500/10 text-amber-600', prefix: 's_' },
-    { label: 'Storage', value: apiKpis?.[3]?.value ?? '2.4TB', change: apiKpis?.[3]?.change ?? '+120GB', up: false, sub: 'Of 5TB used', icon3d: Icon3D_Storage, gradient: 'from-violet-500/10 to-violet-500/5', borderGlow: 'hover:shadow-violet-500/20', sparkline: apiKpis?.[3]?.sparkline ?? [1.8, 1.9, 1.95, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4], sparkColor: '#8b5cf6', chipColor: 'bg-violet-500/10 text-violet-600', prefix: 's_' },
+    { label: 'API Response', value: kpisObj?.apiResponse?.value ?? '…', change: kpisObj?.apiResponse?.change ?? '', up: true, sub: 'P95 latency', icon3d: Icon3D_Server, gradient: 'from-blue-500/10 to-blue-500/5', borderGlow: 'hover:shadow-blue-500/20', sparkline: kpisObj?.apiResponse?.sparkline ?? [55, 52, 49, 48, 47, 45, 44, 44, 43, 43, 42, 42], sparkColor: '#3b82f6', chipColor: 'bg-emerald-500/10 text-emerald-600', prefix: 's_' },
+    { label: 'DB Load', value: kpisObj?.dbLoad?.value ?? '…', change: kpisObj?.dbLoad?.change ?? '', up: true, sub: 'PostgreSQL CPU', icon3d: Icon3D_DB, gradient: 'from-emerald-500/10 to-emerald-500/5', borderGlow: 'hover:shadow-emerald-500/20', sparkline: kpisObj?.dbLoad?.sparkline ?? [30, 28, 27, 26, 25, 25, 24, 24, 23, 23, 23, 23], sparkColor: '#10b981', chipColor: 'bg-emerald-500/10 text-emerald-600', prefix: 's_' },
+    { label: 'Queue Depth', value: kpisObj?.queueDepth?.value ?? '…', change: kpisObj?.queueDepth?.change ?? '', up: false, sub: 'Jobs pending', icon3d: Icon3D_Queue, gradient: 'from-amber-500/10 to-amber-500/5', borderGlow: 'hover:shadow-amber-500/20', sparkline: kpisObj?.queueDepth?.sparkline ?? [5, 6, 7, 8, 8, 9, 10, 10, 11, 11, 12, 12], sparkColor: '#f59e0b', chipColor: 'bg-amber-500/10 text-amber-600', prefix: 's_' },
+    { label: 'Storage', value: kpisObj?.storage?.value ?? '…', change: kpisObj?.storage?.change ?? '', up: false, sub: processInfo ? `Heap: ${processInfo.heapUsedMB}/${processInfo.heapTotalMB}MB` : 'Of 5TB used', icon3d: Icon3D_Storage, gradient: 'from-violet-500/10 to-violet-500/5', borderGlow: 'hover:shadow-violet-500/20', sparkline: kpisObj?.storage?.sparkline ?? [1.8, 1.9, 1.95, 2.0, 2.05, 2.1, 2.15, 2.2, 2.25, 2.3, 2.35, 2.4], sparkColor: '#8b5cf6', chipColor: 'bg-violet-500/10 text-violet-600', prefix: 's_' },
   ];
   /* Deterministic infra data seeded from gauge values */
   const cpuBase = (apiGauges?.[0]?.pct ?? 34);
@@ -95,7 +94,7 @@ export function SystemView() {
     { time: '3h ago', msg: 'Database backup completed', type: 'success' },
     { time: '6h ago', msg: 'Deployment v2.4.1 rolled out', type: 'info' },
   ];
-  const apiEvents = (analyticsHealth as any)?.events as typeof FALLBACK_events | undefined;
+  const apiEvents = apiObj?.events as typeof FALLBACK_events | undefined;
   const events = apiEvents ?? FALLBACK_events;
   const gauges = (apiGauges ?? [
     { label: 'CPU', pct: 34, color: '#3b82f6' },
@@ -104,7 +103,7 @@ export function SystemView() {
     { label: 'Network', pct: 45, color: '#8b5cf6' },
   ]);
   /* Deterministic uptime: mark down only days divisible by 17 (rare but predictable) */
-  const downDaySet = new Set((analyticsHealth as any)?.downDays ?? [17]);
+  const downDaySet = new Set((apiObj?.downDays as number[] | undefined) ?? [17]);
   const uptimeDays = Array.from({ length: 30 }, (_, i) => ({ day: i + 1, up: !downDaySet.has(i + 1) }));
 
   return (
@@ -120,7 +119,7 @@ export function SystemView() {
               <div className="relative flex h-6 w-6 items-center justify-center rounded-lg bg-linear-to-br from-cyan-500 to-blue-600 shadow-sm shadow-cyan-500/25"><Activity className="size-3 text-white" /></div>
               <div><h3 className="text-[11px] font-semibold">Infrastructure Health</h3><p className="text-[8px] text-muted-foreground">CPU &amp; Memory (24h)</p></div>
             </div>
-            <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600"><ArrowUpRight className="size-2.5" />99.9% uptime</span>
+            <span className="flex items-center gap-0.5 rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600"><ArrowUpRight className="size-2.5" />{processInfo ? `Up ${processInfo.uptimeHours}h` : 'Monitoring'}</span>
           </div>
           <div className="flex-1 px-1 pb-1 min-h-0">
             <ResponsiveContainer width="100%" height="100%">
@@ -215,7 +214,7 @@ export function SystemView() {
         <div data-animate className="group flex flex-col rounded-xl border border-emerald-500/20 bg-linear-to-br from-emerald-500/8 via-card to-card p-2.5 shadow-(--shadow-sm) transition-all duration-300 hover:shadow-(--shadow-md) hover:border-emerald-500/30 overflow-hidden" style={{ minHeight: 140 }}>
           <div className="flex items-center justify-between mb-1.5">
             <h3 className="text-[10px] font-semibold text-foreground">Uptime (30d)</h3>
-            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">99.97%</span>
+            <span className="rounded-full bg-emerald-500/10 border border-emerald-500/20 px-1.5 py-0.5 text-[8px] font-bold text-emerald-600 dark:text-emerald-400">{(() => { const upCount = uptimeDays.filter(d => d.up).length; return `${((upCount / 30) * 100).toFixed(2)}%`; })()}</span>
           </div>
           <div className="grid grid-cols-10 gap-0.5">
             {uptimeDays.map(d => (<div key={d.day} className={`h-2.5 rounded-sm ${d.up ? 'bg-emerald-500/60' : 'bg-red-500/60'}`} title={`Day ${d.day}: ${d.up ? 'Up' : 'Down'}`} />))}

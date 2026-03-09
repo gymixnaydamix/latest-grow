@@ -379,9 +379,17 @@ function StatusPageView() {
       {/* 90-day uptime */}
       <Panel title="90-Day Uptime" accentBorder="border-emerald-500/20">
         <div className="space-y-3">
-          {components.map((comp) => {
+          {components.map((comp, compIdx) => {
             const ok = comp.publicStatus === 'OPERATIONAL';
-            const uptimePct = ok ? '99.98' : '99.72';
+            const compIncidents = incidents.filter((inc) =>
+              inc.affectedServices.some((svc) => svc.toLowerCase() === comp.name.toLowerCase()) || (!ok && inc.status !== 'RESOLVED'),
+            );
+            const downDays = Math.min(30, compIncidents.length);
+            const uptimePct = ((30 - downDays) / 30 * 100).toFixed(2);
+            /* Spread down-day markers deterministically based on component index + incident count */
+            const downDayIndices = new Set(
+              Array.from({ length: downDays }, (_, i) => ((compIdx * 7 + i * 11 + 3) % 30)),
+            );
             return (
               <div key={comp.id} className="flex items-center gap-3 text-xs">
                 <span className="w-28 shrink-0 text-slate-300">{comp.name}</span>
@@ -389,7 +397,7 @@ function StatusPageView() {
                   {Array.from({ length: 30 }).map((_, i) => (
                     <div
                       key={i}
-                      className={`h-4 flex-1 rounded-[1px] ${!ok && (i === 14 || i === 22) ? 'bg-red-500/60' : 'bg-emerald-500/40'}`}
+                      className={`h-4 flex-1 rounded-[1px] ${downDayIndices.has(i) ? 'bg-red-500/60' : 'bg-emerald-500/40'}`}
                     />
                   ))}
                 </div>
