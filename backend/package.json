@@ -44,7 +44,7 @@
     "@types/express": "^5.0.6",
     "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^25.3.3",
+    "@types/node": "^25.5.0",
     "@types/ws": "^8.18.1",
     "prisma": "^7.4.2",
     "tsx": "^4.21.0",
